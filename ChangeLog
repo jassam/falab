@@ -1,0 +1,28 @@
+2012-07-29    llz
+	* add fa_psychomodel in audo 
+
+2012-07-22~25 llz
+	* add fa_asmodel module in audio, this model is the prototype of analysis 
+	  and synthesis model for learning audio signal processing, it can be also
+	  used in video too, but I only write it for audio for I familar with
+	  audio processing.
+
+2012-07-18~21 llz
+	* add the fa_fft&fa_mdct module in share, also add fixed point mdct
+
+2012-07-15 llz
+	* add the fa_resample module in share
+
+2012-07-10 llz
+	* add the fa_fir module in share 
+
+2012-07-09 llz
+	* add the fa_print module in utils
+	* add the fa_wavfmt modult in audio
+
+2012-07-08 llz
+	* add fa_parseopt module in utils
+
+2012-07-07 llz
+	* build the directory of falab project
+	* will add some signal processing basis module into module directory
