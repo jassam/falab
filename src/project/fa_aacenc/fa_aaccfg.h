@@ -1,6 +1,7 @@
 #ifndef _FA_AACCFG_H
 #define _FA_AACCFG_H 
 
+/*-------------------------- configuration define -----------------------------------*/
 //MPEG ID's 
 #define MPEG2       1
 #define MPEG4       0
@@ -24,11 +25,86 @@
 //channels
 #define MAX_CHANNELS            64
 
+
+/*-------------------------- encoding/decoding define -------------------------------*/
+//length for bitstream define
+#define LEN_SE_ID           3
+#define LEN_TAG             4
+#define LEN_GLOB_GAIN       8
+#define LEN_COM_WIN         1
+#define LEN_ICS_RESERV      1
+#define LEN_WIN_SEQ         2
+#define LEN_WIN_SH          1
+#define LEN_MAX_SFBL        6
+#define LEN_MAX_SFBS        4
+#define LEN_CB              4
+#define LEN_SCL_PCM         8
+#define LEN_PRED_PRES       1
+#define LEN_PRED_RST        1
+#define LEN_PRED_RSTGRP     5
+#define LEN_PRED_ENAB       1
+#define LEN_MASK_PRES       2
+#define LEN_MASK            1
+#define LEN_PULSE_PRES      1
+
+#define LEN_TNS_PRES        1
+#define LEN_TNS_NFILTL      2
+#define LEN_TNS_NFILTS      1
+#define LEN_TNS_COEFF_RES   1
+#define LEN_TNS_LENGTHL     6
+#define LEN_TNS_LENGTHS     4
+#define LEN_TNS_ORDERL      5
+#define LEN_TNS_ORDERS      3
+#define LEN_TNS_DIRECTION   1
+#define LEN_TNS_COMPRESS    1
+#define LEN_GAIN_PRES       1
+
+#define LEN_NEC_NPULSE      2
+#define LEN_NEC_ST_SFB      6
+#define LEN_NEC_POFF        5
+#define LEN_NEC_PAMP        4
+#define NUM_NEC_LINES       4
+#define NEC_OFFSET_AMP      4
+
+#define LEN_NCC             3
+#define LEN_IS_CPE          1
+#define LEN_CC_LR           1
+#define LEN_CC_DOM          1
+#define LEN_CC_SGN          1
+#define LEN_CCH_GES         2
+#define LEN_CCH_CGP         1
+#define LEN_D_CNT           4
+#define LEN_D_ESC           12
+#define LEN_F_CNT           4
+#define LEN_F_ESC           8
+#define LEN_BYTE            8
+#define LEN_PAD_DATA        8
+
+#define LEN_PC_COMM         8
+
 //scale factor band
 #define NSFB_LONG               51
 #define NSFB_SHORT              15
 #define MAX_SHORT_WINDOWS       8
 #define MAX_SCFAC_BANDS         ((NSFB_SHORT+1)*MAX_SHORT_WINDOWS)
+
+//block type define
+enum {
+    ONLY_LONG_BLOCK  = 0,
+    LONG_START_BLOCK = 1,   //long  to short
+    ONLY_SHORT_BLOCK = 2,
+    LONG_STOP_BLOCK  = 3,   //short to long
+};
+
+enum {
+    LONG_CODING_BLOCK  = 0,
+    SHORT_CODING_BLOCK = 1,
+};
+
+#define AAC_FRAME_LEN       1024
+#define AAC_BLOCK_LONG_LEN  1024
+#define AAC_BLOCK_SHORT_LEN 128
+#define AAC_BLOCK_TRANS_LEN 448   // (1024-128)/2=448
 
 
 
