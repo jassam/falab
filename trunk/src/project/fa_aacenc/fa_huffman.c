@@ -17,6 +17,10 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
+
+#define INTENSITY_HCB 15
+#define INTENSITY_HCB2 14
+
 /*
    This function takes an element that is larger than 16 and generates the base10 value of the
    equivalent escape sequence.  It returns the escape sequence in the variable, 'output'.  It
@@ -282,8 +286,8 @@ int fa_huffman_encode_mdctline(int *x_quant, int sfb_num, int *sfb_offset, int *
         hufftab_no = quant_hufftab_no[sfb];
         switch(hufftab_no) {
             case 0:
-            /*case INTENSITY_HCB:*/
-            /*case INTENSITY_HCB2:*/
+            case INTENSITY_HCB:
+            case INTENSITY_HCB2:
                 x_quant_bits[counter]   = 0;
                 x_quant_code[counter++] = 0;
                 break;

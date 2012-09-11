@@ -32,6 +32,7 @@
 #include <memory.h>
 #include "fa_wavfmt.h"
 #include "fa_parseopt.h"
+#include "fa_aaccfg.h"
 #include "fa_aacpsy.h"
 #include "fa_swbtab.h"
 #include "fa_aacfilterbank.h"

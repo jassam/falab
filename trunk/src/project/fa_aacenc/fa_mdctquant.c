@@ -66,7 +66,7 @@ static int calculate_start_common_scalefac(float max_mdct_line)
     float tmp;
 
     tmp = ceil(16./3 * (log2((pow(max_mdct_line, 0.75))/MAX_QUANT)));
-    start_common_scalefac = (int)tmp;
+    start_common_scalefac = (int)tmp+48;
 
     return start_common_scalefac;
 }
@@ -220,13 +220,13 @@ static void iteration_outerloop(fa_mdctquant_t *f,
         else
             energy_err_ok = 0;
 
-        if(sfb_allscale >= sb_num)
+        if(sfb_scale_cnt >= sb_num)
             sfb_allscale = 1;
 
         outer_loop_count++;
     }while(!iteration_stop(energy_err_ok, sfb_allscale));
 
-#if 0
+#if  0  
     for(sb = 0; sb < sb_num; sb++) {
         printf("%d,",scalefactor[sb]);
     }

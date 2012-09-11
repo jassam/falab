@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "fa_aaccfg.h"
 #include "fa_aacpsy.h"
 #include "fa_aacfilterbank.h"
 #include "fa_mdct.h"

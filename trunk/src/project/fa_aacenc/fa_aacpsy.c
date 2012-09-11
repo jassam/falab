@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <math.h>
+#include "fa_aaccfg.h"
 #include "fa_aacpsy.h"
 #include "fa_psytab.h"
 #include "fa_swbtab.h"
-#include "fa_aacfilterbank.h"
 
 typedef struct _fa_aacpsy_t {
     int   sample_rate;
