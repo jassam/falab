@@ -4,7 +4,7 @@
 #include "fa_aaccfg.h"
 #include "fa_aacchn.h"
 
-
+typedef unsigned uintptr_t;
 
 #define TNS_MAX_ORDER 20
 #define DEF_TNS_GAIN_THRESH 1.4
@@ -89,9 +89,9 @@ typedef struct
 
 
 
-typedef struct _fa_aacenc_ctx_t{
-    //the configuration of aac encoder
-    fa_aaccfg_t cfg;
+typedef struct _aacenc_ctx_t{
+
+    //chn info
     chn_info_t  chn_info;
 
     //the coding status variable 
@@ -117,8 +117,11 @@ typedef struct _fa_aacenc_ctx_t{
 
     int used_bytes;
 
-    unsigned long h_bitstream;
-
+    uintptr_t h_aacpsy;
+    uintptr_t h_aac_analysis;
+    uintptr_t h_mdctq_long, h_mdctq_short;
+    uintptr_t h_bitstream;
+ 
     ///////////////////////
 
     int spectral_count;
@@ -143,8 +146,15 @@ typedef struct _fa_aacenc_ctx_t{
     int pred_sfb_flag[MAX_SCFAC_BANDS];
     int reset_group_number;
 
+}aacenc_ctx_t;
+
+
+typedef struct _fa_aacenc_ctx_t{
+    //the configuration of aac encoder
+    aaccfg_t cfg;
+
+    //encode ctx for each channel
+    aacenc_ctx_t ctx[MAX_CHANNELS];
 }fa_aacenc_ctx_t;
-
-
 
 #endif

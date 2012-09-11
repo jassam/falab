@@ -10,13 +10,13 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
-static int find_grouping_bits(fa_aacenc_ctx_t *p_ctx);
-static int write_ltp_predictor_data(fa_aacenc_ctx_t *p_ctx, int write_flag);
-static int write_predictor_data(fa_aacenc_ctx_t *p_ctx, int write_flag);
-static int write_tns_data(fa_aacenc_ctx_t *p_ctx, int write_flag);
-static int write_gaincontrol_data(fa_aacenc_ctx_t *p_ctx, int write_flag);
-static int write_spectral_data(fa_aacenc_ctx_t *p_ctx, int write_flag);
-static int write_aac_fillbits(fa_aacenc_ctx_t *p_ctx, int write_flag, int numBits);
+static int find_grouping_bits(aacenc_ctx_t *p_ctx);
+static int write_ltp_predictor_data(aacenc_ctx_t *p_ctx, int write_flag);
+static int write_predictor_data(aacenc_ctx_t *p_ctx, int write_flag);
+static int write_tns_data(aacenc_ctx_t *p_ctx, int write_flag);
+static int write_gaincontrol_data(aacenc_ctx_t *p_ctx, int write_flag);
+static int write_spectral_data(aacenc_ctx_t *p_ctx, int write_flag);
+static int write_aac_fillbits(aacenc_ctx_t *p_ctx, int write_flag, int numBits);
 
 /* returns the maximum bitrate per channel for certain sample rate*/
 unsigned int get_aac_max_bitrate(unsigned long sample_rate)
@@ -59,7 +59,7 @@ unsigned int get_aac_bitreservoir_maxsize(unsigned long bit_rate, unsigned long 
     return (6144 - (unsigned int)((float)bit_rate/(float)sample_rate*1024));
 }
 
-static int write_adtsheader(fa_aacenc_ctx_t *p_ctx, int write_flag)
+static int write_adtsheader(aaccfg_t *p_cfg, aacenc_ctx_t *p_ctx, int write_flag)
 {
     unsigned long h_bs = p_ctx->h_bitstream;
     int bits = 56;
@@ -68,13 +68,13 @@ static int write_adtsheader(fa_aacenc_ctx_t *p_ctx, int write_flag)
         /* Fixed ADTS header */
         fa_bitstream_putbits(h_bs, 0xFFFF, 12);
         fa_bitstream_putbits(h_bs, 0xFFFF, 12);                     /* 12 bit Syncword */
-        fa_bitstream_putbits(h_bs, p_ctx->cfg.mpeg_version, 1);     /* ID == 0 for MPEG4 AAC, 1 for MPEG2 AAC */
+        fa_bitstream_putbits(h_bs, p_cfg->mpeg_version, 1);         /* ID == 0 for MPEG4 AAC, 1 for MPEG2 AAC */
         fa_bitstream_putbits(h_bs, 0, 2);                           /* layer == 0 */
         fa_bitstream_putbits(h_bs, 1, 1);                           /* protection absent */
-        fa_bitstream_putbits(h_bs, p_ctx->cfg.aac_objtype-1, 2);    /* profile */
+        fa_bitstream_putbits(h_bs, p_cfg->aac_objtype-1, 2);        /* profile */
         fa_bitstream_putbits(h_bs, p_ctx->sample_rate_index, 4);    /* sampling rate */
         fa_bitstream_putbits(h_bs, 0, 1);                           /* private bit */
-        fa_bitstream_putbits(h_bs, p_ctx->cfg.chn_num, 3);          /* ch. config (must be > 0) */
+        fa_bitstream_putbits(h_bs, p_cfg->chn_num, 3);              /* ch. config (must be > 0) */
         fa_bitstream_putbits(h_bs, 0, 1);                           /* original/copy */
         fa_bitstream_putbits(h_bs, 0, 1);                           /* home */
 
@@ -89,7 +89,7 @@ static int write_adtsheader(fa_aacenc_ctx_t *p_ctx, int write_flag)
     return bits;
 }
 
-static int write_icsinfo(fa_aacenc_ctx_t *p_ctx, int write_flag, 
+static int write_icsinfo(aacenc_ctx_t *p_ctx, int write_flag, 
                         int objtype,
                         int common_window)
 {
@@ -179,7 +179,7 @@ static int WriteICS(CoderInfo *coderInfo,
 
 
 
-static int write_cpe(fa_aacenc_ctx_t *p_ctx, int write_flag)
+static int write_cpe(aacenc_ctx_t *p_ctx, int write_flag)
 {
     unsigned long h_bs = p_ctx->h_bitstream;
     chn_info_t *p_chn_info = p_ctx->chn_info;
@@ -235,7 +235,7 @@ static int write_cpe(fa_aacenc_ctx_t *p_ctx, int write_flag)
 #endif 
 
 
-static int find_grouping_bits(fa_aacenc_ctx_t *p_ctx)
+static int find_grouping_bits(aacenc_ctx_t *p_ctx)
 {
     /* This function inputs the grouping information and outputs the seven bit
     'grouping_bits' field that the AAC decoder expects.  */
@@ -262,7 +262,7 @@ static int find_grouping_bits(fa_aacenc_ctx_t *p_ctx)
 }
 
 
-static int write_ltp_predictor_data(fa_aacenc_ctx_t *p_ctx, int write_flag)
+static int write_ltp_predictor_data(aacenc_ctx_t *p_ctx, int write_flag)
 {
     unsigned long h_bs = p_ctx->h_bitstream;
     int i, last_band;
@@ -308,7 +308,7 @@ static int write_ltp_predictor_data(fa_aacenc_ctx_t *p_ctx, int write_flag)
     return (bits);
 }
 
-static int write_predictor_data(fa_aacenc_ctx_t *p_ctx, int write_flag)
+static int write_predictor_data(aacenc_ctx_t *p_ctx, int write_flag)
 {
     unsigned long h_bs = p_ctx->h_bitstream;
     int bits = 0;
@@ -342,7 +342,7 @@ static int write_predictor_data(fa_aacenc_ctx_t *p_ctx, int write_flag)
 }
 
 
-static int write_pulse_data(fa_aacenc_ctx_t *p_ctx, int write_flag)
+static int write_pulse_data(aacenc_ctx_t *p_ctx, int write_flag)
 {
     unsigned long h_bs = p_ctx->h_bitstream;
     int bits = 0;
@@ -357,7 +357,7 @@ static int write_pulse_data(fa_aacenc_ctx_t *p_ctx, int write_flag)
 }
 
 
-static int write_tns_data(fa_aacenc_ctx_t *p_ctx, int write_flag)
+static int write_tns_data(aacenc_ctx_t *p_ctx, int write_flag)
 {
     unsigned long h_bs = p_ctx->h_bitstream;
     int bits = 0;
@@ -442,7 +442,7 @@ static int write_tns_data(fa_aacenc_ctx_t *p_ctx, int write_flag)
 }
 
 
-static int write_gaincontrol_data(fa_aacenc_ctx_t *p_ctx, int write_flag)
+static int write_gaincontrol_data(aacenc_ctx_t *p_ctx, int write_flag)
 {
     unsigned long h_bs = p_ctx->h_bitstream;
     int bits = 0;
@@ -457,7 +457,7 @@ static int write_gaincontrol_data(fa_aacenc_ctx_t *p_ctx, int write_flag)
 }
 
 
-static int write_spectral_data(fa_aacenc_ctx_t *p_ctx, int write_flag)
+static int write_spectral_data(aacenc_ctx_t *p_ctx, int write_flag)
 {
     unsigned long h_bs = p_ctx->h_bitstream;
     int i, bits = 0;
@@ -485,7 +485,7 @@ static int write_spectral_data(fa_aacenc_ctx_t *p_ctx, int write_flag)
 }
 
 
-static int write_aac_fillbits(fa_aacenc_ctx_t *p_ctx, int write_flag, int numBits)
+static int write_aac_fillbits(aacenc_ctx_t *p_ctx, int write_flag, int numBits)
 {
     unsigned long h_bs = p_ctx->h_bitstream;
     int numberOfBitsLeft = numBits;
