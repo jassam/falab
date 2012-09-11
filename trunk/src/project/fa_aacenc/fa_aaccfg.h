@@ -109,7 +109,7 @@ enum {
 
 
 
-typedef struct _fa_aaccfg_t  {
+typedef struct _aaccfg_t  {
     /* copyright string */
     char *copyright;
 
@@ -134,7 +134,7 @@ typedef struct _fa_aaccfg_t  {
 
     int sample_rate;
 
-}fa_aaccfg_t;
+}aaccfg_t;
 
 
 
