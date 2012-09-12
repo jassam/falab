@@ -3,6 +3,7 @@
 
 #include "fa_aaccfg.h"
 #include "fa_aacchn.h"
+#include "fa_swbtab.h"
 
 typedef unsigned uintptr_t;
 
@@ -124,7 +125,17 @@ typedef struct _aacenc_ctx_t{
  
     ///////////////////////
 
+    float mdct_line[2*AAC_FRAME_LEN];
+
     int spectral_count;
+
+    int scalefactor_long[FA_SWB_NUM_MAX];
+    int scalefactor_short[8][FA_SWB_NUM_MAX];
+    int common_scalefac_long;
+    int common_scalefac_short[8];
+    int x_quant[1024];
+    int mdct_ling_sig[1024];
+    int unused_bits;
 
     /* Huffman codebook selected for each sf band */
     int book_vector[MAX_SCFAC_BANDS];
@@ -150,11 +161,31 @@ typedef struct _aacenc_ctx_t{
 
 
 typedef struct _fa_aacenc_ctx_t{
+
+    float *sample;
+
+    int block_switch_en;
     //the configuration of aac encoder
     aaccfg_t cfg;
 
     //encode ctx for each channel
     aacenc_ctx_t ctx[MAX_CHANNELS];
+
 }fa_aacenc_ctx_t;
+
+
+#define MS_DEFAULT              0
+#define LFE_DEFAULT             0
+#define TNS_DEFAULT             0
+#define BLOCK_SWITCH_DEFAULT    1
+
+uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
+                         int mpeg_version, int aac_objtype, 
+                         int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable);
+
+void fa_aacenc_uninit(uintptr_t handle);
+
+void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int outlen);
+
 
 #endif

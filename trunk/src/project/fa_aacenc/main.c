@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <memory.h>
+#include "fa_aacenc.h"
 #include "fa_wavfmt.h"
 #include "fa_parseopt.h"
 #include "fa_aaccfg.h"
@@ -53,6 +54,8 @@ int main(int argc, char *argv[])
     int is_last = 0;
     int read_len = 0;
     int write_total_size= 0;
+
+    uintptr_t h_aacenc;
 
     uintptr_t h_aac_analysis, h_aac_synthesis;
     uintptr_t h_aacpsy;
@@ -80,6 +83,8 @@ int main(int argc, char *argv[])
 
     int block_switch_en = 1;
 
+    fa_aacenc_ctx_t *f;
+
     ret = fa_parseopt(argc, argv);
     if(ret) return -1;
 
@@ -98,6 +103,14 @@ int main(int argc, char *argv[])
     fseek(destfile, 0, SEEK_SET);
     fa_wavfmt_writeheader(fmt, destfile);
     printf("\n\nsamplerate=%d\n", fmt.samplerate);
+
+
+    h_aacenc = fa_aacenc_init(fmt.samplerate, 96000, fmt.channels,
+                              2, LOW, 
+                              MS_DEFAULT, LFE_DEFAULT, TNS_DEFAULT, BLOCK_SWITCH_DEFAULT);
+
+
+
 
     h_aacpsy = fa_aacpsy_init(fmt.samplerate);
     h_aac_analysis = fa_aacfilterbank_init(block_switch_en);
