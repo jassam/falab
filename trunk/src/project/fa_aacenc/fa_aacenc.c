@@ -119,7 +119,7 @@ void fa_aacenc_uninit(uintptr_t handle)
 }
 
 
-void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int outlen)
+void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int *outlen)
 {
     int i,j;
     int chn_num;
@@ -139,22 +139,22 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     /*ith sample, jth chn*/
     for(i = 0; i < AAC_FRAME_LEN; i++) 
         for(j = 0; j < chn_num; j++) 
-            f->sample[i+j*AAC_FRAME_LEN] = (float)sample_in[i*chn_num+j];
+            f->sample[i+j*AAC_FRAME_LEN] = (float)(sample_in[i*chn_num+j]);
 
     block_switch_en = f->block_switch_en;
 
     for(i = 0; i < chn_num; i++) {
         g = &(f->ctx[i]);
+        sample_buf = f->sample+i*AAC_FRAME_LEN;
         /*analysis*/
         if(block_switch_en) {
             g->block_type = fa_get_aacblocktype(g->h_aac_analysis);
-            fa_aacpsy_calculate_pe(g->h_aacpsy, buf_in, g->block_type, &pe);
+            fa_aacpsy_calculate_pe(g->h_aacpsy, sample_buf, g->block_type, &pe);
             /*printf("block_type=%d, pe=%f\n", block_type, pe);*/
             fa_aacblocktype_switch(g->h_aac_analysis, g->h_aacpsy, pe);
         }else {
             g->block_type = ONLY_LONG_BLOCK;
         }
-        sample_buf = &(f->sample[i*AAC_FRAME_LEN]);
         fa_aacfilterbank_analysis(g->h_aac_analysis, sample_buf, g->mdct_line);
         fa_aacpsy_calculate_xmin(g->h_aacpsy, g->mdct_line, g->block_type, xmin);
 
