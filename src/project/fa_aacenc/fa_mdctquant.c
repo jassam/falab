@@ -66,7 +66,7 @@ static int calculate_start_common_scalefac(float max_mdct_line)
     float tmp;
 
     tmp = ceil(16./3 * (log2((pow(max_mdct_line, 0.75))/MAX_QUANT)));
-    start_common_scalefac = (int)tmp+24;
+    start_common_scalefac = (int)tmp;//+24;
 
     return start_common_scalefac;
 }

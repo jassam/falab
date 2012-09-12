@@ -185,7 +185,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
 void fa_aacenc_uninit(uintptr_t handle);
 
-void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int outlen);
+void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int *outlen);
 
 
 #endif
