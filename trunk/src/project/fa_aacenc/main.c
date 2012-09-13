@@ -278,6 +278,7 @@ int main(int argc, char *argv[])
 
         frame_index++;
         fprintf(stderr,"\rthe frame = [%d]", frame_index);
+        /*printf("rthe frame = [%d]---------\n", frame_index);*/
     }
 
     fmt.data_size=write_total_size/fmt.block_align;
