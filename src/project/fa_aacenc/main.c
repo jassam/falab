@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
             break;
     }
 
-
+#define TEST  1 
 
     while(1)
     {
@@ -169,12 +169,12 @@ int main(int argc, char *argv[])
             buf_in[i] = (float)wavsamples_in[i];
             buf_out[i] = 0;
         }
-       
+#if TEST 
         fa_aacenc_encode(h_aacenc, wavsamples_in, chn_num*2*read_len, aac_buf, &aac_out_len);
         f = (fa_aacenc_ctx_t *)h_aacenc;
 
         /*analysis*/
-#if 0 
+#else
         if(block_switch_en) {
             block_type = fa_get_aacblocktype(h_aac_analysis);
             fa_aacpsy_calculate_pe(h_aacpsy, buf_in, block_type, &pe);
@@ -182,6 +182,7 @@ int main(int argc, char *argv[])
             fa_aacblocktype_switch(h_aac_analysis, h_aacpsy, pe);
         }else {
             block_type = ONLY_LONG_BLOCK;
+            fa_aacpsy_calculate_pe(h_aacpsy, buf_in, block_type, &pe);
         }
 
         fa_aacfilterbank_analysis(h_aac_analysis, buf_in, mdct_line);
@@ -211,7 +212,7 @@ int main(int argc, char *argv[])
         }
 #endif
         /*synthesis*/
-#if 1 
+#if TEST 
         memset(mdct_line_inv, 0, FRAME_SIZE_MAX*sizeof(float));
         if(f->ctx[0].block_type == ONLY_SHORT_BLOCK) {
             for(k = 0; k < 8; k++) {
@@ -223,8 +224,16 @@ int main(int argc, char *argv[])
                                f->ctx[0].x_quant, mdct_line_inv);
         }
         for(i = 0; i < 1024; i++) {
-            mdct_line[i] = f->ctx[0].mdct_ling_sig[i] * mdct_line_inv[i];
+            mdct_line_inv[i] = f->ctx[0].mdct_ling_sig[i] * mdct_line_inv[i];
         }
+
+        if(f->block_switch_en) {
+            block_type = fa_get_aacblocktype(f->ctx[0].h_aac_analysis);
+            fa_set_aacblocktype(h_aac_synthesis, block_type);
+        }else {
+            block_type = ONLY_LONG_BLOCK;
+        }
+
 #else 
         memset(mdct_line_inv, 0, FRAME_SIZE_MAX*sizeof(float));
         if(block_type == ONLY_SHORT_BLOCK) {
@@ -236,19 +245,20 @@ int main(int argc, char *argv[])
             mdctline_iquantize(h_mdctiq_long, common_scalefac_long, scalefactor_long,
                                x_quant, mdct_line_inv);
         }
+
         for(i = 0; i < 1024; i++) {
-            mdct_line[i] = mdct_ling_sig[i] * mdct_line_inv[i];
+            mdct_line_inv[i] = mdct_ling_sig[i] * mdct_line_inv[i];
         }
 
-#endif
-
-        if(f->block_switch_en) {
-            block_type = fa_get_aacblocktype(f->ctx[0].h_aac_analysis);
+        if(block_switch_en) {
+            block_type = fa_get_aacblocktype(h_aac_analysis);
             fa_set_aacblocktype(h_aac_synthesis, block_type);
         }else {
             block_type = ONLY_LONG_BLOCK;
         }
-        fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line, buf_out);
+#endif
+        fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line_inv, buf_out);
+        /*fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line, buf_out);*/
 
         for(i = 0 ; i < opt_framelen; i++) {
             float temp;

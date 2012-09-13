@@ -14,6 +14,7 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
+#define FA_MAG_MAX     10000000000000000
 
 typedef struct _fa_psychomodel2_t {
     int   cbands_num;
@@ -393,6 +394,7 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
     float *npart     = f->npart;
     float *thrbin    = f->thrbin;
     float *smr       = f->smr;
+    float thrbin_max;
 
     /*calculate fft frequence line*/
     for(i = 0; i < fft_len; i++) {
@@ -522,7 +524,7 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
 
     for(i = 0; i < swb_num; i++) {
         float tmp, tmpmin;
-        tmpmin = 1000;
+        tmpmin = FA_MAG_MAX;
         for(j = swb_offset[i]; j < swb_offset[i+1]; j++) {
             tmp = FA_MIN(tmpmin, thrbin[j]);
             if(tmp > 0)
