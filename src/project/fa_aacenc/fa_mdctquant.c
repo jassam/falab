@@ -65,8 +65,8 @@ static int calculate_start_common_scalefac(float max_mdct_line)
     int start_common_scalefac;
     float tmp;
 
-    tmp = ceil(16./3 * (log2((pow(max_mdct_line, 0.75))/MAX_QUANT)));
-    start_common_scalefac = (int)tmp+48;
+    tmp = ceilf(16./3 * (log2f((powf(max_mdct_line, 0.75))/MAX_QUANT)));
+    start_common_scalefac = (int)tmp;
 
     return start_common_scalefac;
 }
@@ -98,7 +98,7 @@ static void iteration_innerloop(fa_mdctquant_t *f,
     do {
         /*quantize spectrum*/
         for(i = 0; i < mdct_line_num; i++) {
-            cof_quant = pow(2, (-3./16)*f->common_scalefac);
+            cof_quant = powf(2, (-3./16)*f->common_scalefac);
             x_quant[i] = (int)(mdct_scaled[i] * cof_quant + MAGIC_NUMBER);
         }
         return;
@@ -177,9 +177,9 @@ static void iteration_outerloop(fa_mdctquant_t *f,
 
         for(sb = 0; sb < sb_num; sb++) {
             for(i = sb_low[sb]; i <= sb_high[sb]; i++) {
-                tmp = fabs(mdct_line[i]); 
-                xr_pow = sqrt(tmp*sqrt(tmp));
-                cof_scale = pow(2, (3./16.) * scalefactor[sb]);
+                tmp = fabsf(mdct_line[i]); 
+                xr_pow = sqrtf(tmp*sqrtf(tmp));
+                cof_scale = powf(2, (3./16.) * scalefactor[sb]);
                 mdct_scaled[i] = xr_pow * cof_scale;
             }
         }
@@ -192,11 +192,11 @@ static void iteration_outerloop(fa_mdctquant_t *f,
             float tmp_xq;
             error_energy[sb] = 0;
             for(i = sb_low[sb]; i <= sb_high[sb]; i++) {
-                inv_cof = pow(2, 0.25*(f->common_scalefac - scalefactor[sb]));
+                inv_cof = powf(2, 0.25*(f->common_scalefac - scalefactor[sb]));
                 tmp_xq = (float)x_quant[i];
                 /*inv_x_quant = pow(x_quant[i], 4./3.) * inv_cof; */
-                inv_x_quant = pow(tmp_xq, 4./3.) * inv_cof; 
-                tmp = fabs(mdct_line[i]) - inv_x_quant;
+                inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof; 
+                tmp = fabsf(mdct_line[i]) - inv_x_quant;
                 error_energy[sb] = error_energy[sb] + tmp*tmp;  
             }
         }
@@ -243,7 +243,8 @@ int mdctline_quantize(uintptr_t handle,
                       int *common_scalefac, int *scalefactor, int *x_quant, int *unused_bits)
 {
     int i;
-    int max_mdct_line;
+    float max_mdct_line;
+    float abs_mdct_line;
     int used_bits;
     int available_bits;
 
@@ -263,9 +264,9 @@ int mdctline_quantize(uintptr_t handle,
     /*calculate max mdct_line*/
     for(i = 0; i < f->mdct_line_num; i++) {
         x_quant[i] = 0;  //also reset the x_quant value
-        /*if(fabs(mdct_line[i]) > max_mdct_line)*/
-        if(mdct_line[i] > max_mdct_line)
-            max_mdct_line = mdct_line[i];
+        abs_mdct_line = fabsf(mdct_line[i]);
+        if(abs_mdct_line > max_mdct_line)
+            max_mdct_line = abs_mdct_line;
     }
 
     /*if all mdct_line are zeros, skip this*/
@@ -298,9 +299,9 @@ int mdctline_iquantize(uintptr_t handle, int common_scalefac, int *scalefactor,
 
     for(sb = 0; sb < sb_num; sb++) {
         for(i = sb_low[sb]; i <= sb_high[sb]; i++) {
-            inv_cof = pow(2, 0.25*(common_scalefac - scalefactor[sb]));
+            inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[sb]));
             tmp_xq = (float)x_quant[i];
-            mdct_line[i] = pow(tmp_xq, 4./3.) * inv_cof; 
+            mdct_line[i] = powf(tmp_xq, 4./3.) * inv_cof; 
         }
     }
 
