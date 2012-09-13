@@ -133,7 +133,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     float pe;
 
     chn_num = f->cfg.chn_num;
-    assert(inlen == chn_num*AAC_FRAME_LEN*2);
+    /*assert(inlen == chn_num*AAC_FRAME_LEN*2);*/
 
     sample_in = (short *)buf_in;
     /*ith sample, jth chn*/
