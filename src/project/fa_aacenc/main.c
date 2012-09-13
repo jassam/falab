@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     unsigned char aac_buf[FRAME_SIZE_MAX];
     int aac_out_len;
 
-    int block_switch_en = 0;
+    int block_switch_en = 1;
 
     fa_aacenc_ctx_t *f;
 
@@ -110,12 +110,11 @@ int main(int argc, char *argv[])
     printf("\n\nsamplerate=%d\n", fmt.samplerate);
 
     sample_rate = fmt.samplerate;
-    chn_num     = 1;//fmt.channels;
+    chn_num     = fmt.channels;
 
     h_aacenc = fa_aacenc_init(sample_rate, 96000, chn_num,
                               2, LOW, 
                               MS_DEFAULT, LFE_DEFAULT, TNS_DEFAULT, BLOCK_SWITCH_DEFAULT);
-
 
 
 
@@ -257,8 +256,8 @@ int main(int argc, char *argv[])
             block_type = ONLY_LONG_BLOCK;
         }
 #endif
-        /*fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line_inv, buf_out);*/
-        fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line, buf_out);
+        fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line_inv, buf_out);
+        /*fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line, buf_out);*/
 
         for(i = 0 ; i < opt_framelen; i++) {
             float temp;
