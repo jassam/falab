@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     unsigned char aac_buf[FRAME_SIZE_MAX];
     int aac_out_len;
 
-    int block_switch_en = 1;
+    int block_switch_en = 0;
 
     fa_aacenc_ctx_t *f;
 
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
             break;
     }
 
-#define TEST  1 
+#define TEST  0 
 
     while(1)
     {
@@ -257,8 +257,8 @@ int main(int argc, char *argv[])
             block_type = ONLY_LONG_BLOCK;
         }
 #endif
-        fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line_inv, buf_out);
-        /*fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line, buf_out);*/
+        /*fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line_inv, buf_out);*/
+        fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line, buf_out);
 
         for(i = 0 ; i < opt_framelen; i++) {
             float temp;
