@@ -68,13 +68,19 @@ int main(int argc, char *argv[])
 
     float xmin[1024];
     int average_bits, more_bits, bitres_bits, maximum_bitreservoir_size; 
+    int common_scalefac;
     int common_scalefac_long;
     int common_scalefac_short[8];
+    int scalefactor[8][FA_SWB_NUM_MAX];
     int scalefactor_long[FA_SWB_NUM_MAX];
     int scalefactor_short[8][FA_SWB_NUM_MAX];
     int x_quant[1024];
     int mdct_ling_sig[1024];
     int unused_bits;
+
+    int num_window_groups;
+
+    int window_group_length[8];
 
 	short wavsamples_in[FRAME_SIZE_MAX];
 	short wavsamples_out[FRAME_SIZE_MAX];
@@ -114,7 +120,8 @@ int main(int argc, char *argv[])
 
     h_aacenc = fa_aacenc_init(sample_rate, 96000, chn_num,
                               2, LOW, 
-                              MS_DEFAULT, LFE_DEFAULT, TNS_DEFAULT, BLOCK_SWITCH_DEFAULT);
+                              /*MS_DEFAULT, LFE_DEFAULT, TNS_DEFAULT, BLOCK_SWITCH_DEFAULT);*/
+                              MS_DEFAULT, LFE_DEFAULT, TNS_DEFAULT, 0);
 
 
 
@@ -124,35 +131,35 @@ int main(int argc, char *argv[])
 
     switch(fmt.samplerate) {
         case 48000:
-            h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_48k_LONG_NUM ,fa_swb_48k_long_offset);
-            h_mdctq_short= fa_mdctquant_init(128 , FA_SWB_48k_SHORT_NUM,fa_swb_48k_short_offset);
+            h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_48k_LONG_NUM ,fa_swb_48k_long_offset, 1);
+            h_mdctq_short= fa_mdctquant_init(128 , FA_SWB_48k_SHORT_NUM,fa_swb_48k_short_offset, 8);
             break;
         case 44100:
-            h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_44k_LONG_NUM ,fa_swb_44k_long_offset);
-            h_mdctq_short= fa_mdctquant_init(128 , FA_SWB_44k_SHORT_NUM,fa_swb_44k_short_offset);
+            h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_44k_LONG_NUM ,fa_swb_44k_long_offset, 1);
+            h_mdctq_short= fa_mdctquant_init(128 , FA_SWB_44k_SHORT_NUM,fa_swb_44k_short_offset, 8);
             break;
         case 32000:
-            h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_32k_LONG_NUM ,fa_swb_32k_long_offset);
-            h_mdctq_short= fa_mdctquant_init(128 , FA_SWB_32k_SHORT_NUM,fa_swb_32k_short_offset);
+            h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_32k_LONG_NUM ,fa_swb_32k_long_offset, 1);
+            h_mdctq_short= fa_mdctquant_init(128 , FA_SWB_32k_SHORT_NUM,fa_swb_32k_short_offset, 8);
             break;
     }
 
     switch(fmt.samplerate) {
         case 48000:
-            h_mdctiq_long = fa_mdctquant_init(1024, FA_SWB_48k_LONG_NUM ,fa_swb_48k_long_offset);
-            h_mdctiq_short= fa_mdctquant_init(128 , FA_SWB_48k_SHORT_NUM,fa_swb_48k_short_offset);
+            h_mdctiq_long = fa_mdctquant_init(1024, FA_SWB_48k_LONG_NUM ,fa_swb_48k_long_offset, 1);
+            h_mdctiq_short= fa_mdctquant_init(128 , FA_SWB_48k_SHORT_NUM,fa_swb_48k_short_offset, 8);
             break;
         case 44100:
-            h_mdctiq_long = fa_mdctquant_init(1024, FA_SWB_44k_LONG_NUM ,fa_swb_44k_long_offset);
-            h_mdctiq_short= fa_mdctquant_init(128 , FA_SWB_44k_SHORT_NUM,fa_swb_44k_short_offset);
+            h_mdctiq_long = fa_mdctquant_init(1024, FA_SWB_44k_LONG_NUM ,fa_swb_44k_long_offset, 1);
+            h_mdctiq_short= fa_mdctquant_init(128 , FA_SWB_44k_SHORT_NUM,fa_swb_44k_short_offset, 8);
             break;
         case 32000:
-            h_mdctiq_long = fa_mdctquant_init(1024, FA_SWB_32k_LONG_NUM ,fa_swb_32k_long_offset);
-            h_mdctiq_short= fa_mdctquant_init(128 , FA_SWB_32k_SHORT_NUM,fa_swb_32k_short_offset);
+            h_mdctiq_long = fa_mdctquant_init(1024, FA_SWB_32k_LONG_NUM ,fa_swb_32k_long_offset, 1);
+            h_mdctiq_short= fa_mdctquant_init(128 , FA_SWB_32k_SHORT_NUM,fa_swb_32k_short_offset, 8);
             break;
     }
 
-#define TEST  0 
+#define TEST  1 
 
     while(1)
     {
@@ -214,16 +221,31 @@ int main(int argc, char *argv[])
 #if TEST 
         memset(mdct_line_inv, 0, FRAME_SIZE_MAX*sizeof(float));
         if(f->ctx[0].block_type == ONLY_SHORT_BLOCK) {
-            for(k = 0; k < 8; k++) {
-                mdctline_iquantize(h_mdctiq_short, f->ctx[0].common_scalefac_short[k], f->ctx[0].scalefactor_short[k],
-                                   f->ctx[0].x_quant+k*AAC_BLOCK_SHORT_LEN, mdct_line_inv+k*AAC_BLOCK_SHORT_LEN);
-            }
-        }else {
-            mdctline_iquantize(h_mdctiq_long, f->ctx[0].common_scalefac_long, f->ctx[0].scalefactor_long,
+            num_window_groups = 1;
+            window_group_length[0] = 8;
+            window_group_length[1] = 0;
+            window_group_length[2] = 0;
+            window_group_length[3] = 0;
+            window_group_length[4] = 0;
+            window_group_length[5] = 0;
+            window_group_length[6] = 0;
+            window_group_length[7] = 0;
+ 
+            mdctline_iquantize(h_mdctiq_short, 
+                               num_window_groups, window_group_length, 
+                               f->ctx[0].common_scalefac, f->ctx[0].scalefactor,
                                f->ctx[0].x_quant, mdct_line_inv);
-        }
-        for(i = 0; i < 1024; i++) {
-            mdct_line_inv[i] = f->ctx[0].mdct_ling_sig[i] * mdct_line_inv[i];
+            mdctline_sfb_iarrange(h_mdctiq_short, mdct_line_inv, f->ctx[0].mdct_ling_sig,
+                                  num_window_groups, window_group_length);
+        }else {
+            num_window_groups = 1;
+            window_group_length[0] = 1;
+            mdctline_iquantize(h_mdctiq_long, 
+                               num_window_groups, window_group_length, 
+                               f->ctx[0].common_scalefac, f->ctx[0].scalefactor,
+                               f->ctx[0].x_quant);
+            mdctline_sfb_iarrange(h_mdctiq_long, mdct_line_inv,f->ctx[0].mdct_ling_sig,
+                                  num_window_groups, window_group_length);
         }
 
         if(f->block_switch_en) {
