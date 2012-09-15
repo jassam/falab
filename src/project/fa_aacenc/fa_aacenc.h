@@ -104,7 +104,6 @@ typedef struct _aacenc_ctx_t{
 
     int global_gain;
 
-    int scale_factor[MAX_SCFAC_BANDS];
 
     int num_window_groups;
 
@@ -129,8 +128,10 @@ typedef struct _aacenc_ctx_t{
 
     int spectral_count;
 
+    int scalefactor[8][FA_SWB_NUM_MAX];
     int scalefactor_long[FA_SWB_NUM_MAX];
     int scalefactor_short[8][FA_SWB_NUM_MAX];
+    int common_scalefac;
     int common_scalefac_long;
     int common_scalefac_short[8];
     int x_quant[1024];

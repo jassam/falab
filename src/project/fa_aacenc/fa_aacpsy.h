@@ -1,6 +1,7 @@
 #ifndef _FA_AACPSY_H
 #define _FA_AACPSY_H 
 
+#include "fa_swbtab.h"
 #include "fa_psychomodel2.h"
 
 typedef unsigned uintptr_t;
@@ -21,5 +22,6 @@ void fa_aacpsy_calculate_xmin_long(uintptr_t handle, float *mdct_line, float *xm
 void fa_aacpsy_calculate_xmin_short(uintptr_t handle, float *mdct_line, float xmin_short[8][]);
 */
 void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *pe_block);
-void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type, float *xmin);
+//void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type, float *xmin);
+void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type, float xmin[8][FA_SWB_NUM_MAX]);
 #endif

@@ -5,7 +5,6 @@
 #include "fa_aaccfg.h"
 #include "fa_aacpsy.h"
 #include "fa_psytab.h"
-#include "fa_swbtab.h"
 
 typedef struct _fa_aacpsy_t {
     int   sample_rate;
@@ -227,7 +226,7 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
     float pe;
     float pe_sum;
     fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
-
+/*
     if(block_type == LONG_CODING_BLOCK) {
         fa_psychomodel2_calculate_pe(f->h_psy2_long , x, &pe);
         pe_sum = pe;
@@ -239,21 +238,34 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
             pe_sum += pe;
         }
     }
+*/
+    if(block_type == ONLY_SHORT_BLOCK) {
+        pe_sum = 0;
+        for(win = 0; win < 8; win++) {
+            xp = x + AAC_BLOCK_TRANS_LEN + win*128;
+            fa_psychomodel2_calculate_pe(f->h_psy2_short, xp, &pe);
+            pe_sum += pe;
+        }
+    }else {
+        fa_psychomodel2_calculate_pe(f->h_psy2_long , x, &pe);
+        pe_sum = pe;
+    }
 
     *pe_block = pe_sum;
 
 }
 
-void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type, float *xmin)
+void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type, float xmin[8][FA_SWB_NUM_MAX])
 {
     int k;
     fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
 
     if(block_type == ONLY_SHORT_BLOCK) {
         for(k = 0; k < 8; k++) 
-            fa_psychomodel2_calculate_xmin(f->h_psy2_short, mdct_line+k*AAC_BLOCK_SHORT_LEN, xmin+k*AAC_BLOCK_SHORT_LEN);
+            /*fa_psychomodel2_calculate_xmin(f->h_psy2_short, mdct_line+k*AAC_BLOCK_SHORT_LEN, xmin+k*AAC_BLOCK_SHORT_LEN);*/
+            fa_psychomodel2_calculate_xmin(f->h_psy2_short, mdct_line+k*AAC_BLOCK_SHORT_LEN, &(xmin[k][0]));
     }else {
-        fa_psychomodel2_calculate_xmin(f->h_psy2_long, mdct_line, xmin);
+        fa_psychomodel2_calculate_xmin(f->h_psy2_long, mdct_line, &(xmin[0][0]));
     }
 }
 

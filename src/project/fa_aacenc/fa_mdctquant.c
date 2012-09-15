@@ -1,77 +1,57 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "fa_mdctquant.h"
 
 #ifndef FA_MIN
 #define FA_MIN(a,b)  ( (a) < (b) ? (a) : (b) )
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
-#define MAX_QUANT    8191
-#define MAGIC_NUMBER 0.4054
+#define MAX_QUANT             8191
+#define MAGIC_NUMBER          0.4054
 
-typedef unsigned long uintptr_t;
 
 typedef struct _fa_mdctquant_t {
-    int block_type;
-    int type_cof;
 
-    int mdct_line_num;
-    float *mdct_line;
-    float *xr_pow;
-    float *mdct_scaled;
+    int   block_type_cof;
+    int   mdct_line_num;
 
-    int sfb_num;
-    int swb_low[FA_SWB_NUM_MAX];
-    int swb_high[FA_SWB_NUM_MAX];
+    float mdct_line[NUM_MDCT_LINE_MAX];
+    float xr_pow[NUM_MDCT_LINE_MAX];
+    float mdct_scaled[NUM_MDCT_LINE_MAX];
 
-    int sfb_low[8][FA_SWB_NUM_MAX];
-    int sfb_high[8][FA_SWB_NUM_MAX];
+    float xmin[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX][NUM_WINDOWS_MAX];
 
-    int common_scalefac;
+    int   sfb_num;
+    int   swb_low[FA_SWB_NUM_MAX];
+    int   swb_high[FA_SWB_NUM_MAX];
+    int   sfb_low[NUM_WINDOW_GROUPS_MAX][FA_SWB_NUM_MAX];
+    int   sfb_high[NUM_WINDOW_GROUPS_MAX][FA_SWB_NUM_MAX];
 
-    float *error_energy;
-       
+    int   common_scalefac;
+
 }fa_mdctquant_t;
 
-uintptr_t fa_mdctquant_init(int mdct_line_num, int sfb_num, int *swb_low, int mdctq_block_type, int type_cof)
+uintptr_t fa_mdctquant_init(int mdct_line_num, int sfb_num, int *swb_low, int block_type_cof)
 {
     int swb;
 
     fa_mdctquant_t *f = (fa_mdctquant_t *)malloc(sizeof(fa_mdctquant_t));
     
-    f->block_type = mdctq_block_type;
-    f->type_cof   = type_cof;
+    f->block_type_cof = block_type_cof;
+    f->mdct_line_num  = mdct_line_num;
 
-    f->mdct_line_num = mdct_line_num;
-    if(mdctq_block_type == MDCTQ_SHORT_BLOCK) {
-        f->mdct_line     = (float *)malloc(sizeof(float)*mdct_line_num*type_cof);
-        memset(f->mdct_line, 0, sizeof(float)*mdct_line_num*type_cof);
-        f->xmin          = (float *)malloc(sizeof(float)*mdct_line_num*type_cof);
-        memset(f->xmin     , 0, sizeof(float)*mdct_line_num*type_cof);
-        f->xr_pow        = (float *)malloc(sizeof(float)*mdct_line_num*type_cof);
-        memset(f->xr_pow   , 0, sizeof(float)*mdct_line_num*type_cof);
-        f->mdct_scaled   = (float *)malloc(sizeof(float)*mdct_line_num*type_cof);
-        memset(f->mdct_scaled, 0, sizeof(float)*mdct_line_num*type_cof);
-    }else {
-        f->mdct_line     = (float *)malloc(sizeof(float)*mdct_line_num);
-        memset(f->mdct_line, 0, sizeof(float)*mdct_line_num);
-        f->xmin          = (float *)malloc(sizeof(float)*mdct_line_num);
-        memset(f->xmin     , 0, sizeof(float)*mdct_line_num);
-        f->xr_pow        = (float *)malloc(sizeof(float)*mdct_line_num);
-        memset(f->xr_pow   , 0, sizeof(float)*mdct_line_num);
-        f->mdct_scaled   = (float *)malloc(sizeof(float)*mdct_line_num);
-        memset(f->mdct_scaled, 0, sizeof(float)*mdct_line_num);
-    }
+    memset(f->mdct_line  , 0, sizeof(float)*NUM_MDCT_LINE_MAX);
+    memset(f->xr_pow     , 0, sizeof(float)*NUM_MDCT_LINE_MAX);
+    memset(f->mdct_scaled, 0, sizeof(float)*NUM_MDCT_LINE_MAX);
+    memset(f->xmin       , 0, sizeof(float)*NUM_WINDOW_GROUPS_MAX*NUM_SFB_MAX*NUM_WINDOWS_MAX);
 
     f->sfb_num = sfb_num;
-    memset(f->swb_low, 0, sizeof(int)*FA_SWB_NUM_MAX);
-    memset(f->swb_high, 0, sizeof(int)*FA_SWB_NUM_MAX);
-    memset(f->sfb_low, 0, sizeof(int)*FA_SWB_NUM_MAX*8);
-    memset(f->sfb_high, 0, sizeof(int)*FA_SWB_NUM_MAX*8);
-    /*f->swb_low = (int *)malloc(sizeof(int)*sfb_num);*/
-    /*f->swb_high = (int *)malloc(sizeof(int)*sfb_num);*/
-    f->error_energy = (float *)malloc(sizeof(float)*sfb_num);
+    memset(f->swb_low    , 0, sizeof(int)*FA_SWB_NUM_MAX);
+    memset(f->swb_high   , 0, sizeof(int)*FA_SWB_NUM_MAX);
+    memset(f->sfb_low    , 0, sizeof(int)*FA_SWB_NUM_MAX*NUM_WINDOW_GROUPS_MAX);
+    memset(f->sfb_high   , 0, sizeof(int)*FA_SWB_NUM_MAX*NUM_WINDOW_GROUPS_MAX);
 
     for(swb = 0; swb < sfb_num; swb++) {
         f->swb_low[swb] = swb_low[swb];
@@ -90,6 +70,10 @@ void      fa_mdctquant_uninit(uintptr_t handle)
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
 
+    if(f) {
+        free(f);
+        f = NULL;
+    }
 
 }
 
@@ -352,15 +336,16 @@ static void iteration_innerloop(fa_mdctquant_t *f,
     *used_bits = counted_bits;
 }
 
-static int iteration_stop(int energy_err_ok, int sfb_allscale)
+static int iteration_stop(int num_window_groups, int *energy_err_ok, int *sfb_allscale)
 {
-    if(energy_err_ok)
-        return 1;
+    int gr;
 
-    if(sfb_allscale)
-        return 1;
+    for(gr = 0; gr < num_window_groups; gr++) {
+        if((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0))
+            return 0;
+    }
 
-    return 0;
+    return 1;
 }
 
 static void xr_pow34_calculate(float *mdct_line, float mdct_line_num, float *xr_pow)
@@ -377,17 +362,21 @@ static void xr_pow34_calculate(float *mdct_line, float mdct_line_num, float *xr_
 
 static void iteration_outerloop(fa_mdctquant_t *f,   
                                 int num_window_groups, int *window_group_length,
-                                int available_bits, float *xmin,
-                                int *scalefactor, int *x_quant, int *used_bits)
+                                int available_bits, 
+                                int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], int *x_quant, int *used_bits)
 {
     int i;
-    int cb, sfb;
 
-    int block_type;
+    int gr, win;
+    int sfb;
     int sfb_num;
-    int *sfb_low, *sfb_high;
+    int *swb_low, *swb_high;
+    int swb_width;
+
+    float *mdct_line;
+    float *xr_pow;
     float *mdct_scaled;
-    float *error_energy;
+
 
     float tmp;
     float cof_scale;
@@ -397,153 +386,115 @@ static void iteration_outerloop(fa_mdctquant_t *f,
 
     int outer_loop_count;
 
+    float error_energy[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX][NUM_WINDOWS_MAX];
+    int mdct_line_offset;
     /*three break condition variable*/
     /*no1*/
-    int energy_err_ok_cnt;
-    int energy_err_ok;
+    int energy_err_ok_cnt[NUM_WINDOW_GROUPS_MAX];
+    int energy_err_ok[NUM_WINDOW_GROUPS_MAX];
     /*no2*/
-    int sfb_scale_cnt;
-    int sfb_allscale;
+    int sfb_scale_cnt[NUM_WINDOW_GROUPS_MAX];
+    int sfb_allscale[NUM_WINDOW_GROUPS_MAX];
     /*no3*/
     int sfb_nb_diff60;
-    float *mdct_line;
-    float *xr_pow;
 
-    block_type = f->block_type;
+    int scalefactor_ok[NUM_WINDOW_GROUPS_MAX];
 
-    sfb_num = f->sfb_num;
-    sfb_low = f->sfb_low;
-    sfb_high = f->sfb_high;
 
-    xr_pow = f->xr_pow;
-    mdct_line = f->mdct_line;
-    mdct_scaled = f->mdct_scaled;
-    error_energy = f->error_energy;
+    sfb_num  = f->sfb_num;
+    swb_low  = f->swb_low;
+    swb_high = f->swb_high;
+
+    xr_pow       = f->xr_pow;
+    mdct_line    = f->mdct_line;
+    mdct_scaled  = f->mdct_scaled;
 
     outer_loop_count = 0;
 
+    sfb_nb_diff60     = 0;
+    memset(energy_err_ok_cnt, 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
+    memset(energy_err_ok    , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
+    memset(sfb_scale_cnt    , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
+    memset(sfb_allscale     , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
+    memset(scalefactor_ok   , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
 
-    if(block_type == MDCTQ_SHORT_BLOCK)
-        xr_pow34_calculate(mdct_line, f->type_cof*f->mdct_line_num, xr_pow);
-    else
-        xr_pow34_calculate(mdct_line, f->mdct_line_num, xr_pow);
+    xr_pow34_calculate(mdct_line, f->block_type_cof*f->mdct_line_num, xr_pow);
 
     do {
 
-        if(block_type == MDCTQ_SHORT_BLOCK) {
-            for(gr = 0; gr < num_window_groups; gr++) {
-                for(sfb = 0; sfb < sfb_num; sfb++) {
-                    cof_scale = powf(2, (3./16.) * scalefactor[gr][sfb]);
-                    for(i = sfb_low[gr][sfb]; i <= sfb_high[gr][sfb]; i++) 
-                        mdct_scaled[i] = xr_pow[i] * cof_scale;
-                }
-            }
-        }else {
+        for(gr = 0; gr < num_window_groups; gr++) {
             for(sfb = 0; sfb < sfb_num; sfb++) {
-                cof_scale = powf(2, (3./16.) * scalefactor[0][sfb]);
-                for(i = sfb_low[0][sfb]; i <= sfb_high[0][sfb]; i++) 
+                cof_scale = powf(2, (3./16.) * scalefactor[gr][sfb]);
+                for(i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) 
                     mdct_scaled[i] = xr_pow[i] * cof_scale;
             }
-         
         }
 
         iteration_innerloop(f, outer_loop_count, available_bits,
                             x_quant, used_bits);
 
         /*calculate scalefactor band error energy*/
+        memset(error_energy, 0, sizeof(float)*NUM_WINDOW_GROUPS_MAX*NUM_SFB_MAX*NUM_WINDOWS_MAX);
+
+        /*calculate error_energy*/
+        mdct_line_offset = 0;
+        for(gr = 0; gr < num_window_groups; gr++) {
+            for(sfb = 0; sfb < sfb_num; sfb++) {
+                swb_width = swb_high[sfb] - swb_low[sfb] + 1;
+                for(win = 0; win < window_group_length[gr]; win++) {
+                    float tmp_xq;
+                    error_energy[gr][sfb][win] = 0;
+                    for(i = 0; i < swb_width; i++) {
+                        inv_cof = powf(2, 0.25*(f->common_scalefac - scalefactor[gr][sfb]));
+                        tmp_xq = (float)x_quant[mdct_line_offset+i];
+                        inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof; 
+                        tmp = fabsf(mdct_line[mdct_line_offset+i]) - inv_x_quant;
+                        error_energy[gr][sfb][win] += tmp*tmp;  
+                    }
+                    mdct_line_offset += swb_width;
+               }
+
+            }
+        }
+
+        /*judge if scalefactor increase or not*/
         for(gr = 0; gr < num_window_groups; gr++) {
             for(sfb = 0; sfb < sfb_num; sfb++) {
                 for(win = 0; win < window_group_length[gr]; win++) {
-
+                    if(error_energy[gr][sfb][win] > f->xmin[gr][sfb][win]) {
+                        scalefactor[gr][sfb] += 1;
+                        sfb_scale_cnt[gr]++;
+                        break;
+                    }else {
+                        energy_err_ok_cnt[gr]++;
+                    }
                 }
-
-            }
-                float tmp_xq;
-                error_energy[sfb] = 0;
-                for(i = sfb_low[sfb]; i <= sfb_high[sfb]; i++) {
-                    inv_cof = powf(2, 0.25*(f->common_scalefac - scalefactor[gr][sfb]));
-                    tmp_xq = (float)x_quant[i];
-                    /*inv_x_quant = pow(x_quant[i], 4./3.) * inv_cof; */
-                    inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof; 
-                    tmp = fabsf(mdct_line[i]) - inv_x_quant;
-                    error_energy[sfb] = error_energy[sfb] + tmp*tmp;  
-                }
-            }
-
-            energy_err_ok_cnt = 0;
-            energy_err_ok     = 0;
-            sfb_scale_cnt     = 0;
-            sfb_allscale      = 0;
-            sfb_nb_diff60     = 0;
-            for(sfb = 0; sfb < sfb_num; sfb++) {
-                if(error_energy[sfb] > xmin[sfb]) {
-                    scalefactor[sfb] = scalefactor[swb] + 1;
-                    sfb_scale_cnt++;
-                }else {
-                    energy_err_ok_cnt++;
-                }
-            }
-            /*every scalefactor band has good energy distorit;*/
-            if(energy_err_ok_cnt >= sfb_num)
-                energy_err_ok = 1;
-            else
-                energy_err_ok = 0;
-
-            if(sfb_scale_cnt >= sfb_num)
-                sfb_allscale = 1;
-
-
-
-
-        }
-
-        for(swb = 0; swb < sfb_num; swb++) {
-            float tmp_xq;
-            error_energy[swb] = 0;
-            for(i = swb_low[swb]; i <= swb_high[swb]; i++) {
-                inv_cof = powf(2, 0.25*(f->common_scalefac - scalefactor[swb]));
-                tmp_xq = (float)x_quant[i];
-                /*inv_x_quant = pow(x_quant[i], 4./3.) * inv_cof; */
-                inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof; 
-                tmp = fabsf(mdct_line[i]) - inv_x_quant;
-                error_energy[swb] = error_energy[swb] + tmp*tmp;  
             }
         }
 
-
-        energy_err_ok_cnt = 0;
-        energy_err_ok     = 0;
-        sfb_scale_cnt     = 0;
-        sfb_allscale      = 0;
-        sfb_nb_diff60     = 0;
-        for(swb = 0; swb < sfb_num; swb++) {
-            if(error_energy[swb] > xmin[swb]) {
-                scalefactor[swb] = scalefactor[swb] + 1;
-                sfb_scale_cnt++;
-            }else {
-                energy_err_ok_cnt++;
-            }
-        }
         /*every scalefactor band has good energy distorit;*/
-        if(energy_err_ok_cnt >= sfb_num)
-            energy_err_ok = 1;
-        else
-            energy_err_ok = 0;
+        for(gr = 0; gr < num_window_groups; gr++) {
+            if(energy_err_ok_cnt[gr] >= sfb_num*window_group_length[gr])
+                energy_err_ok[gr] = 1;
+            else 
+                energy_err_ok[gr] = 0;
 
-        if(sfb_scale_cnt >= sfb_num)
-            sfb_allscale = 1;
+            if(sfb_scale_cnt[gr] >= sfb_num)
+                sfb_allscale[gr] = 1;
+            else
+                sfb_allscale[gr] = 0;
+        }
 
         outer_loop_count++;
-    }while(!iteration_stop(energy_err_ok, sfb_allscale));
+    }while(!iteration_stop(num_window_groups, energy_err_ok, sfb_allscale));
 
 }
 
 
 int mdctline_quantize(uintptr_t handle, 
                       int num_window_groups, int *window_group_length,
-                      float *xmin,
                       int average_bits, int more_bits, int bitres_bits, int maximum_bitreservoir_size, 
-                      int *common_scalefac, int *scalefactor, int *x_quant, int *unused_bits)
+                      int *common_scalefac, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], int *x_quant, int *unused_bits)
 {
     int i;
     float max_mdct_line;
@@ -565,13 +516,8 @@ int mdctline_quantize(uintptr_t handle,
     max_mdct_line = 0;
     used_bits = 0;
 
-    if(f->block_type == MDCTQ_SHORT_BLOCK)
-        mdct_line_num = f->mdct_line_num * type_cof;
-    else 
-        mdct_line_num = f->mdct_line_num;
-
     /*calculate max mdct_line*/
-    for(i = 0; i < mdct_line_num; i++) {
+    for(i = 0; i < (f->block_type_cof*f->mdct_line_num); i++) {
         x_quant[i] = 0;  //also reset the x_quant value
         abs_mdct_line = fabsf(mdct_line[i]);
         if(abs_mdct_line > max_mdct_line)
@@ -582,7 +528,7 @@ int mdctline_quantize(uintptr_t handle,
     if(max_mdct_line > 0) {
         f->common_scalefac = calculate_start_common_scalefac(max_mdct_line);
 
-        iteration_outerloop(f, num_window_groups, window_group_length, available_bits, xmin, scalefactor, x_quant, &used_bits);
+        iteration_outerloop(f, num_window_groups, window_group_length, available_bits, scalefactor, x_quant, &used_bits);
     }
 
     *common_scalefac = f->common_scalefac;
@@ -596,33 +542,69 @@ int mdctline_quantize(uintptr_t handle,
 
 #endif
 
-int mdctline_iquantize(uintptr_t handle, int common_scalefac, int *scalefactor, 
-                       int *x_quant, float *mdct_line)
+int mdctline_iquantize(uintptr_t handle, 
+                       int num_window_groups, int *window_group_length,
+                       int common_scalefac, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
+                       int *x_quant)
 {
     int i;
-    int swb;
+    int gr, win;
+    int sfb;
     int sfb_num;
     int *swb_low, *swb_high;
+    int swb_width;
     float tmp_xq, inv_cof;
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
+    float *mdct_line = f->mdct_line;
+    int mdct_line_offset;
+    float inv_x_quant;
+    float tmp;
 
     sfb_num = f->sfb_num;
     swb_low = f->swb_low;
     swb_high = f->swb_high;
- 
 
-    for(swb = 0; swb < sfb_num; swb++) {
-        for(i = swb_low[swb]; i <= swb_high[swb]; i++) {
-            inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[swb]));
-            tmp_xq = (float)x_quant[i];
-            mdct_line[i] = powf(tmp_xq, 4./3.) * inv_cof; 
+    mdct_line_offset = 0;
+    for(gr = 0; gr < num_window_groups; gr++) {
+        for(sfb = 0; sfb < sfb_num; sfb++) {
+            swb_width = swb_high[sfb] - swb_low[sfb] + 1;
+            for(win = 0; win < window_group_length[gr]; win++) {
+                for(i = 0; i < swb_width; i++) {
+                    inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));
+                    tmp_xq = (float)x_quant[mdct_line_offset+i];
+                    inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof; 
+                    mdct_line[mdct_line_offset+i] = inv_x_quant;
+                }
+                mdct_line_offset += swb_width;
+           }
+
         }
     }
 
+    return 0;
 }
 
+void xmin_sfb_arrange(uintptr_t handle, float xmin_swb[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX],
+                      int num_window_groups, int *window_group_length)
+{
+    fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
+    int sfb_num = f->sfb_num;
 
-void mdctline_sfb_arrange(uintptr_t handle, float *mdct_line_swb,
+    int gr, swb, win;
+    int win_offset;
+
+    win_offset = 0;
+    for(gr = 0; gr < num_window_groups; gr++) {
+        for(swb = 0; swb < sfb_num; swb++) {
+            for(win = 0; win < window_group_length[gr]; win++) {
+                f->xmin[gr][swb][win] = xmin_swb[win_offset+win][swb];
+            }
+        }
+        win_offset += window_group_length[gr];
+    }
+}
+
+void mdctline_sfb_arrange(uintptr_t handle, float *mdct_line_swb, 
                           int num_window_groups, int *window_group_length)
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
@@ -631,8 +613,6 @@ void mdctline_sfb_arrange(uintptr_t handle, float *mdct_line_swb,
     int sfb_num       = f->sfb_num;
     int *swb_low      = f->swb_low;
     int *swb_high     = f->swb_high;
-    int *sfb_low      = f->sfb_low;
-    int *sfb_high     = f->sfb_high;
 
     float *mdct_line_sfb = f->mdct_line;
 
@@ -651,29 +631,31 @@ void mdctline_sfb_arrange(uintptr_t handle, float *mdct_line_swb,
             for(win = 0; win < window_group_length[gr]; win++) {
                 for(i = 0; i < swb_width; i++) {
                     index = group_offset + swb_low[swb] + win*mdct_line_num + i;
-                    mdct_line_sfb[k] = mdct_line_swb[index];
+                    mdct_line_sfb[k++] = mdct_line_swb[index];
                 }
             }
         }
-        group_offset += mdct_line_num * window_group_length[i];
+        group_offset += mdct_line_num * window_group_length[gr];
     }
 
     /*calcualte sfb width and sfb_low and sfb_high*/
+    group_offset = 0;
     for(gr = 0; gr < num_window_groups; gr++) {
         sfb = 0;
-        sfb_low[sfb++] = 0;
+        f->sfb_low[gr][sfb++] = group_offset;
         for(swb = 0; swb < sfb_num; swb++) {
             swb_width           = swb_high[swb]  - swb_low[swb] + 1;
-            sfb_low[gr][sfb]    = sfb_low[sfb-1] + swb_width*window_group_length[gr];
-            sfb_high[gr][sfb-1] = sfb_low[sfb]   - 1;
+            f->sfb_low[gr][sfb]    = f->sfb_low[gr][sfb-1] + swb_width*window_group_length[gr];
+            f->sfb_high[gr][sfb-1] = f->sfb_low[gr][sfb]   - 1;
             sfb++;
         }
+        group_offset += mdct_line_num * window_group_length[gr];
     }
 
 }
 
 
-void mdctline_sfb_iarrange(uintptr_t handle, float *mdct_line_sfb,
+void mdctline_sfb_iarrange(uintptr_t handle, float *mdct_line_swb, int *mdct_line_sig,
                           int num_window_groups, int *window_group_length)
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
@@ -682,18 +664,25 @@ void mdctline_sfb_iarrange(uintptr_t handle, float *mdct_line_sfb,
     int sfb_num       = f->sfb_num;
     int *swb_low      = f->swb_low;
     int *swb_high     = f->swb_high;
-    int *sfb_low      = f->sfb_low;
-    int *sfb_high     = f->sfb_high;
 
-    float *mdct_line_swb = f->mdct_line;
+    float *mdct_line_sfb = f->mdct_line;
 
     int swb_width;
     int group_offset;
     int gr, swb, win, i, k;
     int sfb;
 
+    for(i = 0; i < 1024; i++)
+        mdct_line_sfb[i] = mdct_line_sfb[i] * mdct_line_sig[i];
+
     k = 0;
     group_offset = 0;
+
+    for(i = 0; i < 1024; i++)
+        mdct_line_swb[i] = mdct_line_sfb[i];
+
+    return ;
+
     /*order rearrage:  sfb[gr][sb][win][k] ---> swb[gr][win][sb][k]*/
     for(gr = 0; gr < num_window_groups; gr++) {
         for(win = 0; win < window_group_length[gr]; win++) {
