@@ -302,7 +302,6 @@ static void iteration_innerloop(fa_mdctquant_t *f,
     int counted_bits;
 
     float *mdct_scaled = f->mdct_scaled;
-    int mdct_line_num = f->mdct_line_num;
 
     if(outer_loop_count == 0)
         quantizer_change = 64;
@@ -311,7 +310,7 @@ static void iteration_innerloop(fa_mdctquant_t *f,
 
     do {
         /*quantize spectrum*/
-        for(i = 0; i < mdct_line_num; i++) {
+        for(i = 0; i < f->block_type_cof*f->mdct_line_num; i++) {
             cof_quant = powf(2, (-3./16)*f->common_scalefac);
             x_quant[i] = (int)(mdct_scaled[i] * cof_quant + MAGIC_NUMBER);
         }
@@ -342,6 +341,7 @@ static int iteration_stop(int num_window_groups, int *energy_err_ok, int *sfb_al
 
     for(gr = 0; gr < num_window_groups; gr++) {
         if((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0))
+        /*if((energy_err_ok[gr] == 0)) // && (sfb_allscale[gr] == 0))*/
             return 0;
     }
 
@@ -412,15 +412,15 @@ static void iteration_outerloop(fa_mdctquant_t *f,
     outer_loop_count = 0;
 
     sfb_nb_diff60     = 0;
-    memset(energy_err_ok_cnt, 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
-    memset(energy_err_ok    , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
-    memset(sfb_scale_cnt    , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
-    memset(sfb_allscale     , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
-    memset(scalefactor_ok   , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
-
     xr_pow34_calculate(mdct_line, f->block_type_cof*f->mdct_line_num, xr_pow);
 
     do {
+
+        memset(energy_err_ok_cnt, 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
+        memset(energy_err_ok    , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
+        memset(sfb_scale_cnt    , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
+        memset(sfb_allscale     , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
+        memset(scalefactor_ok   , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
 
         for(gr = 0; gr < num_window_groups; gr++) {
             for(sfb = 0; sfb < sfb_num; sfb++) {
@@ -479,8 +479,12 @@ static void iteration_outerloop(fa_mdctquant_t *f,
             else 
                 energy_err_ok[gr] = 0;
 
-            if(sfb_scale_cnt[gr] >= sfb_num)
+            if(sfb_scale_cnt[gr] >= sfb_num) {
                 sfb_allscale[gr] = 1;
+                for(sfb = 0; sfb < sfb_num; sfb++) {
+                    scalefactor[gr][sfb] -= 1;
+                }
+            }
             else
                 sfb_allscale[gr] = 0;
         }
@@ -671,27 +675,46 @@ void mdctline_sfb_iarrange(uintptr_t handle, float *mdct_line_swb, int *mdct_lin
     int group_offset;
     int gr, swb, win, i, k;
     int sfb;
+    int index;
 
-    for(i = 0; i < 1024; i++)
-        mdct_line_sfb[i] = mdct_line_sfb[i] * mdct_line_sig[i];
 
     k = 0;
     group_offset = 0;
 
+#if 0 
     for(i = 0; i < 1024; i++)
         mdct_line_swb[i] = mdct_line_sfb[i];
 
     return ;
+#endif
 
     /*order rearrage:  sfb[gr][sb][win][k] ---> swb[gr][win][sb][k]*/
+    for(gr = 0; gr < num_window_groups; gr++) {
+        for(swb = 0; swb < sfb_num; swb++) {
+            swb_width = swb_high[swb] - swb_low[swb] + 1;
+            for(win = 0; win < window_group_length[gr]; win++) {
+                for(i = 0; i < swb_width; i++) {
+                    index = group_offset + swb_low[swb] + win*mdct_line_num + i;
+                    mdct_line_swb[index] = mdct_line_sfb[k++];
+                }
+            }
+        }
+        group_offset += mdct_line_num * window_group_length[gr];
+    }
+
+    for(i = 0; i < 1024; i++)
+        mdct_line_swb[i] = mdct_line_swb[i] * mdct_line_sig[i];
+/*
+
     for(gr = 0; gr < num_window_groups; gr++) {
         for(win = 0; win < window_group_length[gr]; win++) {
             for(swb = 0; swb < sfb_num; swb++) {
                 swb_width = swb_high[swb] - swb_low[swb] + 1;
                 for(i = 0; i < swb_width; i++)
-                    mdct_line_swb[k++] = mdct_line_sfb[group_offset+win*swb_width+window_group_length[gr]*swb_width+i];
+                    mdct_line_swb[k++] = mdct_line_sfb[group_offset+win*swb_width+(window_group_length[gr]-1)*swb_width+i];
             }
         }
         group_offset += mdct_line_num * window_group_length[i];
     }
+*/
 }
