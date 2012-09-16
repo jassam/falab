@@ -226,7 +226,8 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
     float pe;
     float pe_sum;
     fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
-/*
+
+#if 0
     if(block_type == LONG_CODING_BLOCK) {
         fa_psychomodel2_calculate_pe(f->h_psy2_long , x, &pe);
         pe_sum = pe;
@@ -238,7 +239,7 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
             pe_sum += pe;
         }
     }
-*/
+#else 
     if(block_type == ONLY_SHORT_BLOCK) {
         pe_sum = 0;
         for(win = 0; win < 8; win++) {
@@ -250,6 +251,7 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
         fa_psychomodel2_calculate_pe(f->h_psy2_long , x, &pe);
         pe_sum = pe;
     }
+#endif
 
     *pe_block = pe_sum;
 

@@ -120,8 +120,8 @@ int main(int argc, char *argv[])
 
     h_aacenc = fa_aacenc_init(sample_rate, 96000, chn_num,
                               2, LOW, 
-                              /*MS_DEFAULT, LFE_DEFAULT, TNS_DEFAULT, BLOCK_SWITCH_DEFAULT);*/
-                              MS_DEFAULT, LFE_DEFAULT, TNS_DEFAULT, 0);
+                              MS_DEFAULT, LFE_DEFAULT, TNS_DEFAULT, BLOCK_SWITCH_DEFAULT);
+                              /*MS_DEFAULT, LFE_DEFAULT, TNS_DEFAULT, 0);*/
 
 
 
