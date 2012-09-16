@@ -125,6 +125,7 @@ void update_psy_long_previnfo(uintptr_t handle)
 
 
     fa_psychomodel2_reset_nb_prev(f->h_psy2_long);
+    fa_psychomodel2_reset_nb_prev(f->h_psy2_short);
 }
 
 /*long to short*/
@@ -168,6 +169,7 @@ void update_psy_short_previnfo(uintptr_t handle)
     fa_psychomodel2_set_mag_prev2(f->h_psy2_short, f->mag_prev2_short, (len>>3));
 
     fa_psychomodel2_reset_nb_prev(f->h_psy2_short);
+    fa_psychomodel2_reset_nb_prev(f->h_psy2_long);
 }
 
 /*

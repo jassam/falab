@@ -102,7 +102,7 @@ void fa_aacfilterbank_uninit(uintptr_t handle)
     }
 }
 
-#define SWITCH_PE  1800
+#define SWITCH_PE 2500 //300// 1800
 
 static void aacblocktype_switch(float pe, int prev_block_type, int *cur_block_type)
 {
@@ -143,7 +143,7 @@ void fa_aacblocktype_switch(uintptr_t h_fltbank, uintptr_t h_psy, float pe)
     prev_block_type = f->block_type;
     aacblocktype_switch(pe, prev_block_type, &cur_block_type);
 
-#if 1 
+#if 0 
     if(cur_block_type == LONG_START_BLOCK)
         update_psy_short_previnfo(h_psy);
 
