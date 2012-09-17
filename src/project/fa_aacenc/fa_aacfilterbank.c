@@ -102,7 +102,7 @@ void fa_aacfilterbank_uninit(uintptr_t handle)
     }
 }
 
-#define SWITCH_PE 2500 //300// 1800
+#define SWITCH_PE 1800 //300// 1800
 
 static void aacblocktype_switch(float pe, int prev_block_type, int *cur_block_type)
 {
