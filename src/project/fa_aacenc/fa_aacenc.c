@@ -150,7 +150,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         if(block_switch_en) {
             g->block_type = fa_get_aacblocktype(g->h_aac_analysis);
             fa_aacpsy_calculate_pe(g->h_aacpsy, sample_buf, g->block_type, &pe);
-            /*printf("block_type=%d, pe=%f\n", g->block_type, pe);*/
+            printf("block_type=%d, pe=%f\n", g->block_type, pe);
             fa_aacblocktype_switch(g->h_aac_analysis, g->h_aacpsy, pe);
         }else {
             g->block_type = ONLY_LONG_BLOCK;

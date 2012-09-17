@@ -22,5 +22,9 @@ void fa_psychomodel2_set_phi_prev1(uintptr_t handle, float *phi, int len);
 void fa_psychomodel2_set_phi_prev2(uintptr_t handle, float *phi, int len);
 
 void fa_psychomodel2_reset_nb_prev(uintptr_t handle);
+void fa_psychomodel2_reset_mag_prev1(uintptr_t handle);
+void fa_psychomodel2_reset_mag_prev2(uintptr_t handle);
+void fa_psychomodel2_reset_phi_prev1(uintptr_t handle);
+void fa_psychomodel2_reset_phi_prev2(uintptr_t handle);
 
 #endif

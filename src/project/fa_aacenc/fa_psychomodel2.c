@@ -648,3 +648,49 @@ void fa_psychomodel2_reset_nb_prev(uintptr_t handle)
 }
 
 
+void fa_psychomodel2_reset_mag_prev1(uintptr_t handle)
+{
+    int i;
+    int len;
+    fa_psychomodel2_t *f = (fa_psychomodel2_t *)handle;
+
+    len = f->fft_len>>1;
+    for(i = 0; i < len; i++)
+        f->mag_prev1[i] = 0;;
+}
+
+void fa_psychomodel2_reset_mag_prev2(uintptr_t handle)
+{
+    int i;
+    int len;
+    fa_psychomodel2_t *f = (fa_psychomodel2_t *)handle;
+
+    len = f->fft_len>>1;
+    for(i = 0; i < len; i++)
+        f->mag_prev2[i] = 0;
+}
+
+
+void fa_psychomodel2_reset_phi_prev1(uintptr_t handle)
+{
+    int i;
+    int len;
+    fa_psychomodel2_t *f = (fa_psychomodel2_t *)handle;
+
+    len = f->fft_len>>1;
+    for(i = 0; i < len; i++)
+        f->phi_prev1[i] = 0;
+}
+
+void fa_psychomodel2_reset_phi_prev2(uintptr_t handle)
+{
+    int i;
+    int len;
+    fa_psychomodel2_t *f = (fa_psychomodel2_t *)handle;
+
+    len = f->fft_len>>1;
+    for(i = 0; i < len; i++)
+        f->phi_prev2[i] = 0;
+}
+
+
