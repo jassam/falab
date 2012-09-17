@@ -24,7 +24,7 @@ int fa_mdctline_quantize(uintptr_t handle,
 
 int fa_mdctline_iquantize(uintptr_t handle, 
                           int num_window_groups, int *window_group_length,
-                          int common_scalefac, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
+                          int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
                           int *x_quant);
 void fa_xmin_sfb_arrange(uintptr_t handle, float xmin_swb[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX],
                          int num_window_groups, int *window_group_length);

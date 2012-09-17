@@ -63,7 +63,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].sample_rate_index = get_samplerate_index(sample_rate);
         f->ctx[i].block_type        = ONLY_LONG_BLOCK;
         f->ctx[i].window_shape      = SINE_WINDOW;
-        f->ctx[i].global_gain       = 0;
+        f->ctx[i].common_scalefac   = 0;
         memset(f->ctx[i].scalefactor, 0, sizeof(int)*MAX_SCFAC_BANDS);
         f->ctx[i].num_window_groups = 1;
         f->ctx[i].window_group_length[0] = 1;
