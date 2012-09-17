@@ -166,6 +166,26 @@ void update_psy_short_previnfo(uintptr_t handle)
 
     fa_psychomodel2_reset_nb_prev(f->h_psy2_short);
     fa_psychomodel2_reset_nb_prev(f->h_psy2_long);
+
+
+}
+
+void reset_psy_previnfo(uintptr_t handle)
+{
+    fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
+
+    fa_psychomodel2_reset_mag_prev1(f->h_psy2_short);
+    fa_psychomodel2_reset_mag_prev2(f->h_psy2_short);
+    fa_psychomodel2_reset_phi_prev1(f->h_psy2_short);
+    fa_psychomodel2_reset_phi_prev2(f->h_psy2_short);
+    fa_psychomodel2_reset_nb_prev(f->h_psy2_short);
+
+    fa_psychomodel2_reset_mag_prev1(f->h_psy2_long);
+    fa_psychomodel2_reset_mag_prev2(f->h_psy2_long);
+    fa_psychomodel2_reset_phi_prev1(f->h_psy2_long);
+    fa_psychomodel2_reset_phi_prev2(f->h_psy2_long);
+    fa_psychomodel2_reset_nb_prev(f->h_psy2_long);
+
 }
 
 void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *pe_block)

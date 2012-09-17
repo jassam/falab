@@ -149,6 +149,11 @@ void fa_aacblocktype_switch(uintptr_t h_fltbank, uintptr_t h_psy, float pe)
 
     if(cur_block_type == LONG_STOP_BLOCK)
         update_psy_long_previnfo(h_psy);
+#else
+
+    /*if(cur_block_type == LONG_START_BLOCK || cur_block_type == LONG_STOP_BLOCK)*/
+        /*reset_psy_previnfo(h_psy);*/
+
 #endif
         
     f->block_type = cur_block_type;
