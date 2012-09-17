@@ -11,6 +11,7 @@
 #define MAX_QUANT             8191
 #define MAGIC_NUMBER          0.4054
 
+#define SF_OFFSET             100
 
 typedef struct _fa_mdctquant_t {
 
@@ -294,6 +295,15 @@ static void iteration_outerloop(fa_mdctquant_t *f,
         outer_loop_count++;
     }while(!iteration_stop(num_window_groups, energy_err_ok, sfb_allscale));
 
+    /* offset the difference of common_scalefac and scalefactors by SF_OFFSET  */
+    for(gr = 0; gr < num_window_groups; gr++) {
+        for(sfb = 0; sfb < sfb_num; sfb++) {
+            scalefactor[gr][sfb] = f->common_scalefac - scalefactor[gr][sfb] + SF_OFFSET;
+        }
+    }
+
+    f->common_scalefac = scalefactor[0][0];
+
 }
 
 
@@ -338,6 +348,7 @@ int fa_mdctline_quantize(uintptr_t handle,
         iteration_outerloop(f, num_window_groups, window_group_length, available_bits, scalefactor, x_quant, &used_bits);
     }
 
+
     *common_scalefac = f->common_scalefac;
     *unused_bits = available_bits - used_bits;
 
@@ -347,7 +358,7 @@ int fa_mdctline_quantize(uintptr_t handle,
 
 int fa_mdctline_iquantize(uintptr_t handle, 
                           int num_window_groups, int *window_group_length,
-                          int common_scalefac, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
+                          int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
                           int *x_quant)
 {
     int i;
@@ -373,7 +384,8 @@ int fa_mdctline_iquantize(uintptr_t handle,
             swb_width = swb_high[sfb] - swb_low[sfb] + 1;
             for(win = 0; win < window_group_length[gr]; win++) {
                 for(i = 0; i < swb_width; i++) {
-                    inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));
+                    /*inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));*/
+                    inv_cof = powf(2, 0.25*(scalefactor[gr][sfb] - SF_OFFSET));
                     tmp_xq = (float)x_quant[mdct_line_offset+i];
                     inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof; 
                     mdct_line[mdct_line_offset+i] = inv_x_quant;
