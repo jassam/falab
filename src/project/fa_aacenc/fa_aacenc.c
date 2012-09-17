@@ -150,7 +150,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         if(block_switch_en) {
             g->block_type = fa_get_aacblocktype(g->h_aac_analysis);
             fa_aacpsy_calculate_pe(g->h_aacpsy, sample_buf, g->block_type, &pe);
-            printf("block_type=%d, pe=%f\n", g->block_type, pe);
+            /*printf("block_type=%d, pe=%f\n", g->block_type, pe);*/
             fa_aacblocktype_switch(g->h_aac_analysis, g->h_aacpsy, pe);
         }else {
             g->block_type = ONLY_LONG_BLOCK;
@@ -168,34 +168,34 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             g->window_group_length[5] = 0;
             g->window_group_length[6] = 0;
             g->window_group_length[7] = 0;
-            mdctline_sfb_arrange(g->h_mdctq_short, g->mdct_line, 
-                                 g->num_window_groups, g->window_group_length);
-            xmin_sfb_arrange(g->h_mdctq_short, xmin,
-                             g->num_window_groups, g->window_group_length);
+            fa_mdctline_sfb_arrange(g->h_mdctq_short, g->mdct_line, 
+                                    g->num_window_groups, g->window_group_length);
+            fa_xmin_sfb_arrange(g->h_mdctq_short, xmin,
+                                g->num_window_groups, g->window_group_length);
             memset(g->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
-            mdctline_quantize(g->h_mdctq_short,
-                              g->num_window_groups, g->window_group_length, 
-                              0, 0, 0, 0, 
-                              &(g->common_scalefac), g->scalefactor, g->x_quant, &(g->unused_bits));
+            fa_mdctline_quantize(g->h_mdctq_short,
+                                 g->num_window_groups, g->window_group_length, 
+                                 0, 0, 0, 0, 
+                                 &(g->common_scalefac), g->scalefactor, g->x_quant, &(g->unused_bits));
         }else {
             g->num_window_groups = 1;
             g->window_group_length[0] = 1;
-            mdctline_sfb_arrange(g->h_mdctq_long, g->mdct_line, 
-                                 g->num_window_groups, g->window_group_length);
-            xmin_sfb_arrange(g->h_mdctq_long, xmin,
-                             g->num_window_groups, g->window_group_length);
+            fa_mdctline_sfb_arrange(g->h_mdctq_long, g->mdct_line, 
+                                    g->num_window_groups, g->window_group_length);
+            fa_xmin_sfb_arrange(g->h_mdctq_long, xmin,
+                                g->num_window_groups, g->window_group_length);
             memset(g->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
-            mdctline_quantize(g->h_mdctq_long,
-                              g->num_window_groups, g->window_group_length, 
-                              0, 0, 0, 0, 
-                              &(g->common_scalefac), g->scalefactor, g->x_quant, &(g->unused_bits));
+            fa_mdctline_quantize(g->h_mdctq_long,
+                                 g->num_window_groups, g->window_group_length, 
+                                 0, 0, 0, 0, 
+                                 &(g->common_scalefac), g->scalefactor, g->x_quant, &(g->unused_bits));
         }
 
         for(i = 0; i < 1024; i++) {
             if(g->mdct_line[i] >= 0)
-                g->mdct_ling_sig[i] = 1;
+                g->mdct_line_sig[i] = 1;
             else
-                g->mdct_ling_sig[i] = -1;
+                g->mdct_line_sig[i] = -1;
         }
 
     }

@@ -135,7 +135,7 @@ typedef struct _aacenc_ctx_t{
     int common_scalefac_long;
     int common_scalefac_short[8];
     int x_quant[1024];
-    int mdct_ling_sig[1024];
+    int mdct_line_sig[1024];
     int unused_bits;
 
     /* Huffman codebook selected for each sf band */
