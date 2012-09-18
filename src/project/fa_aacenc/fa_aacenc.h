@@ -165,6 +165,10 @@ typedef struct _fa_aacenc_ctx_t{
     //encode ctx for each channel
     aacenc_ctx_t ctx[MAX_CHANNELS];
 
+    int bitres_maxsize;
+    unsigned char *bitres;
+
+
 }fa_aacenc_ctx_t;
 
 

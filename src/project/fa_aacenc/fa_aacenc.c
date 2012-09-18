@@ -45,6 +45,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     int i;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)malloc(sizeof(fa_aacenc_ctx_t));
 
+    /*init configuration*/
     f->cfg.sample_rate   = sample_rate;
     f->cfg.bit_rate      = bit_rate;
     f->cfg.chn_num       = chn_num;
@@ -59,6 +60,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
     f->block_switch_en = block_switch_enable;
 
+    /*init psy and mdct quant */
     for(i = 0; i < chn_num; i++) {
         f->ctx[i].sample_rate_index = get_samplerate_index(sample_rate);
         f->ctx[i].block_type        = ONLY_LONG_BLOCK;
@@ -99,6 +101,10 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         f->ctx[i].max_pred_sfb = get_max_pred_sfb(f->ctx[i].sample_rate_index);
     }
+
+    f->bitres_maxsize = get_aac_bitreservoir_maxsize(f->cfg.bit_rate, f->cfg.sample_rate);
+    
+    /*f->bitres = (unsigned char *)malloc(;*/
 
     return (uintptr_t)f;
 }
@@ -158,6 +164,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         fa_aacfilterbank_analysis(g->h_aac_analysis, sample_buf, g->mdct_line);
         fa_aacpsy_calculate_xmin(g->h_aacpsy, g->mdct_line, g->block_type, xmin);
 
+        /*use mdct transform*/
         if(g->block_type == ONLY_SHORT_BLOCK) {
             g->num_window_groups = 1;
             g->window_group_length[0] = 8;
