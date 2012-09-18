@@ -54,9 +54,9 @@ unsigned int calculate_bit_allocation(float pe, int short_block)
 
 
 /* returns the maximum bit reservoir size */
-unsigned int get_aac_bitreservoir_maxsize(unsigned long bit_rate, unsigned long sample_rate)
+int get_aac_bitreservoir_maxsize(int bit_rate, int sample_rate)
 {
-    return (6144 - (unsigned int)((float)bit_rate/(float)sample_rate*1024));
+    return (6144 - (int)((float)bit_rate/(float)sample_rate*1024));
 }
 
 static int write_adtsheader(aaccfg_t *p_cfg, aacenc_ctx_t *p_ctx, int write_flag)
@@ -107,8 +107,8 @@ static int write_icsinfo(aacenc_ctx_t *p_ctx, int write_flag,
     bits += LEN_WIN_SH;
 
     /* For short windows, write out max_sfb and scale_factor_grouping */
-    if (p_ctx->block_type == ONLY_SHORT_BLOCK){
-        if (write_flag) {
+    if(p_ctx->block_type == ONLY_SHORT_BLOCK){
+        if(write_flag) {
             fa_bitstream_putbits(h_bs, p_ctx->max_sfb, LEN_MAX_SFBS);
             grouping_bits = find_grouping_bits(p_ctx);
             fa_bitstream_putbits(h_bs, grouping_bits, MAX_SHORT_WINDOWS - 1);  /* the grouping bits */
@@ -116,11 +116,11 @@ static int write_icsinfo(aacenc_ctx_t *p_ctx, int write_flag,
         bits += LEN_MAX_SFBS;
         bits += MAX_SHORT_WINDOWS - 1;
     } else { /* Otherwise, write out max_sfb and predictor data */
-        if (write_flag) {
+        if(write_flag) {
             fa_bitstream_putbits(h_bs, p_ctx->max_sfb, LEN_MAX_SFBL);
         }
         bits += LEN_MAX_SFBL;
-        if (objtype == LTP)
+        if(objtype == LTP)
         {
             bits++;
             if(write_flag)
@@ -129,7 +129,7 @@ static int write_icsinfo(aacenc_ctx_t *p_ctx, int write_flag,
             bits += write_ltp_predictor_data(p_ctx, write_flag);
             if (common_window)
                 bits += write_ltp_predictor_data(p_ctx, write_flag);
-        } else {
+        }else {
             bits++;
             if (write_flag)
                 fa_bitstream_putbits(h_bs, p_ctx->pred_global_flag, LEN_PRED_PRES);  /* predictor_data_present */
@@ -142,24 +142,23 @@ static int write_icsinfo(aacenc_ctx_t *p_ctx, int write_flag,
 }
 
 #if 0 
-static int WriteICS(CoderInfo *coderInfo,
-                    BitStream *bitStream,
-                    int commonWindow,
-                    int objectType,
-                    int write_flag)
+static int WriteICS(aacenc_ctx_t *p_ctx, int write_flag,
+                    int objtype,
+                    int common_window)
 {
+    unsigned long h_bs = p_ctx->h_bitstream;
     /* this function writes out an individual_channel_stream to the bitstream and */
     /* returns the number of bits written to the bitstream */
     int bits = 0;
 
     /* Write the 8-bit global_gain */
     if (write_flag)
-        fa_bitstream_putbits(h_bs, coderInfo->global_gain, LEN_GLOB_GAIN);
+        fa_bitstream_putbits(h_bs, p_ctx->common_scalefac, LEN_GLOB_GAIN);
     bits += LEN_GLOB_GAIN;
 
     /* Write ics information */
     if (!commonWindow) {
-        bits += WriteICSInfo(coderInfo, bitStream, objectType, commonWindow, write_flag);
+        bits += write_icsinfo(p_ctx, write_flag, objtype, common_window);
     }
 
     bits += SortBookNumbers(coderInfo, bitStream, write_flag);
