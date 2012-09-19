@@ -121,11 +121,13 @@ typedef struct _aacenc_ctx_t{
  
     ///////////////////////
 
+    float max_mdct_line;
     float mdct_line[2*AAC_FRAME_LEN];
 
     int spectral_count;
 
     int scalefactor[8][FA_SWB_NUM_MAX];
+    int start_common_scalefac;
     int common_scalefac;
     int x_quant[1024];
     int mdct_line_sig[1024];

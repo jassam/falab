@@ -13,9 +13,9 @@ typedef struct _ms_info_t{
 
 typedef struct _chn_info_t{
 
-    int tag;
-
     int present;
+
+    int tag;
 
     int ch_is_left;
 
