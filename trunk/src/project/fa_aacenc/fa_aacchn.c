@@ -40,6 +40,7 @@ void get_aac_chn_info(chn_info_t *chn_info, int nchn, int lfe_enable)
     if (nchn_left != 2) {
         chn_info[nchn-nchn_left].present = 1;
         chn_info[nchn-nchn_left].tag = sce_tag++;
+        chn_info[nchn-nchn_left].sce = 1;
         chn_info[nchn-nchn_left].cpe = 0;
         chn_info[nchn-nchn_left].lfe = 0;
         nchn_left--;
@@ -54,6 +55,7 @@ void get_aac_chn_info(chn_info_t *chn_info, int nchn, int lfe_enable)
         chn_info[nchn-nchn_left].common_window = 0;
         chn_info[nchn-nchn_left].ch_is_left = 1;
         chn_info[nchn-nchn_left].paired_ch = nchn-nchn_left+1;
+        chn_info[nchn-nchn_left].sce = 0;
         chn_info[nchn-nchn_left].lfe = 0;
         nchn_left--;
 
@@ -63,6 +65,7 @@ void get_aac_chn_info(chn_info_t *chn_info, int nchn, int lfe_enable)
         chn_info[nchn-nchn_left].common_window = 0;
         chn_info[nchn-nchn_left].ch_is_left = 0;
         chn_info[nchn-nchn_left].paired_ch = nchn-nchn_left-1;
+        chn_info[nchn-nchn_left].sce = 0;
         chn_info[nchn-nchn_left].lfe = 0;
         nchn_left--;
     }
@@ -72,11 +75,13 @@ void get_aac_chn_info(chn_info_t *chn_info, int nchn, int lfe_enable)
         if (lfe_enable) {
             chn_info[nchn-nchn_left].present = 1;
             chn_info[nchn-nchn_left].tag = lfe_tag++;
+            chn_info[nchn-nchn_left].sce = 0;
             chn_info[nchn-nchn_left].cpe = 0;
             chn_info[nchn-nchn_left].lfe = 1;
         } else {
             chn_info[nchn-nchn_left].present = 1;
             chn_info[nchn-nchn_left].tag = sce_tag++;
+            chn_info[nchn-nchn_left].sce = 1;
             chn_info[nchn-nchn_left].cpe = 0;
             chn_info[nchn-nchn_left].lfe = 0;
         }

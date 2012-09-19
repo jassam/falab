@@ -128,13 +128,16 @@ void fa_aacenc_uninit(uintptr_t handle)
 void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int *outlen)
 {
     int i,j;
+    int chn;
     int chn_num;
     short *sample_in;
     float *sample_buf;
     float xmin[8][FA_SWB_NUM_MAX];
     int block_switch_en;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)handle;
-    aacenc_ctx_t *g;
+    aacenc_ctx_t *s, *sl, *sr;
+    int quant_ok_cnt;
+    int outer_loop_count;
 
     float pe;
 
@@ -149,61 +152,235 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
     block_switch_en = f->block_switch_en;
 
+    /*psy analysis and use filterbank to generate mdctline*/
     for(i = 0; i < chn_num; i++) {
-        g = &(f->ctx[i]);
+        s = &(f->ctx[i]);
         sample_buf = f->sample+i*AAC_FRAME_LEN;
         /*analysis*/
         if(block_switch_en) {
-            g->block_type = fa_get_aacblocktype(g->h_aac_analysis);
-            fa_aacpsy_calculate_pe(g->h_aacpsy, sample_buf, g->block_type, &pe);
-            printf("block_type=%d, pe=%f\n", g->block_type, pe);
-            fa_aacblocktype_switch(g->h_aac_analysis, g->h_aacpsy, pe);
+            s->block_type = fa_get_aacblocktype(s->h_aac_analysis);
+            fa_aacpsy_calculate_pe(s->h_aacpsy, sample_buf, s->block_type, &pe);
+            printf("block_type=%d, pe=%f\n", s->block_type, pe);
+            fa_aacblocktype_switch(s->h_aac_analysis, s->h_aacpsy, pe);
         }else {
-            g->block_type = ONLY_LONG_BLOCK;
+            s->block_type = ONLY_LONG_BLOCK;
         }
-        fa_aacfilterbank_analysis(g->h_aac_analysis, sample_buf, g->mdct_line);
-        fa_aacpsy_calculate_xmin(g->h_aacpsy, g->mdct_line, g->block_type, xmin);
+        fa_aacfilterbank_analysis(s->h_aac_analysis, sample_buf, s->mdct_line);
+        fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
 
         /*use mdct transform*/
-        if(g->block_type == ONLY_SHORT_BLOCK) {
-            g->num_window_groups = 1;
-            g->window_group_length[0] = 8;
-            g->window_group_length[1] = 0;
-            g->window_group_length[2] = 0;
-            g->window_group_length[3] = 0;
-            g->window_group_length[4] = 0;
-            g->window_group_length[5] = 0;
-            g->window_group_length[6] = 0;
-            g->window_group_length[7] = 0;
-            fa_mdctline_sfb_arrange(g->h_mdctq_short, g->mdct_line, 
-                                    g->num_window_groups, g->window_group_length);
-            fa_xmin_sfb_arrange(g->h_mdctq_short, xmin,
-                                g->num_window_groups, g->window_group_length);
-            memset(g->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
-            fa_mdctline_quantize(g->h_mdctq_short,
-                                 g->num_window_groups, g->window_group_length, 
-                                 0, 0, 0, 0, 
-                                 &(g->common_scalefac), g->scalefactor, g->x_quant, &(g->unused_bits));
+        if(s->block_type == ONLY_SHORT_BLOCK) {
+            s->num_window_groups = 1;
+            s->window_group_length[0] = 8;
+            s->window_group_length[1] = 0;
+            s->window_group_length[2] = 0;
+            s->window_group_length[3] = 0;
+            s->window_group_length[4] = 0;
+            s->window_group_length[5] = 0;
+            s->window_group_length[6] = 0;
+            s->window_group_length[7] = 0;
+            fa_mdctline_sfb_arrange(s->h_mdctq_short, s->mdct_line, 
+                                    s->num_window_groups, s->window_group_length);
+            fa_xmin_sfb_arrange(s->h_mdctq_short, xmin,
+                                s->num_window_groups, s->window_group_length);
+            s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_short);
+            fa_mdctline_pow34(s->h_mdctq_short);
+
+            memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
         }else {
-            g->num_window_groups = 1;
-            g->window_group_length[0] = 1;
-            fa_mdctline_sfb_arrange(g->h_mdctq_long, g->mdct_line, 
-                                    g->num_window_groups, g->window_group_length);
-            fa_xmin_sfb_arrange(g->h_mdctq_long, xmin,
-                                g->num_window_groups, g->window_group_length);
-            memset(g->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
-            fa_mdctline_quantize(g->h_mdctq_long,
-                                 g->num_window_groups, g->window_group_length, 
-                                 0, 0, 0, 0, 
-                                 &(g->common_scalefac), g->scalefactor, g->x_quant, &(g->unused_bits));
-        }
+            s->num_window_groups = 1;
+            s->window_group_length[0] = 1;
+            fa_mdctline_sfb_arrange(s->h_mdctq_long, s->mdct_line, 
+                                    s->num_window_groups, s->window_group_length);
+            fa_xmin_sfb_arrange(s->h_mdctq_long, xmin,
+                                s->num_window_groups, s->window_group_length);
+            s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_long);
+            fa_mdctline_pow34(s->h_mdctq_long);
 
-        for(i = 0; i < 1024; i++) {
-            if(g->mdct_line[i] >= 0)
-                g->mdct_line_sig[i] = 1;
-            else
-                g->mdct_line_sig[i] = -1;
+            memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
         }
-
     }
+
+    /*check common_window and start_common_scalefac*/
+    i = 0;
+    chn = 1;
+    while (i < chn_num) {
+        s = &(f->ctx[i]);
+        s->chn_info.common_window = 0;
+
+        if (s->chn_info.cpe == 1) {
+            chn = 2;
+            sl = s;
+            sr = &(f->ctx[i+1]);
+            if (sl->block_type == sr->block_type) {
+                float max_mdct_line;
+                sl->chn_info.common_window = 1;
+                sr->chn_info.common_window = 1;
+                max_mdct_line = FA_MAX(sl->max_mdct_line, sr->max_mdct_line);
+                sl->start_common_scalefac = fa_get_start_common_scalefac(max_mdct_line);
+                sr->start_common_scalefac = sl->start_common_scalefac;
+            } else {
+                sl->chn_info.common_window = 0;
+                sr->chn_info.common_window = 0;
+                sl->start_common_scalefac = fa_get_start_common_scalefac(sl->max_mdct_line);
+                sr->start_common_scalefac = fa_get_start_common_scalefac(sr->max_mdct_line);
+            }
+        } else if (s->chn_info.sce == 1) {
+            chn = 1;
+            s->start_common_scalefac = fa_get_start_common_scalefac(s->max_mdct_line);
+        } else  { //lfe
+            chn = 1;
+            s->start_common_scalefac = fa_get_start_common_scalefac(s->max_mdct_line);
+        }
+
+        i += chn;
+    }
+
+    /*outer loop*/
+    quant_ok_cnt = 0;
+    outer_loop_count = 0;
+    do {
+        /*scale the mdctline firstly using scalefactor*/
+        i = 0;
+        chn = 1;
+        while (i < chn_num) {
+            s = &(f->ctx[i]);
+
+            if (s->chn_info.cpe == 1) {
+                chn = 2;
+                sl = s;
+                sr = &(f->ctx[i+1]);
+                if (s->common_window == 1) {
+                    if (!sl->quant_ok || !sr->quant_ok) {
+                        if (s->block_type == ONLY_SHORT_BLOCK) {
+                            fa_mdctline_scaled(sl->h_mdctq_short, s->num_window_groups, s->scalefactor);
+                            fa_mdctline_scaled(sr->h_mdctq_short, s->num_window_groups, s->scalefactor);
+                        } else {
+                            fa_mdctline_scaled(sl->h_mdctq_long, s->num_window_groups, s->scalefactor);
+                            fa_mdctline_scaled(sr->h_mdctq_long, s->num_window_groups, s->scalefactor);
+                        }
+                    }
+                } else {
+                    if (!sl->quant_ok) {
+                        if (sl->block_type == ONLY_LONG_BLOCK)
+                            fa_mdctline_scaled(sl->h_mdctq_short, sl->num_window_groups, sl->scalefactor);
+                        else 
+                            fa_mdctline_scaled(sl->h_mdctq_long, sl->num_window_groups, sl->scalefactor);
+                    }
+                    if (!sr->quant_ok) {
+                        if (sr->block_type == ONLY_LONG_BLOCK)
+                            fa_mdctline_scaled(sr->h_mdctq_short, sr->num_window_groups, sr->scalefactor);
+                        else 
+                            fa_mdctline_scaled(sr->h_mdctq_long, sr->num_window_groups, sr->scalefactor);
+                    }
+                }
+            } else if (s->chn_info.sce == 1) {
+                chn = 1;
+                if (!s->quant_ok) {
+                    if (s->block_type == ONLY_SHORT_BLOCK) 
+                        fa_mdctline_scaled(s->h_mdctq_short, s->num_window_groups, s->scalefactor);
+                    else 
+                        fa_mdctline_scaled(s->h_mdctq_long, s->num_window_groups, s->scalefactor);
+                }
+            } else {
+                chn = 1;
+            }
+
+            i += chn;
+        }
+
+        /*inner loop*/
+        do {
+            i = 0;
+            chn = 1;
+
+            if (outer_loop_count == 0) {
+                s->common_scalefac = s->start_common_scalefac;
+                quant_change = 64;
+            } else {
+                quant_change = 2;
+            }
+
+            while (i < chn_num) {
+                s = &(f->ctx[i]);
+
+                if (!s->quant_ok) {
+                    if (s->chn_info.cpe == 1) {
+                        chn = 2;
+                        sl = s;
+                        sr = &(f->ctx[i+1]);
+                        if (sl->common_window == 1) {
+                            if (!sl->quant_ok || !sr->quant_ok) {
+                                if (sl->block_type == ONLY_SHORT_BLOCK) 
+                                    fa_mdctline_scaled(s->h_mdctq_short, s->num_window_groups, s->scalefactor);
+                                else 
+                                    fa_mdctline_scaled(s->h_mdctq_long, s->num_window_groups, s->scalefactor);
+                            }
+                        } else {
+                            if (!sl->quant_ok) {
+                                if (sl->block_type == ONLY_LONG_BLOCK)
+                                    fa_mdctline_scaled(sl->h_mdctq_short, sl->num_window_groups, sl->scalefactor);
+                                else 
+                                    fa_mdctline_scaled(sl->h_mdctq_long, sl->num_window_groups, sl->scalefactor);
+                            }
+                            if (!sr->quant_ok) {
+                                if (sr->block_type == ONLY_LONG_BLOCK)
+                                    fa_mdctline_scaled(sr->h_mdctq_short, sr->num_window_groups, sr->scalefactor);
+                                else 
+                                    fa_mdctline_scaled(sr->h_mdctq_long, sr->num_window_groups, sr->scalefactor);
+                            }
+                        }
+
+                    } else if (s->chn_info.sce == 1) {
+                        chn = 1;
+                        if (!s->quant_ok) {
+                            if (s->block_type == ONLY_SHORT_BLOCK) 
+                                fa_mdctline_quant(s->h_mdctq_short, s->common_scalefac, s->x_quant);
+                            else 
+                                fa_mdctline_quant(s->h_mdctq_long, s->common_scalefac, s->x_quant);
+                        }
+                    } else {
+                        chn = 1;
+                    }
+                }
+                i += chn;
+            }
+             
+            counted_bits = fa_bit_count();
+            if (counted_bits > s->available_bits) 
+                s->common_scalefac += quant_change;
+            else
+                s->common_scalefac -= quant_change;
+
+            quant_change >>= 1;
+
+            if(quant_change == 0 && counted_bits>available_bits)
+                quant_change = 1;
+   
+        } while (quant_change != 0)
+
+        quant_ok_cnt = 0;
+        for (i = 0; i < chn_num; i++) {
+            s = &(f->ctx[i]);
+            if (!s->quant_ok) {
+                s->quant_ok = fa_fix_quant_noise(s->h_mdctq_short, 
+                                                 s->num_window_groups, s->window_group_length,
+                                                 s->common_scalefac, s->scalefactor,
+                                                 s->x_quant);
+            }
+            if (s->quant_ok)
+                quant_ok_cnt++;
+        }
+
+        outer_loop_count++;
+    } while (quant_ok_cnt < chn_num)
+
+    for(i = 0; i < 1024; i++) {
+        if(s->mdct_line[i] >= 0)
+            s->mdct_line_sig[i] = 1;
+        else
+            s->mdct_line_sig[i] = -1;
+    }
+
+
 }
