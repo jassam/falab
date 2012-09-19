@@ -294,15 +294,15 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             i = 0;
             chn = 1;
 
-            if (outer_loop_count == 0) {
-                s->common_scalefac = s->start_common_scalefac;
-                quant_change = 64;
-            } else {
-                quant_change = 2;
-            }
-
             while (i < chn_num) {
                 s = &(f->ctx[i]);
+
+                if (outer_loop_count == 0) {
+                    s->common_scalefac = s->start_common_scalefac;
+                    quant_change = 64;
+                } else {
+                    quant_change = 2;
+                }
 
                 if (!s->quant_ok) {
                     if (s->chn_info.cpe == 1) {
@@ -311,23 +311,26 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
                         sr = &(f->ctx[i+1]);
                         if (sl->common_window == 1) {
                             if (!sl->quant_ok || !sr->quant_ok) {
-                                if (sl->block_type == ONLY_SHORT_BLOCK) 
-                                    fa_mdctline_scaled(s->h_mdctq_short, s->num_window_groups, s->scalefactor);
-                                else 
-                                    fa_mdctline_scaled(s->h_mdctq_long, s->num_window_groups, s->scalefactor);
+                                if (s->block_type == ONLY_SHORT_BLOCK) {
+                                    fa_mdctline_quant(sl->h_mdctq_short, s->common_scalefac, s->x_quant);
+                                    fa_mdctline_quant(sr->h_mdctq_short, s->common_scalefac, s->x_quant);
+                                } else {
+                                    fa_mdctline_quant(sl->h_mdctq_long, s->common_scalefac, s->x_quant);
+                                    fa_mdctline_quant(sr->h_mdctq_long, s->common_scalefac, s->x_quant);
+                                }
                             }
                         } else {
                             if (!sl->quant_ok) {
                                 if (sl->block_type == ONLY_LONG_BLOCK)
-                                    fa_mdctline_scaled(sl->h_mdctq_short, sl->num_window_groups, sl->scalefactor);
+                                    fa_mdctline_quant(sl->h_mdctq_short, sl->common_scalefac, sl->x_quant);
                                 else 
-                                    fa_mdctline_scaled(sl->h_mdctq_long, sl->num_window_groups, sl->scalefactor);
+                                    fa_mdctline_quant(sl->h_mdctq_long, sl->common_scalefac, sl->x_quant);
                             }
                             if (!sr->quant_ok) {
                                 if (sr->block_type == ONLY_LONG_BLOCK)
-                                    fa_mdctline_scaled(sr->h_mdctq_short, sr->num_window_groups, sr->scalefactor);
+                                    fa_mdctline_quant(sr->h_mdctq_short, sr->common_scalefac, sr->x_quant);
                                 else 
-                                    fa_mdctline_scaled(sr->h_mdctq_long, sr->num_window_groups, sr->scalefactor);
+                                    fa_mdctline_quant(sr->h_mdctq_long, sr->common_scalefac, sr->x_quant);
                             }
                         }
 
@@ -343,6 +346,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
                         chn = 1;
                     }
                 }
+
                 i += chn;
             }
              
@@ -363,14 +367,93 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         for (i = 0; i < chn_num; i++) {
             s = &(f->ctx[i]);
             if (!s->quant_ok) {
-                s->quant_ok = fa_fix_quant_noise(s->h_mdctq_short, 
-                                                 s->num_window_groups, s->window_group_length,
-                                                 s->common_scalefac, s->scalefactor,
-                                                 s->x_quant);
+                if (s->block_type == ONLY_SHORT_BLOCK) {
+                    fa_calculate_quant_noise(s->h_mdctq_short,
+                                             s->num_window_groups, s->window_group_length,
+                                             s->common_scalefac, s->scalefactor, 
+                                             s->x_quant);
+                } else {
+                    fa_calculate_quant_noise(s->h_mdctq_long,
+                                             s->num_window_groups, s->window_group_length,
+                                             s->common_scalefac, s->scalefactor, 
+                                             s->x_quant);
+                }
             }
-            if (s->quant_ok)
-                quant_ok_cnt++;
         }
+
+        i = 0;
+        chn = 1;
+        while (i < chn_num) {
+            s = &(f->ctx[i]);
+
+            if (s->chn_info.cpe == 1) {
+                chn = 2;
+                sl = s;
+                sr = &(f->ctx[i+1]);
+                if (s->common_window == 1) {
+                    if (!sl->quant_ok || !sr->quant_ok) {
+                        if (s->block_type == ONLY_SHORT_BLOCK) {
+                            fa_fix_quant_noise_couple(sl->h_mdctq_short, sr->h_mdctq_short, 
+                                                      s->num_window_groups, s->window_group_length,
+                                                      s->scalefactor, 
+                                                      s->x_quant);
+                        } else {
+                            fa_fix_quant_noise_couple(sl->h_mdctq_long, sr->h_mdctq_long, 
+                                                      s->num_window_groups, s->window_group_length,
+                                                      s->scalefactor, 
+                                                      s->x_quant);
+                        }
+                    }
+                } else {
+                    if (!sl->quant_ok) {
+                        if (sl->block_type == ONLY_SHORT_BLOCK) {
+                            fa_fix_quant_noise_single(sl->h_mdctq_short, 
+                                                      sl->num_window_groups, sl->window_group_length,
+                                                      sl->scalefactor, 
+                                                      sl->x_quant);
+                        } else {
+                            fa_fix_quant_noise_single(sl->h_mdctq_long, 
+                                                      sl->num_window_groups, sl->window_group_length,
+                                                      sl->scalefactor, 
+                                                      sl->x_quant);
+                        }
+                    }
+                    if (!sr->quant_ok) {
+                        if (sr->block_type == ONLY_SHORT_BLOCK) {
+                            fa_fix_quant_noise_single(sr->h_mdctq_short, 
+                                                      sr->num_window_groups, sr->window_group_length,
+                                                      sr->scalefactor, 
+                                                      sr->x_quant);
+                        } else {
+                            fa_fix_quant_noise_single(sr->h_mdctq_long, 
+                                                      sr->num_window_groups, sr->window_group_length,
+                                                      sr->scalefactor, 
+                                                      sr->x_quant);
+                        }
+                    }
+                }
+            } else (s->chn_info.sce == 1) {
+                chn = 1;
+                if (!s->quant_ok) {
+                    if (s->block_type == ONLY_SHORT_BLOCK) {
+                        fa_fix_quant_noise_single(s->h_mdctq_short, 
+                                                  s->num_window_groups, s->window_group_length,
+                                                  s->scalefactor, 
+                                                  s->x_quant);
+                    } else {
+                        fa_fix_quant_noise_single(s->h_mdctq_long, 
+                                                  s->num_window_groups, s->window_group_length,
+                                                  s->scalefactor, 
+                                                  s->x_quant);
+                    }
+                }
+            } else {
+                chn = 1;
+            }
+
+            i += chn;
+        }
+
 
         outer_loop_count++;
     } while (quant_ok_cnt < chn_num)
