@@ -132,6 +132,8 @@ typedef struct _aacenc_ctx_t{
     int x_quant[1024];
     int mdct_line_sig[1024];
     int unused_bits;
+     
+    int quant_ok;
 
     /* Huffman codebook selected for each sf band */
     int book_vector[MAX_SCFAC_BANDS];

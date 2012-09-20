@@ -309,6 +309,7 @@ static void iteration_outerloop(fa_mdctquant_t *f,
 int fa_mdctline_getmax(uintptr_t handle)
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
+    int   i;
     float max_mdct_line;
     float abs_mdct_line;
     float *mdct_line = f->mdct_line;
@@ -351,9 +352,13 @@ void fa_mdctline_scaled(uintptr_t handle,
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
 
+    int i;
     int gr;
     int sfb;
     int sfb_num;
+    float *xr_pow;
+    float *mdct_scaled;
+    float cof_scale;
 
     sfb_num      = f->sfb_num;
     xr_pow       = f->xr_pow;
@@ -373,7 +378,9 @@ void fa_mdctline_quant(uintptr_t handle,
                        int common_scalefac, int *x_quant)
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
-    float mdct_scaled = f->mdct_scaled;
+    int i;
+    float *mdct_scaled = f->mdct_scaled;
+    float cof_quant;
 
     for(i = 0; i < f->block_type_cof*f->mdct_line_num; i++) {
         cof_quant = powf(2, (-3./16)*common_scalefac);
@@ -404,17 +411,15 @@ void fa_calculate_quant_noise(uintptr_t handle,
 
 
     int mdct_line_offset;
-    float *error_energy;
 
     sfb_num  = f->sfb_num;
     swb_low  = f->swb_low;
     swb_high = f->swb_high;
 
     mdct_line    = f->mdct_line;
-    error_energy = f->error_energy;
 
     /*calculate scalefactor band error energy*/
-    memset(error_energy, 0, sizeof(float)*NUM_WINDOW_GROUPS_MAX*NUM_SFB_MAX*NUM_WINDOWS_MAX);
+    memset(f->error_energy, 0, sizeof(float)*NUM_WINDOW_GROUPS_MAX*NUM_SFB_MAX*NUM_WINDOWS_MAX);
 
     /*calculate error_energy*/
     mdct_line_offset = 0;
@@ -423,13 +428,13 @@ void fa_calculate_quant_noise(uintptr_t handle,
             swb_width = swb_high[sfb] - swb_low[sfb] + 1;
             for(win = 0; win < window_group_length[gr]; win++) {
                 float tmp_xq;
-                error_energy[gr][sfb][win] = 0;
+                f->error_energy[gr][sfb][win] = 0;
                 for(i = 0; i < swb_width; i++) {
                     inv_cof = powf(2, 0.25*(f->common_scalefac - scalefactor[gr][sfb]));
                     tmp_xq = (float)x_quant[mdct_line_offset+i];
                     inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof; 
                     tmp = fabsf(mdct_line[mdct_line_offset+i]) - inv_x_quant;
-                    error_energy[gr][sfb][win] += tmp*tmp;  
+                    f->error_energy[gr][sfb][win] += tmp*tmp;  
                 }
                 mdct_line_offset += swb_width;
            }
@@ -475,7 +480,7 @@ int  fa_fix_quant_noise_single(uintptr_t handle,
     for(gr = 0; gr < num_window_groups; gr++) {
         for(sfb = 0; sfb < sfb_num; sfb++) {
             for(win = 0; win < window_group_length[gr]; win++) {
-                if(error_energy[gr][sfb][win] > f->xmin[gr][sfb][win]) {
+                if(f->error_energy[gr][sfb][win] > f->xmin[gr][sfb][win]) {
                     scalefactor[gr][sfb] += 1;
                     sfb_scale_cnt[gr]++;
                     break;
@@ -527,9 +532,6 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2,
     int sfb;
     int sfb_num;
 
-    float *error_energy1;
-    float *error_energy2;
-
     /*three break condition variable*/
     /*no1*/
     int energy_err_ok_cnt[NUM_WINDOW_GROUPS_MAX];
@@ -542,8 +544,6 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2,
 
 
     sfb_num  = f1->sfb_num;
-    error_energy1 = f1->error_energy;
-    error_energy2 = f2->error_energy;
 
 
     sfb_nb_diff60     = 0;
@@ -557,8 +557,8 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2,
     for(gr = 0; gr < num_window_groups; gr++) {
         for(sfb = 0; sfb < sfb_num; sfb++) {
             for(win = 0; win < window_group_length[gr]; win++) {
-                if((error_energy1[gr][sfb][win] > f1->xmin[gr][sfb][win]) ||
-                   (error_energy2[gr][sfb][win] > f2->xmin[gr][sfb][win])) {
+                if((f1->error_energy[gr][sfb][win] > f1->xmin[gr][sfb][win]) ||
+                   (f2->error_energy[gr][sfb][win] > f2->xmin[gr][sfb][win])) {
                     scalefactor[gr][sfb] += 1;
                     sfb_scale_cnt[gr]++;
                     break;
