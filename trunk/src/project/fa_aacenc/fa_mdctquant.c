@@ -306,7 +306,7 @@ static void iteration_outerloop(fa_mdctquant_t *f,
 
 }
 
-int fa_mdctline_getmax(uintptr_t handle)
+float fa_mdctline_getmax(uintptr_t handle)
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
     int   i;
@@ -326,10 +326,13 @@ int fa_mdctline_getmax(uintptr_t handle)
     return max_mdct_line;
 }
 
-int fa_get_start_common_scalefac(int max_mdct_line)
+int fa_get_start_common_scalefac(float max_mdct_line)
 {
     int start_common_scalefac;
     float tmp;
+
+    if (max_mdct_line == 0)
+        return 0;
 
     tmp = ceilf(16./3 * (log2f((powf(max_mdct_line, 0.75))/MAX_QUANT)));
     start_common_scalefac = (int)tmp;
@@ -430,7 +433,7 @@ void fa_calculate_quant_noise(uintptr_t handle,
                 float tmp_xq;
                 f->error_energy[gr][sfb][win] = 0;
                 for(i = 0; i < swb_width; i++) {
-                    inv_cof = powf(2, 0.25*(f->common_scalefac - scalefactor[gr][sfb]));
+                    inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));
                     tmp_xq = (float)x_quant[mdct_line_offset+i];
                     inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof; 
                     tmp = fabsf(mdct_line[mdct_line_offset+i]) - inv_x_quant;
@@ -597,6 +600,12 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2,
 }
 
 
+int fa_mdctline_get_sfbnum(uintptr_t handle)
+{
+    fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
+
+    return f->sfb_num;
+}
 
 
 

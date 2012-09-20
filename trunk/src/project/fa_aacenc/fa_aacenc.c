@@ -5,6 +5,7 @@
 #include "fa_aaccfg.h"
 #include "fa_aacpsy.h"
 #include "fa_swbtab.h"
+#include "fa_mdctquant.h"
 #include "fa_aacfilterbank.h"
 
 #ifndef FA_MIN
@@ -212,6 +213,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
             memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
         }
+
+        s->quant_ok = 0;
     }
 
     /*check common_window and start_common_scalefac*/
@@ -490,6 +493,24 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
         outer_loop_count++;
     } while (quant_ok_cnt < chn_num);
+
+
+    /* offset the difference of common_scalefac and scalefactors by SF_OFFSET  */
+    for (i = 0; i < chn_num ; i++) {
+        int gr, sfb, sfb_num;
+        s = &(f->ctx[i]);
+        if (s->block_type == ONLY_SHORT_BLOCK) 
+            sfb_num = fa_mdctline_get_sfbnum(s->h_mdctq_short);
+        else 
+            sfb_num = fa_mdctline_get_sfbnum(s->h_mdctq_long);
+
+        for (gr = 0; gr < s->num_window_groups; gr++) {
+            for (sfb = 0; sfb < sfb_num; sfb++) {
+                s->scalefactor[gr][sfb] = s->common_scalefac - s->scalefactor[gr][sfb] + 100;//SF_OFFSET;
+            }
+        }
+        s->common_scalefac = s->scalefactor[0][0];
+    }
 
     for(i = 0; i < 1024; i++) {
         if(s->mdct_line[i] >= 0)
