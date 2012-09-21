@@ -106,6 +106,10 @@ typedef struct _aacenc_ctx_t{
 
     int window_group_length[8];
 
+    int sfb_num_long;
+
+    int sfb_num_short;
+
     int max_sfb;
 
     int nr_of_sfb;
@@ -131,9 +135,19 @@ typedef struct _aacenc_ctx_t{
     int common_scalefac;
     int x_quant[1024];
     int mdct_line_sig[1024];
+
+    int bits_alloc;
+    int bits_average;
+    int bits_more;
+    int bits_res_maxsize;
+    int bits_res_size;
+    unsigned char *res_buf;
+
     int unused_bits;
      
     int quant_ok;
+
+    int hufftab_no[8][FA_SWB_NUM_MAX];
 
     /* Huffman codebook selected for each sf band */
     int book_vector[MAX_SCFAC_BANDS];
