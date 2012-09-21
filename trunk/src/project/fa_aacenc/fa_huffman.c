@@ -18,8 +18,6 @@
 #endif
 
 
-#define INTENSITY_HCB 15
-#define INTENSITY_HCB2 14
 
 /*
    This function takes an element that is larger than 16 and generates the base10 value of the

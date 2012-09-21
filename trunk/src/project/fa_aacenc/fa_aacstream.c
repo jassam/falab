@@ -4,6 +4,8 @@
 #include "fa_aacstream.h"
 #include "fa_bitstream.h"
 #include "fa_aacenc.h"
+#include "fa_huffman.h"
+#include "fa_huffmantab.h"
 
 #ifndef FA_MIN
 #define FA_MIN(a,b)  ( (a) < (b) ? (a) : (b) )
@@ -19,27 +21,28 @@ static int write_spectral_data(aacenc_ctx_t *p_ctx, int write_flag);
 static int write_aac_fillbits(aacenc_ctx_t *p_ctx, int write_flag, int numBits);
 
 /* returns the maximum bitrate per channel for certain sample rate*/
-unsigned int get_aac_max_bitrate(unsigned long sample_rate)
+int get_aac_max_bitrate(long sample_rate)
 {
     /*maximum of 6144 bit for a channel*/
-    return (unsigned int)(6144.0 * (float)sample_rate/(float)1024 + .5);
+    return (int)(6144.0 * (float)sample_rate/(float)1024 + .5);
 }
 
 /* returns the minimum bitrate per channel*/
-unsigned int get_aac_min_bitrate()
+int get_aac_min_bitrate()
 {
     return 8000;
 }
 
 
 /* calculate bit_allocation based on PE */
-unsigned int calculate_bit_allocation(float pe, int short_block)
+int calculate_bit_allocation(float pe, int block_type)
 {
     float pe1;
     float pe2;
     float bit_allocation;
+    int bits_alloc;
 
-    if (short_block) {
+    if (block_type == ONLY_SHORT_BLOCK) {
         pe1 = 0.6;
         pe2 = 24.0;
     } else {
@@ -49,7 +52,11 @@ unsigned int calculate_bit_allocation(float pe, int short_block)
     bit_allocation = pe1 * pe + pe2 * sqrt(pe);
     bit_allocation = FA_MIN(FA_MAX(0.0, bit_allocation), 6144.0);
 
-    return (unsigned int)(bit_allocation+0.5);
+    bits_alloc = (int)(bit_allocation + 0.5);
+    if (bits_alloc > 3000)
+        bits_alloc = 3000;
+
+    return bits_alloc;
 }
 
 
@@ -538,4 +545,153 @@ static int write_aac_fillbits(aacenc_ctx_t *p_ctx, int write_flag, int numBits)
 
     return numberOfBitsLeft;
 }
+
+static int write_hufftab_no(aacenc_ctx_t *s, int write_flag)
+{
+    unsigned long h_bs = s->h_bitstream;
+
+    int repeat_counter;
+    int bit_count = 0;
+    int previous;
+    int max, bit_len/*,sfbs*/;
+    int gr, sfb;
+    int sect_cb_bits = 4;
+    int sfb_num;
+
+    /* Set local pointers to coderInfo elements */
+
+    if (s->block_type == ONLY_SHORT_BLOCK){
+        max = 7;
+        bit_len = 3;
+        sfb_num = s->sfb_num_short;
+    } else {  /* the block_type is a long,start, or stop window */
+        max = 31;
+        bit_len = 5;
+        sfb_num = s->sfb_num_long;
+    }
+
+    for (gr = 0; gr < s->num_window_groups; gr++) {
+        repeat_counter=1;
+
+        previous = s->hufftab_no[gr][0];
+        if (write_flag) {
+            fa_bitstream_putbits(h_bs, s->hufftab_no[gr][0],sect_cb_bits);
+        }
+        bit_count += sect_cb_bits;
+
+        for (sfb = 1; sfb < sfb_num; sfb++) {
+            if ((s->hufftab_no[gr][sfb] != previous)) {
+                if (write_flag) {
+                    fa_bitstream_putbits(h_bs, repeat_counter, bit_len);
+                }
+                bit_count += bit_len;
+
+                if (repeat_counter == max){  /* in case you need to terminate an escape sequence */
+                    if (write_flag)
+                        fa_bitstream_putbits(h_bs, 0, bit_len);
+                    bit_count += bit_len;
+                }
+
+                if (write_flag)
+                    fa_bitstream_putbits(h_bs, s->hufftab_no[gr][sfb], sect_cb_bits);
+                bit_count += sect_cb_bits;
+                previous = s->hufftab_no[gr][sfb];
+                repeat_counter=1;
+            }
+            /* if the length of the section is longer than the amount of bits available in */
+            /* the bitsream, "max", then start up an escape sequence */
+            else if ((s->hufftab_no[gr][sfb] == previous) && (repeat_counter == max)) {
+                if (write_flag) {
+                    fa_bitstream_putbits(h_bs, repeat_counter, bit_len);
+                }
+                bit_count += bit_len;
+                repeat_counter = 1;
+            }
+            else {
+                repeat_counter++;
+            }
+        }
+
+        if (write_flag)
+            fa_bitstream_putbits(h_bs, repeat_counter, bit_len);
+        bit_count += bit_len;
+
+        if (repeat_counter == max) {  /* special case if the last section length is an */
+            /* escape sequence */
+            if (write_flag)
+                fa_bitstream_putbits(h_bs, 0, bit_len);
+            bit_count += bit_len;
+        }
+    }  /* Bottom of group iteration */
+
+    return bit_count;
+}
+
+
+
+static int write_scalefactor(aacenc_ctx_t *s, int write_flag) 
+{
+    /* this function takes care of counting the number of bits necessary */
+    /* to encode the scalefactors.  In addition, if the writeFlag == 1, */
+    /* then the scalefactors are written out the bitStream output bit */
+    /* stream.  it returns k, the number of bits written to the bitstream*/
+
+    unsigned long h_bs = s->h_bitstream;
+    int gr, sfb;
+
+    int bit_count=0;
+    int diff,length,codeword;
+    int previous_scale_factor;
+    int previous_is_factor;       /* Intensity stereo */
+    int index = 0;
+    int sfb_num;
+
+    if (s->block_type == ONLY_SHORT_BLOCK) {
+        sfb_num = s->sfb_num_short;
+    } else {
+        sfb_num = s->sfb_num_long;
+    }
+
+    previous_scale_factor = s->common_scalefac;
+    previous_is_factor = 0;
+
+    for (gr = 0; gr < s->num_window_groups; gr++) {
+        for (sfb = 0; sfb < sfb_num; sfb++) {
+            /* test to see if any codebooks in a group are zero */
+            if ((s->hufftab_no[gr][sfb] == INTENSITY_HCB) ||
+                (s->hufftab_no[gr][sfb] == INTENSITY_HCB2) ) {
+                /* only send scalefactors if using non-zero codebooks */
+                diff = s->scalefactor[gr][sfb] - previous_is_factor;
+                if ((diff < 60)&&(diff >= -60))
+                    length = fa_hufftab12[diff+60][0];
+                else 
+                    length = 0;
+                bit_count += length;
+                previous_is_factor = s->scalefactor[index];
+                if (write_flag) {
+                    codeword = fa_hufftab12[diff+60][1];
+                    fa_bitstream_putbits(h_bs, codeword, length);
+                }
+            } else if (s->hufftab_no[gr][sfb]) {
+                /* only send scalefactors if using non-zero codebooks */
+                diff = s->scalefactor[gr][sfb] - previous_scale_factor;
+                if ((diff < 60)&&(diff >= -60))
+                    length = fa_hufftab12[diff+60][0];
+                else 
+                    length = 0;
+                bit_count+=length;
+                previous_scale_factor = s->scalefactor[gr][sfb];
+                if (write_flag) {
+                    codeword = fa_hufftab12[diff+60][1];
+                    fa_bitstream_putbits(h_bs, codeword, length);
+                }
+            }
+            index++;
+        }
+    }
+
+    return bit_count;
+}
+
+
 
