@@ -103,4 +103,14 @@ int  fa_bitstream_getbits(uintptr_t handle, unsigned int *value, int nbits)
     return nbits;
 }
 
+int fa_bitstream_getbits_num(uintptr_t handle)
+{
+    int nbits;
+
+    fa_bitstream_t *f = (fa_bitstream_t *)handle;
+
+    nbits = fa_getbits_num(&f->bitbuf);
+
+    return nbits;
+}
 

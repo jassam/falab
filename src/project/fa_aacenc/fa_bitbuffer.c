@@ -124,6 +124,11 @@ int  fa_bit2byte(int bit)
     return ((bit + 8 - 1)/8);
 }
 
+int  fa_getbits_num(fa_bitbuffer_t * bitbuf)
+{
+    return bitbuf->nbits;
+}
+
 int  fa_putbits(fa_bitbuffer_t * bitbuf, unsigned int wValue, int nbits)
 {
     short bitsToWrite, bitsWritten;
