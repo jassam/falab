@@ -133,6 +133,7 @@ typedef struct _aacenc_ctx_t{
     int scalefactor[8][FA_SWB_NUM_MAX];
     int start_common_scalefac;
     int common_scalefac;
+    int quant_change;
     int x_quant[1024];
     int mdct_line_sig[1024];
 

@@ -43,6 +43,7 @@ int  fa_bit2byte(int bit);
 
 int  fa_putbits(fa_bitbuffer_t * bitbuf, unsigned int wValue, int nbits);
 int  fa_getbits(fa_bitbuffer_t * bitbuf, short noBitsToRead);
+int  fa_getbits_num(fa_bitbuffer_t * bitbuf);
 
 #ifdef __cplusplus 
 }

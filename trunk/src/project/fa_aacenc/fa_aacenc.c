@@ -205,23 +205,24 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
     int i, chn;
     int chn_num;
     aacenc_ctx_t *s, *sl, *sr;
+    int counted_bits;
+    int quant_ok_cnt;
 
     chn_num = f->cfg.chn_num;
 
     do {
-        int quant_change;
+        quant_ok_cnt = 0;
         i = 0;
         chn = 1;
-
 
         while (i < chn_num) {
             s = &(f->ctx[i]);
 
             if (outer_loop_count == 0) {
                 s->common_scalefac = s->start_common_scalefac;
-                quant_change = 64;
+                s->quant_change = 64;
             } else {
-                quant_change = 2;
+                s->quant_change = 2;
             }
 
             if (!s->quant_ok) {
@@ -271,17 +272,59 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
         }
          
         break;
-#if 0
-        counted_bits = fa_bit_count();
-        if (counted_bits > s->available_bits) 
-            s->common_scalefac += quant_change;
-        else
-            s->common_scalefac -= quant_change;
+#if 0 
+        i = 0;
+        chn = 1;
+        while (i < num) {
+            if (!s->quant_ok) {
+                if (s->chn_info.cpe == 1) {
+                    chn = 2;
+                    sl = s;
+                    sr = &(f->ctx[i+1]);
+                    counted_bits  = fa_bits_count(&f->cfg, s, sr);
+                    if (counted_bits > (s->available_bits+sr->available_bits)) 
+                        s->common_scalefac += s->quant_change;
+                    else
+                        s->common_scalefac -= s->quant_change;
 
-        quant_change >>= 1;
+                    s->quant_change >>= 1;
 
-        if(quant_change == 0 && counted_bits>available_bits)
-            quant_change = 1;
+                    if(s->quant_change == 0 && 
+                       counted_bits>(s->available_bits+sr->available_bits))
+                        s->quant_change = 1;
+
+                    if (s->quant_change == 0)
+                        quant_ok_cnt += 2;
+
+                } else if (s->chn_info.sce == 1) {
+                    chn = 1;
+                    counted_bits  = fa_bits_count(&f->cfg, s, NULL);
+                    if (counted_bits > s->available_bits) 
+                        s->common_scalefac += s->quant_change;
+                    else
+                        s->common_scalefac -= s->quant_change;
+
+                    s->quant_change >>= 1;
+
+                    if(s->quant_change == 0 && 
+                       counted_bits>s->available_bits)
+                        s->quant_change = 1;
+
+                    if (s->quant_change == 0)
+                        quant_ok_cnt += 1;
+                } else {
+                    chn = 1;
+                }
+            } else {
+                quant_ok_cnt += 1;
+            }
+            i += chn;
+        }
+
+        if (quant_ok_cnt >= chn_num)
+            quant_ok = 1;
+
+
 
 #endif
     } while (0); //(quant_change != 0)
