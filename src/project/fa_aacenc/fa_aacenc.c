@@ -42,6 +42,18 @@ int get_max_pred_sfb(int sample_rate_index)
     return _max_pred_sfb[sample_rate_index];
 }
 
+int get_avaiable_bits(int average_bits, int more_bits, int bitres_bits, int bitres_max_size)
+{
+    int available_bits;
+
+    if (more_bits >= 0) {
+        available_bits = average_bits + FA_MIN(more_bits, bitres_bits);
+    } else if (more_bits < 0) {
+        available_bits = average_bits + FA_MAX(more_bits, bitres_bits-bitres_max_size);
+    }
+
+    return available_bits;
+}
 
 
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
@@ -133,9 +145,8 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].quant_ok = 0;
     }
 
-    f->bitres_maxsize = get_aac_bitreservoir_maxsize(f->cfg.bit_rate, f->cfg.sample_rate);
+    /*f->bitres_maxsize = get_aac_bitreservoir_maxsize(f->cfg.bit_rate, f->cfg.sample_rate);*/
     
-    /*f->bitres = (unsigned char *)malloc(;*/
 
     return (uintptr_t)f;
 }
@@ -206,25 +217,24 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
     int chn_num;
     aacenc_ctx_t *s, *sl, *sr;
     int counted_bits;
-    int quant_ok_cnt;
+    int quant_change;
+    int available_bits;
 
     chn_num = f->cfg.chn_num;
 
-    do {
-        quant_ok_cnt = 0;
-        i = 0;
-        chn = 1;
+    i = 0;
+    chn = 1;
+    while (i < chn_num) {
+        s = &(f->ctx[i]);
 
-        while (i < chn_num) {
-            s = &(f->ctx[i]);
+        if (outer_loop_count == 0) {
+            s->common_scalefac = s->start_common_scalefac;
+            quant_change = 64;
+        } else {
+            quant_change = 2;
+        }
 
-            if (outer_loop_count == 0) {
-                s->common_scalefac = s->start_common_scalefac;
-                s->quant_change = 64;
-            } else {
-                s->quant_change = 2;
-            }
-
+        do {
             if (!s->quant_ok) {
                 if (s->chn_info.cpe == 1) {
                     chn = 2;
@@ -254,6 +264,19 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                                 fa_mdctline_quant(sr->h_mdctq_long, sr->common_scalefac, sr->x_quant);
                         }
                     }
+#if 0
+                    counted_bits  = fa_bits_count(&f->cfg, s, sr);
+                    if (counted_bits > (s->available_bits+sr->available_bits)) 
+                        s->common_scalefac += quant_change;
+                    else
+                        s->common_scalefac -= quant_change;
+
+                    quant_change >>= 1;
+
+                    if(quant_change == 0 && 
+                       counted_bits>(s->available_bits+sr->available_bits))
+                       quant_change = 1;
+#endif
 
                 } else if (s->chn_info.sce == 1) {
                     chn = 1;
@@ -263,71 +286,36 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                         else 
                             fa_mdctline_quant(s->h_mdctq_long, s->common_scalefac, s->x_quant);
                     }
-                } else {
-                    chn = 1;
-                }
-            }
-
-            i += chn;
-        }
-         
-        break;
 #if 0 
-        i = 0;
-        chn = 1;
-        while (i < num) {
-            if (!s->quant_ok) {
-                if (s->chn_info.cpe == 1) {
-                    chn = 2;
-                    sl = s;
-                    sr = &(f->ctx[i+1]);
-                    counted_bits  = fa_bits_count(&f->cfg, s, sr);
-                    if (counted_bits > (s->available_bits+sr->available_bits)) 
-                        s->common_scalefac += s->quant_change;
-                    else
-                        s->common_scalefac -= s->quant_change;
-
-                    s->quant_change >>= 1;
-
-                    if(s->quant_change == 0 && 
-                       counted_bits>(s->available_bits+sr->available_bits))
-                        s->quant_change = 1;
-
-                    if (s->quant_change == 0)
-                        quant_ok_cnt += 2;
-
-                } else if (s->chn_info.sce == 1) {
-                    chn = 1;
                     counted_bits  = fa_bits_count(&f->cfg, s, NULL);
-                    if (counted_bits > s->available_bits) 
-                        s->common_scalefac += s->quant_change;
+
+                    available_bits = get_avaiable_bits(s->bits_average, s->bits_more, s->bits_res_size, s->bits_res_maxsize);
+                    if (counted_bits > available_bits) 
+                        s->common_scalefac += quant_change;
                     else
-                        s->common_scalefac -= s->quant_change;
+                        s->common_scalefac -= quant_change;
 
-                    s->quant_change >>= 1;
+                    quant_change >>= 1;
 
-                    if(s->quant_change == 0 && 
-                       counted_bits>s->available_bits)
-                        s->quant_change = 1;
+                    if(quant_change == 0 && 
+                       counted_bits>available_bits)
+                        quant_change = 1;
+#endif 
 
-                    if (s->quant_change == 0)
-                        quant_ok_cnt += 1;
                 } else {
                     chn = 1;
                 }
-            } else {
-                quant_ok_cnt += 1;
             }
-            i += chn;
-        }
 
-        if (quant_ok_cnt >= chn_num)
-            quant_ok = 1;
+        /*} while (quant_change == 0);*/
+        } while(0) ;// (quant_change == 0);
+         
+        s->bits_res_size += s->bits_average - counted_bits;
+        if (s->bits_res_size >= s->bits_res_maxsize)
+            s->bits_res_size = s->bits_res_maxsize;
 
-
-
-#endif
-    } while (0); //(quant_change != 0)
+        i += chn;
+    } 
 
 
 
@@ -552,6 +540,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_buf, s->block_type, &pe);
             fa_aacblocktype_switch(s->h_aac_analysis, s->h_aacpsy, pe);
             s->bits_alloc = calculate_bit_allocation(pe, s->block_type);
+            s->bits_more  = s->bits_alloc - 90;
             printf("block_type=%d, pe=%f, bits_alloc=%d\n", s->block_type, pe, s->bits_alloc);
         }else {
             s->block_type = ONLY_LONG_BLOCK;
