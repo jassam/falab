@@ -52,6 +52,10 @@ int get_avaiable_bits(int average_bits, int more_bits, int bitres_bits, int bitr
         available_bits = average_bits + FA_MAX(more_bits, bitres_bits-bitres_max_size);
     }
 
+    if (available_bits == 1) {
+        available_bits += 1;
+    }
+
     return available_bits;
 }
 
@@ -281,13 +285,23 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                 } else if (s->chn_info.sce == 1) {
                     chn = 1;
                     if (!s->quant_ok) {
-                        if (s->block_type == ONLY_SHORT_BLOCK) 
+                        if (s->block_type == ONLY_SHORT_BLOCK) {
                             fa_mdctline_quant(s->h_mdctq_short, s->common_scalefac, s->x_quant);
-                        else 
+                            s->spectral_count = fa_mdctline_encode(s->h_mdctq_short, s->x_quant, s->num_window_groups, s->window_group_length, 
+                                                                   s->hufftab_no, s->x_quant_code, s->x_quant_bits);
+                        } else {
                             fa_mdctline_quant(s->h_mdctq_long, s->common_scalefac, s->x_quant);
+                            s->spectral_count = fa_mdctline_encode(s->h_mdctq_long, s->x_quant, s->num_window_groups, s->window_group_length, 
+                                                                   s->hufftab_no, s->x_quant_code, s->x_quant_bits);
+                        }
                     }
-#if 0 
+
+#if 1  
                     counted_bits  = fa_bits_count(&f->cfg, s, NULL);
+                    if (counted_bits == 0) {
+                        counted_bits += 1;
+                    }
+
 
                     available_bits = get_avaiable_bits(s->bits_average, s->bits_more, s->bits_res_size, s->bits_res_maxsize);
                     if (counted_bits > available_bits) 
@@ -305,14 +319,18 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                 } else {
                     chn = 1;
                 }
+            } else {
+                break;
             }
 
-        /*} while (quant_change == 0);*/
-        } while(0) ;// (quant_change == 0);
+        } while (quant_change != 0);
+        /*} while(0) ;// (quant_change == 0);*/
          
-        s->bits_res_size += s->bits_average - counted_bits;
-        if (s->bits_res_size >= s->bits_res_maxsize)
-            s->bits_res_size = s->bits_res_maxsize;
+        if (!s->quant_ok) {
+            s->bits_res_size += s->bits_average - counted_bits;
+            if (s->bits_res_size >= s->bits_res_maxsize)
+                s->bits_res_size = s->bits_res_maxsize;
+        }
 
         i += chn;
     } 
@@ -486,7 +504,7 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                                                                 s->num_window_groups, s->window_group_length,
                                                                 s->scalefactor, 
                                                                 s->x_quant);
-                        quant_ok_cnt += sr->quant_ok;
+                        quant_ok_cnt += s->quant_ok;
                     }
                 } else {
                     quant_ok_cnt += 1;
@@ -508,6 +526,8 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
 void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int *outlen)
 {
     int i,j;
+    int sample_rate;
+    int bit_rate;
     int chn;
     int chn_num;
     short *sample_in;
@@ -520,6 +540,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     float pe;
 
     chn_num = f->cfg.chn_num;
+    sample_rate = f->cfg.sample_rate;
+    bit_rate = f->cfg.bit_rate;
     /*assert(inlen == chn_num*AAC_FRAME_LEN*2);*/
 
     sample_in = (short *)buf_in;
@@ -546,6 +568,11 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             s->block_type = ONLY_LONG_BLOCK;
         }
         fa_aacfilterbank_analysis(s->h_aac_analysis, sample_buf, s->mdct_line);
+#if 0 
+        fa_reshape_highfreqline(s->h_aac_analysis, 
+                                s->block_type, sample_rate, bit_rate, 
+                                s->mdct_line);
+#endif 
         fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
 
         /*use mdct transform*/

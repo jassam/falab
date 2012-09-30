@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     sample_rate = fmt.samplerate;
     chn_num     = fmt.channels;
 
-    h_aacenc = fa_aacenc_init(sample_rate, 96000, chn_num,
+    h_aacenc = fa_aacenc_init(sample_rate, 48000, chn_num,
                               2, LOW, 
                               ms_enable, lfe_enable, tns_enable, block_switch_enable);
 
@@ -205,6 +205,9 @@ int main(int argc, char *argv[])
         write_total_size += 2 * opt_framelen;
 
         frame_index++;
+        if (frame_index == 30) {
+            i=i+1;
+        }
         fprintf(stderr,"\rthe frame = [%d]", frame_index);
     }
 

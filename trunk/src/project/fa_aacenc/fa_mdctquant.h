@@ -44,4 +44,9 @@ void fa_mdctline_sfb_arrange(uintptr_t handle, float *mdct_line_swb,
 
 void fa_mdctline_sfb_iarrange(uintptr_t handle, float *mdct_line_swb, int *mdct_line_sig,
                               int num_window_groups, int *window_group_length);
+
+
+int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, int *window_group_length, 
+                        int quant_hufftab_no[8][FA_SWB_NUM_MAX], int *x_quant_code, int *x_quant_bits);
+
 #endif

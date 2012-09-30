@@ -174,6 +174,24 @@ void fa_set_aacblocktype(uintptr_t handle, int block_type)
     f->block_type = block_type;
 }
 
+void fa_reshape_highfreqline(uintptr_t handle, 
+                             int block_type, int sample_rate, int bit_rate, 
+                             float *mdct_line)
+{
+    int i;
+    int stop_line;
+
+    if (block_type == ONLY_SHORT_BLOCK) {
+        stop_line = 96;
+        for (i = stop_line; i < AAC_BLOCK_SHORT_LEN; i++)
+            mdct_line[i] = 0;
+    } else {
+        stop_line = 800;
+        for (i = stop_line; i < AAC_BLOCK_LONG_LEN; i++)
+            mdct_line[i] = 0;
+    }
+
+}
 
 /*used in encode, kbd is used for short block, sine is used for long block*/
 void fa_aacfilterbank_analysis(uintptr_t handle, float *x, float *mdct_line)

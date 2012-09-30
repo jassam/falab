@@ -5,7 +5,14 @@
 
 #ifndef FA_MIN
 #define FA_MIN(a,b)  ( (a) < (b) ? (a) : (b) )
+#endif 
+
+#ifndef FA_MAX
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
+#endif
+
+#ifndef FA_ABS
+#define FA_ABS(a) ( (a) > 0 ? (a) : (-a))
 #endif
 
 #define MAX_QUANT             8191
@@ -25,9 +32,9 @@ typedef struct _fa_mdctquant_t {
     float error_energy[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX][NUM_WINDOWS_MAX];
 
     int   sfb_num;
-    int   swb_low[FA_SWB_NUM_MAX];
+    int   swb_low[FA_SWB_NUM_MAX+1];
     int   swb_high[FA_SWB_NUM_MAX];
-    int   sfb_low[NUM_WINDOW_GROUPS_MAX][FA_SWB_NUM_MAX];
+    int   sfb_low[NUM_WINDOW_GROUPS_MAX][FA_SWB_NUM_MAX+1];
     int   sfb_high[NUM_WINDOW_GROUPS_MAX][FA_SWB_NUM_MAX];
 
 }fa_mdctquant_t;
@@ -47,19 +54,22 @@ uintptr_t fa_mdctquant_init(int mdct_line_num, int sfb_num, int *swb_low, int bl
     memset(f->xmin       , 0, sizeof(float)*NUM_WINDOW_GROUPS_MAX*NUM_SFB_MAX*NUM_WINDOWS_MAX);
 
     f->sfb_num = sfb_num;
-    memset(f->swb_low    , 0, sizeof(int)*FA_SWB_NUM_MAX);
+    memset(f->swb_low    , 0, sizeof(int)*(FA_SWB_NUM_MAX+1));
     memset(f->swb_high   , 0, sizeof(int)*FA_SWB_NUM_MAX);
-    memset(f->sfb_low    , 0, sizeof(int)*FA_SWB_NUM_MAX*NUM_WINDOW_GROUPS_MAX);
+    memset(f->sfb_low    , 0, sizeof(int)*(FA_SWB_NUM_MAX+1)*NUM_WINDOW_GROUPS_MAX);
     memset(f->sfb_high   , 0, sizeof(int)*FA_SWB_NUM_MAX*NUM_WINDOW_GROUPS_MAX);
 
     for(swb = 0; swb < sfb_num; swb++) {
         f->swb_low[swb] = swb_low[swb];
+/*
         if(swb == sfb_num - 1)
             f->swb_high[swb] = mdct_line_num-1;
         else 
             f->swb_high[swb] = swb_low[swb+1] - 1;
+*/
+        f->swb_high[swb] = swb_low[swb+1] - 1;
     }
-
+    f->swb_low[sfb_num] = swb_low[sfb_num];
 
     return (uintptr_t)f;
 }
@@ -293,8 +303,13 @@ int  fa_fix_quant_noise_single(uintptr_t handle,
     }
 
     for(gr = 0; gr < num_window_groups; gr++) {
-        if((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0))
+        if((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
+            for (sfb = 1; sfb < sfb_num; sfb++) {
+                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 40)
+                    return 1;
+            }
             return 0;
+        }
     }
 
     return 1;
@@ -496,6 +511,7 @@ void fa_mdctline_sfb_arrange(uintptr_t handle, float *mdct_line_swb,
             f->sfb_high[gr][sfb-1] = f->sfb_low[gr][sfb]   - 1;
             sfb++;
         }
+        f->sfb_low[gr][sfb_num] = f->sfb_high[gr][sfb_num-1] + 1; 
         group_offset += mdct_line_num * window_group_length[gr];
     }
 
@@ -541,4 +557,41 @@ void fa_mdctline_sfb_iarrange(uintptr_t handle, float *mdct_line_swb, int *mdct_
     for(i = 0; i < 1024; i++)
         mdct_line_swb[i] = mdct_line_swb[i] * mdct_line_sig[i];
 
+}
+
+
+int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, int *window_group_length, 
+                        int quant_hufftab_no[8][FA_SWB_NUM_MAX], int *x_quant_code, int *x_quant_bits)
+{
+    fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
+    int quant_bits;
+
+    int mdct_line_num = f->mdct_line_num;
+    int sfb_num       = f->sfb_num;
+    int *x_quant_gr;
+    int *x_quant_code_gr;
+    int *x_quant_bits_gr;
+    int spectral_count;
+
+    int group_offset;
+    int gr;
+
+    x_quant_gr          = x_quant;
+    x_quant_code_gr     = x_quant_code;
+    x_quant_bits_gr     = x_quant_bits;
+    group_offset = 0;
+    spectral_count = 0;
+    for (gr = 0; gr < num_window_groups; gr++) {
+        x_quant_gr          += group_offset;
+        x_quant_code_gr     += group_offset;
+        x_quant_bits_gr     += group_offset;
+
+        fa_noiseless_huffman_bitcount(x_quant_gr, sfb_num,  f->sfb_low[gr],
+                                      quant_hufftab_no[gr], x_quant_bits_gr);
+        spectral_count += fa_huffman_encode_mdctline(x_quant_gr, sfb_num, f->sfb_low[gr], 
+                                                     quant_hufftab_no[gr], x_quant_code_gr, x_quant_bits_gr);
+        group_offset += mdct_line_num * window_group_length[gr];
+    }
+
+    return spectral_count;
 }
