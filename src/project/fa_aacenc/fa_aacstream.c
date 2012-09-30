@@ -86,6 +86,60 @@ int get_aac_bitreservoir_maxsize(int bit_rate, int sample_rate)
     return (6144 - (int)((float)bit_rate/(float)sample_rate*1024));
 }
 
+int fa_write_bitstream(aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
+{
+
+    chn_info_t *p_chn_info = &(s->chn_info);
+    int channel;
+    int bits = 0;
+    int bits_left_afterfill, num_fill_bits;
+
+
+    bits += write_adtsheader(c, s, 1);
+
+
+    if (p_chn_info->present) {
+        /* Write out a single_channel_element */
+        if (!p_chn_info->cpe) {
+            if (p_chn_info->lfe) {
+                /* Write out lfe */
+                bits += write_lfe(s, c->aac_objtype, 1);
+            } else {
+                /* Write out sce */
+                bits += write_sce(s, c->aac_objtype, 1);
+            }
+        } else {
+            if (p_chn_info->ch_is_left) {
+                /* Write out cpe */
+                bits += write_cpe(s, sr, c->aac_objtype, 1);
+            }
+        }
+    }
+
+    /* Compute how many fill bits are needed to avoid overflowing bit reservoir */
+    /* Save room for ID_END terminator */
+    if (bits < (8 - LEN_SE_ID) ) {
+        num_fill_bits = 8 - LEN_SE_ID - bits;
+    } else {
+        num_fill_bits = 0;
+    }
+
+    /* Write AAC fill_elements, smallest fill element is 7 bits. */
+    /* Function may leave up to 6 bits left after fill, so tell it to fill a few extra */
+    num_fill_bits += 6;
+    bits_left_afterfill = write_aac_fillbits(s, num_fill_bits, 1);
+    bits += (num_fill_bits - bits_left_afterfill);
+
+    /* Write ID_END terminator */
+    bits += LEN_SE_ID;
+
+    /* Now byte align the bitstream */
+    bits += write_bits_for_bytealign(s, bits, 1);
+
+    s->used_bytes = bit2byte(bits);
+
+    return bits;
+}
 
 int fa_bits_count(aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
 {
@@ -590,19 +644,19 @@ static int write_spectral_data(aacenc_ctx_t *s, int write_flag)
     /* set up local pointers to data and len */
     /* data array contains data to be written */
     /* len array contains lengths of data words */
-    int* data = s->data;
-    int* len  = s->len;
+    int* x_quant_code = s->x_quant_code;
+    int* x_quant_bits = s->x_quant_bits;
 
     if (write_flag) {
         for(i = 0; i < s->spectral_count; i++) {
-            if (len[i] > 0) {  /* only send out non-zero codebook data */
-                fa_bitstream_putbits(h_bs, data[i], len[i]); /* write data */
-                bits += len[i];
+            if (x_quant_bits[i] > 0) {  /* only send out non-zero codebook data */
+                fa_bitstream_putbits(h_bs, x_quant_code[i], x_quant_bits[i]); /* write data */
+                bits += x_quant_bits[i];
             }
         }
     } else {
         for(i = 0; i < s->spectral_count; i++) {
-            bits += len[i];
+            bits += x_quant_bits[i];
         }
     }
 

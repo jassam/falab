@@ -499,7 +499,8 @@ int fa_huffman_encode_mdctline(int *x_quant, int sfb_num, int *sfb_offset, int *
         }
     }
 
-    return bits;
+    /*return bits;*/
+    return counter;
 }
 
 
