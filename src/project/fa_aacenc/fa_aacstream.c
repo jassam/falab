@@ -355,6 +355,7 @@ static int write_ics(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
     int bits = 0;
 
     /* Write the 8-bit global_gain */
+
     if (write_flag)
         fa_bitstream_putbits(h_bs, s->common_scalefac, LEN_GLOB_GAIN);
     bits += LEN_GLOB_GAIN;

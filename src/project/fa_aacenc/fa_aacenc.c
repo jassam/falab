@@ -303,14 +303,17 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                     available_bits = get_avaiable_bits(s->bits_average, s->bits_more, s->bits_res_size, s->bits_res_maxsize);
                     if (counted_bits > available_bits) 
                         s->common_scalefac += quant_change;
-                    else
-                        s->common_scalefac -= quant_change;
+                    else {
+                        if (quant_change > 1)
+                            s->common_scalefac -= quant_change;
+                    }
 
                     quant_change >>= 1;
 
                     if(quant_change == 0 && 
                        counted_bits>available_bits)
                         quant_change = 1;
+
 #endif 
 
                 } else {
@@ -625,7 +628,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
         for (gr = 0; gr < s->num_window_groups; gr++) {
             for (sfb = 0; sfb < sfb_num; sfb++) {
-                s->scalefactor[gr][sfb] = s->common_scalefac - s->scalefactor[gr][sfb] + SF_OFFSET;
+                s->scalefactor[gr][sfb] = s->common_scalefac - s->scalefactor[gr][sfb] +4+ SF_OFFSET;
             }
         }
         s->common_scalefac = s->scalefactor[0][0];

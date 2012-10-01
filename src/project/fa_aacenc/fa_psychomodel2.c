@@ -550,11 +550,15 @@ void fa_psychomodel2_calculate_xmin(uintptr_t handle, float *mdct_line, float *x
     float *smr       = f->smr;
 
     for(i = 0; i < swb_num; i++) {
-        codec_e = 0;
-        for(j = swb_offset[i]; j < swb_offset[i+1]; j++)
-            codec_e = codec_e + mdct_line[j]*mdct_line[j];
+        if (smr[i] > 0) {
+            codec_e = 0;
+            for(j = swb_offset[i]; j < swb_offset[i+1]; j++)
+                codec_e = codec_e + mdct_line[j]*mdct_line[j];
 
-        xmin[i] = codec_e/smr[i];
+            xmin[i] = codec_e/smr[i];
+        } else {
+            xmin[i] = 0;
+        }
     }
 }
 

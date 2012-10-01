@@ -11,7 +11,7 @@ typedef unsigned uintptr_t;
 
 #define NUM_MDCT_LINE_MAX     1024
 
-#define SF_OFFSET             100
+#define SF_OFFSET             100 //105 //100
 
 uintptr_t fa_mdctquant_init(int mdct_line_num, int sfb_num, int *swb_low, int block_type_cof);
 void      fa_mdctquant_uninit(uintptr_t handle);
