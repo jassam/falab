@@ -576,6 +576,7 @@ int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, i
     int group_offset;
     int gr;
 
+
     x_quant_gr          = x_quant;
     x_quant_code_gr     = x_quant_code;
     x_quant_bits_gr     = x_quant_bits;

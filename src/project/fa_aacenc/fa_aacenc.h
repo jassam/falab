@@ -96,7 +96,6 @@ typedef struct _aacenc_ctx_t{
     chn_info_t  chn_info;
 
     //the coding status variable 
-    int sample_rate_index;
 
     int block_type;
 
@@ -116,12 +115,11 @@ typedef struct _aacenc_ctx_t{
 
     int sfb_offset[250];
 
-    int used_bytes;
+    int used_bits;
 
     uintptr_t h_aacpsy;
     uintptr_t h_aac_analysis;
     uintptr_t h_mdctq_long, h_mdctq_short;
-    uintptr_t h_bitstream;
  
     ///////////////////////
 
@@ -185,6 +183,9 @@ typedef struct _fa_aacenc_ctx_t{
 
     //encode ctx for each channel
     aacenc_ctx_t ctx[MAX_CHANNELS];
+
+    uintptr_t h_bitstream;
+    int used_bytes;
 
 }fa_aacenc_ctx_t;
 

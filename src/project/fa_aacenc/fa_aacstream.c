@@ -16,29 +16,28 @@
 #define bit2byte(a) (((a)+BYTE_NUMBIT-1)/BYTE_NUMBIT)
 
 
-static int write_adtsheader(aaccfg_t *c, aacenc_ctx_t *s, int write_flag);
-static int write_icsinfo(aacenc_ctx_t *s, int write_flag, 
+static int write_adtsheader(uintptr_t h_bs, aaccfg_t *c, int used_bytes, int write_flag);
+static int write_icsinfo(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag, 
                         int objtype,
                         int common_window);
-static int write_ics(aacenc_ctx_t *s, int write_flag,
+static int write_ics(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
                     int objtype,
                     int common_window);
-static int write_cpe(aacenc_ctx_t *s, aacenc_ctx_t *sr, int aac_objtype, int write_flag);
-static int write_sce(aacenc_ctx_t *s, int aac_objtype, int write_flag);
-static int write_lfe(aacenc_ctx_t *s, int aac_objtype, int write_flag);
+static int write_cpe(uintptr_t h_bs, aacenc_ctx_t *s, aacenc_ctx_t *sr, int aac_objtype, int write_flag);
+static int write_sce(uintptr_t h_bs, aacenc_ctx_t *s, int aac_objtype, int write_flag);
+static int write_lfe(uintptr_t h_bs, aacenc_ctx_t *s, int aac_objtype, int write_flag);
 
 static int find_grouping_bits(aacenc_ctx_t *s);
-static int write_ltp_predictor_data(aacenc_ctx_t *s, int write_flag);
-static int write_predictor_data(aacenc_ctx_t *s, int write_flag);
-static int write_pulse_data(aacenc_ctx_t *s, int write_flag);
-static int write_tns_data(aacenc_ctx_t *s, int write_flag);
-static int write_gaincontrol_data(aacenc_ctx_t *s, int write_flag);
-static int write_spectral_data(aacenc_ctx_t *s, int write_flag);
-static int write_aac_fillbits(aacenc_ctx_t *s, int num_bits, int write_flag);
-static int write_hufftab_no(aacenc_ctx_t *s, int write_flag);
-static int write_scalefactor(aacenc_ctx_t *s, int write_flag) ;
-static int write_aac_fillbits(aacenc_ctx_t *s, int bits_sofar, int write_flag);
-static int write_bits_for_bytealign(aacenc_ctx_t *s, int bits_sofar, int write_flag);
+static int write_ltp_predictor_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag);
+static int write_predictor_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag);
+static int write_pulse_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag);
+static int write_tns_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag);
+static int write_gaincontrol_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag);
+static int write_spectral_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag);
+static int write_aac_fillbits(uintptr_t h_bs, aacenc_ctx_t *s, int num_bits, int write_flag);
+static int write_hufftab_no(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag);
+static int write_scalefactor(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag) ;
+static int write_bits_for_bytealign(uintptr_t h_bs, aacenc_ctx_t *s, int bits_sofar, int write_flag);
 
 /* returns the maximum bitrate per channel for certain sample rate*/
 int get_aac_max_bitrate(long sample_rate)
@@ -86,7 +85,8 @@ int get_aac_bitreservoir_maxsize(int bit_rate, int sample_rate)
     return (6144 - (int)((float)bit_rate/(float)sample_rate*1024));
 }
 
-int fa_write_bitstream(aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
+#if 1 
+int fa_write_bitstream_onechn(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
 {
 
     chn_info_t *p_chn_info = &(s->chn_info);
@@ -95,23 +95,20 @@ int fa_write_bitstream(aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
     int bits_left_afterfill, num_fill_bits;
 
 
-    bits += write_adtsheader(c, s, 1);
-
-
     if (p_chn_info->present) {
         /* Write out a single_channel_element */
         if (!p_chn_info->cpe) {
             if (p_chn_info->lfe) {
                 /* Write out lfe */
-                bits += write_lfe(s, c->aac_objtype, 1);
+                bits += write_lfe(h_bs, s, c->aac_objtype, 1);
             } else {
                 /* Write out sce */
-                bits += write_sce(s, c->aac_objtype, 1);
+                bits += write_sce(h_bs, s, c->aac_objtype, 1);
             }
         } else {
             if (p_chn_info->ch_is_left) {
                 /* Write out cpe */
-                bits += write_cpe(s, sr, c->aac_objtype, 1);
+                bits += write_cpe(h_bs, s, sr, c->aac_objtype, 1);
             }
         }
     }
@@ -127,21 +124,91 @@ int fa_write_bitstream(aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
     /* Write AAC fill_elements, smallest fill element is 7 bits. */
     /* Function may leave up to 6 bits left after fill, so tell it to fill a few extra */
     num_fill_bits += 6;
-    bits_left_afterfill = write_aac_fillbits(s, num_fill_bits, 1);
+    bits_left_afterfill = write_aac_fillbits(h_bs, s, num_fill_bits, 1);
     bits += (num_fill_bits - bits_left_afterfill);
 
     /* Write ID_END terminator */
-    bits += LEN_SE_ID;
+
 
     /* Now byte align the bitstream */
-    bits += write_bits_for_bytealign(s, bits, 1);
+    /*bits += write_bits_for_bytealign(h_bs, s, bits, 1);*/
 
-    s->used_bytes = bit2byte(bits);
+    s->used_bits = bits; //bit2byte(bits);
 
     return bits;
 }
 
-int fa_bits_count(aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
+
+int fa_write_bitstream(fa_aacenc_ctx_t *f)
+{
+    int i;
+    int total_bits;
+    int chn_num;
+    int chn;
+    int write_bits;
+    aacenc_ctx_t *s, *sl, *sr;
+
+    total_bits = 56;
+    i   = 0;
+    chn = 1;
+    chn_num = f->cfg.chn_num;
+
+    while (i < chn_num) {
+        s = &(f->ctx[i]);
+
+        if (s->chn_info.cpe == 1) {
+            chn = 2;
+            total_bits += s->used_bits;
+
+        } else if (s->chn_info.sce == 1) {
+            chn = 1;
+            /*total_bits += s->used_bits;*/
+            total_bits += fa_bits_count(f->h_bitstream, &f->cfg, &(f->ctx[i]), NULL);
+        } else {
+            chn = 1;
+            total_bits += s->used_bits;
+        }
+
+        i += chn;
+    } 
+
+    total_bits += LEN_SE_ID;
+    total_bits += write_bits_for_bytealign(f->h_bitstream, s, total_bits, 0);
+    f->used_bytes = bit2byte(total_bits);
+
+    write_bits = 0;
+    write_bits += write_adtsheader(f->h_bitstream, &f->cfg, f->used_bytes, 1);
+    i = 0;
+    chn = 1;
+    while (i < chn_num) {
+        s = &(f->ctx[i]);
+
+        if (s->chn_info.cpe == 1) {
+            chn = 2;
+            sl = s;
+            sr = &(f->ctx[i+1]);
+            write_bits += fa_write_bitstream_onechn(f->h_bitstream, &f->cfg, sl, sr);
+        } else if (s->chn_info.sce == 1) {
+            chn = 1;
+            write_bits += fa_write_bitstream_onechn(f->h_bitstream, &f->cfg, s, NULL);
+
+        } else {
+            chn = 1;
+            write_bits += fa_write_bitstream_onechn(f->h_bitstream, &f->cfg, s, NULL);
+        }
+
+        i += chn;
+    } 
+
+    write_bits += fa_bitstream_putbits(f->h_bitstream, ID_END, LEN_SE_ID);
+    write_bits += write_bits_for_bytealign(f->h_bitstream, s, write_bits, 1);
+
+    return total_bits;
+}
+
+#endif 
+
+int fa_bits_count(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
 {
     chn_info_t *p_chn_info = &(s->chn_info);
     int channel;
@@ -149,7 +216,7 @@ int fa_bits_count(aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
     int bits_left_afterfill, num_fill_bits;
 
 
-    bits += write_adtsheader(c, s, 0);
+    /*bits += write_adtsheader(c, s, 0);*/
 
 
     if (p_chn_info->present) {
@@ -157,15 +224,15 @@ int fa_bits_count(aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
         if (!p_chn_info->cpe) {
             if (p_chn_info->lfe) {
                 /* Write out lfe */
-                bits += write_lfe(s, c->aac_objtype, 0);
+                bits += write_lfe(h_bs, s, c->aac_objtype, 0);
             } else {
                 /* Write out sce */
-                bits += write_sce(s, c->aac_objtype, 0);
+                bits += write_sce(h_bs, s, c->aac_objtype, 0);
             }
         } else {
             if (p_chn_info->ch_is_left) {
                 /* Write out cpe */
-                bits += write_cpe(s, sr, c->aac_objtype, 0);
+                bits += write_cpe(h_bs, s, sr, c->aac_objtype, 0);
             }
         }
     }
@@ -181,36 +248,34 @@ int fa_bits_count(aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
     /* Write AAC fill_elements, smallest fill element is 7 bits. */
     /* Function may leave up to 6 bits left after fill, so tell it to fill a few extra */
     num_fill_bits += 6;
-    bits_left_afterfill = write_aac_fillbits(s, num_fill_bits, 0);
+    bits_left_afterfill = write_aac_fillbits(h_bs, s, num_fill_bits, 0);
     bits += (num_fill_bits - bits_left_afterfill);
 
-    /* Write ID_END terminator */
-    bits += LEN_SE_ID;
 
     /* Now byte align the bitstream */
-    bits += write_bits_for_bytealign(s, bits, 0);
+    /*bits += write_bits_for_bytealign(h_bs, s, bits, 0);*/
 
-    s->used_bytes = bit2byte(bits);
+    s->used_bits = bits; //bit2byte(bits);
 
     return bits;
 }
 
 
-
-static int write_adtsheader(aaccfg_t *c, aacenc_ctx_t *s, int write_flag)
+static int write_adtsheader(uintptr_t h_bs, aaccfg_t *c, int used_bytes, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*aaccfg_t *c = &(f->cfg);*/
+    /*unsigned long h_bs = s->h_bitstream;*/
     int bits = 56;
 
     if (write_flag) {
         /* Fixed ADTS header */
-        fa_bitstream_putbits(h_bs, 0xFFFF, 12);
         fa_bitstream_putbits(h_bs, 0xFFFF, 12);                     /* 12 bit Syncword */
-        fa_bitstream_putbits(h_bs, c->mpeg_version, 1);         /* ID == 0 for MPEG4 AAC, 1 for MPEG2 AAC */
+        //fa_bitstream_putbits(h_bs, c->mpeg_version, 1);         /* ID == 0 for MPEG4 AAC, 1 for MPEG2 AAC */
+        fa_bitstream_putbits(h_bs, 1, 1);         /* ID == 0 for MPEG4 AAC, 1 for MPEG2 AAC */
         fa_bitstream_putbits(h_bs, 0, 2);                           /* layer == 0 */
         fa_bitstream_putbits(h_bs, 1, 1);                           /* protection absent */
         fa_bitstream_putbits(h_bs, c->aac_objtype-1, 2);        /* profile */
-        fa_bitstream_putbits(h_bs, s->sample_rate_index, 4);    /* sampling rate */
+        fa_bitstream_putbits(h_bs, c->sample_rate_index, 4);    /* sampling rate */
         fa_bitstream_putbits(h_bs, 0, 1);                           /* private bit */
         fa_bitstream_putbits(h_bs, c->chn_num, 3);              /* ch. config (must be > 0) */
         fa_bitstream_putbits(h_bs, 0, 1);                           /* original/copy */
@@ -219,7 +284,7 @@ static int write_adtsheader(aaccfg_t *c, aacenc_ctx_t *s, int write_flag)
         /* Variable ADTS header */
         fa_bitstream_putbits(h_bs, 0, 1);                           /* copyr. id. bit */
         fa_bitstream_putbits(h_bs, 0, 1);                           /* copyr. id. start */
-        fa_bitstream_putbits(h_bs, s->used_bytes, 13);
+        fa_bitstream_putbits(h_bs, used_bytes, 13);
         fa_bitstream_putbits(h_bs, 0x7FF, 11);                      /* buffer fullness (0x7FF for VBR) */
         fa_bitstream_putbits(h_bs, 0, 2);                           /* raw data blocks (0+1=1) */
     }
@@ -227,11 +292,11 @@ static int write_adtsheader(aaccfg_t *c, aacenc_ctx_t *s, int write_flag)
     return bits;
 }
 
-static int write_icsinfo(aacenc_ctx_t *s, int write_flag, 
+static int write_icsinfo(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag, 
                         int objtype,
                         int common_window)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     int grouping_bits;
     int bits = 0;
 
@@ -244,6 +309,7 @@ static int write_icsinfo(aacenc_ctx_t *s, int write_flag,
     bits += LEN_WIN_SEQ;
     bits += LEN_WIN_SH;
 
+    s->max_sfb = 49;
     /* For short windows, write out max_sfb and scale_factor_grouping */
     if(s->block_type == ONLY_SHORT_BLOCK){
         if(write_flag) {
@@ -264,26 +330,26 @@ static int write_icsinfo(aacenc_ctx_t *s, int write_flag,
             if(write_flag)
                 fa_bitstream_putbits(h_bs, s->ltpInfo.global_pred_flag, 1); /* Prediction Global used */
 
-            bits += write_ltp_predictor_data(s, write_flag);
+            bits += write_ltp_predictor_data(h_bs, s, write_flag);
             if (common_window)
-                bits += write_ltp_predictor_data(s, write_flag);
+                bits += write_ltp_predictor_data(h_bs, s, write_flag);
         }else {
             bits++;
             if (write_flag)
                 fa_bitstream_putbits(h_bs, s->pred_global_flag, LEN_PRED_PRES);  /* predictor_data_present */
 
-            bits += write_predictor_data(s, write_flag);
+            bits += write_predictor_data(h_bs, s, write_flag);
         }
     }
 
     return bits;
 }
 
-static int write_ics(aacenc_ctx_t *s, int write_flag,
+static int write_ics(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
                     int objtype,
                     int common_window)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     /* this function writes out an individual_channel_stream to the bitstream and */
     /* returns the number of bits written to the bitstream */
     int bits = 0;
@@ -295,26 +361,26 @@ static int write_ics(aacenc_ctx_t *s, int write_flag,
 
     /* Write ics information */
     if (!common_window) {
-        bits += write_icsinfo(s, write_flag, objtype, common_window);
+        bits += write_icsinfo(h_bs, s, write_flag, objtype, common_window);
     }
 
-    bits += write_hufftab_no(s, write_flag);
-    bits += write_scalefactor(s, write_flag);
+    bits += write_hufftab_no(h_bs, s, write_flag);
+    bits += write_scalefactor(h_bs, s, write_flag);
 
-    bits += write_pulse_data(s, write_flag);
-    bits += write_tns_data(s, write_flag);
-    bits += write_gaincontrol_data(s, write_flag);
+    bits += write_pulse_data(h_bs, s, write_flag);
+    bits += write_tns_data(h_bs, s, write_flag);
+    bits += write_gaincontrol_data(h_bs, s, write_flag);
 
-    bits += write_spectral_data(s, write_flag);
+    bits += write_spectral_data(h_bs, s, write_flag);
 
     return bits;
 }
 
 
 
-static int write_cpe(aacenc_ctx_t *s, aacenc_ctx_t *sr, int aac_objtype, int write_flag)
+static int write_cpe(uintptr_t h_bs, aacenc_ctx_t *s, aacenc_ctx_t *sr, int aac_objtype, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     chn_info_t *p_chn_info = &(s->chn_info);
     int bits = 0;
 
@@ -337,7 +403,7 @@ static int write_cpe(aacenc_ctx_t *s, aacenc_ctx_t *sr, int aac_objtype, int wri
     if (p_chn_info->common_window) {
         int num_windows, max_sfb;
 
-        bits += write_icsinfo(s, write_flag, aac_objtype, p_chn_info->common_window);
+        bits += write_icsinfo(h_bs, s, write_flag, aac_objtype, p_chn_info->common_window);
         num_windows = s->num_window_groups;
         max_sfb = s->max_sfb;
 
@@ -359,16 +425,16 @@ static int write_cpe(aacenc_ctx_t *s, aacenc_ctx_t *sr, int aac_objtype, int wri
     }
 
     /* Write individual_channel_stream elements */
-    bits += write_ics(s , write_flag, aac_objtype, p_chn_info->common_window);
-    bits += write_ics(sr, write_flag, aac_objtype, p_chn_info->common_window);
+    bits += write_ics(h_bs, s , write_flag, aac_objtype, p_chn_info->common_window);
+    bits += write_ics(h_bs, sr, write_flag, aac_objtype, p_chn_info->common_window);
 
     return bits;
 }
 
 
-static int write_sce(aacenc_ctx_t *s, int aac_objtype, int write_flag)
+static int write_sce(uintptr_t h_bs, aacenc_ctx_t *s, int aac_objtype, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     chn_info_t *p_chn_info = &(s->chn_info);
     int bits = 0;
 
@@ -384,15 +450,15 @@ static int write_sce(aacenc_ctx_t *s, int aac_objtype, int write_flag)
     bits += LEN_TAG;
 
     /* Write an Individual Channel Stream element */
-    bits += write_ics(s, write_flag, aac_objtype, 0);
+    bits += write_ics(h_bs, s, write_flag, aac_objtype, 0);
 
     return bits;
 }
 
 
-static int write_lfe(aacenc_ctx_t *s, int aac_objtype, int write_flag)
+static int write_lfe(uintptr_t h_bs, aacenc_ctx_t *s, int aac_objtype, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     chn_info_t *p_chn_info = &(s->chn_info);
     int bits = 0;
 
@@ -408,7 +474,7 @@ static int write_lfe(aacenc_ctx_t *s, int aac_objtype, int write_flag)
     bits += LEN_TAG;
 
     /* Write an individual_channel_stream element */
-    bits += write_ics(s, write_flag, aac_objtype, 0);
+    bits += write_ics(h_bs, s, write_flag, aac_objtype, 0);
 
     return bits;
 }
@@ -441,9 +507,9 @@ static int find_grouping_bits(aacenc_ctx_t *s)
 }
 
 
-static int write_ltp_predictor_data(aacenc_ctx_t *s, int write_flag)
+static int write_ltp_predictor_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     int i, last_band;
     int bits;
     LtpInfo *ltpInfo = &s->ltpInfo;
@@ -487,9 +553,9 @@ static int write_ltp_predictor_data(aacenc_ctx_t *s, int write_flag)
     return (bits);
 }
 
-static int write_predictor_data(aacenc_ctx_t *s, int write_flag)
+static int write_predictor_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     int bits = 0;
 
     /* Write global predictor data present */
@@ -521,9 +587,9 @@ static int write_predictor_data(aacenc_ctx_t *s, int write_flag)
 }
 
 
-static int write_pulse_data(aacenc_ctx_t *s, int write_flag)
+static int write_pulse_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     int bits = 0;
 
     if (write_flag) {
@@ -536,9 +602,9 @@ static int write_pulse_data(aacenc_ctx_t *s, int write_flag)
 }
 
 
-static int write_tns_data(aacenc_ctx_t *s, int write_flag)
+static int write_tns_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     int bits = 0;
     int numWindows;
     int len_tns_nfilt;
@@ -621,9 +687,9 @@ static int write_tns_data(aacenc_ctx_t *s, int write_flag)
 }
 
 
-static int write_gaincontrol_data(aacenc_ctx_t *s, int write_flag)
+static int write_gaincontrol_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     int bits = 0;
 
     if (write_flag) {
@@ -636,9 +702,9 @@ static int write_gaincontrol_data(aacenc_ctx_t *s, int write_flag)
 }
 
 
-static int write_spectral_data(aacenc_ctx_t *s, int write_flag)
+static int write_spectral_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     int i, bits = 0;
 
     /* set up local pointers to data and len */
@@ -664,9 +730,9 @@ static int write_spectral_data(aacenc_ctx_t *s, int write_flag)
 }
 
 
-static int write_aac_fillbits(aacenc_ctx_t *s, int num_bits, int write_flag)
+static int write_aac_fillbits(uintptr_t h_bs, aacenc_ctx_t *s, int num_bits, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     int numberOfBitsLeft = num_bits;
 
     /* Need at least (LEN_SE_ID + LEN_F_CNT) bits for a fill_element */
@@ -719,9 +785,9 @@ static int write_aac_fillbits(aacenc_ctx_t *s, int num_bits, int write_flag)
     return numberOfBitsLeft;
 }
 
-static int write_hufftab_no(aacenc_ctx_t *s, int write_flag)
+static int write_hufftab_no(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
 
     int repeat_counter;
     int bit_count = 0;
@@ -802,14 +868,14 @@ static int write_hufftab_no(aacenc_ctx_t *s, int write_flag)
 
 
 
-static int write_scalefactor(aacenc_ctx_t *s, int write_flag) 
+static int write_scalefactor(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag) 
 {
     /* this function takes care of counting the number of bits necessary */
     /* to encode the scalefactors.  In addition, if the writeFlag == 1, */
     /* then the scalefactors are written out the bitStream output bit */
     /* stream.  it returns k, the number of bits written to the bitstream*/
 
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     int gr, sfb;
 
     int bit_count=0;
@@ -864,13 +930,12 @@ static int write_scalefactor(aacenc_ctx_t *s, int write_flag)
     return bit_count;
 }
 
-static int write_bits_for_bytealign(aacenc_ctx_t *s, int bits_sofar, int write_flag)
+static int write_bits_for_bytealign(uintptr_t h_bs, aacenc_ctx_t *s, int bits_sofar, int write_flag)
 {
-    unsigned long h_bs = s->h_bitstream;
+    /*unsigned long h_bs = s->h_bitstream;*/
     int len, i,j;
 
-    if (write_flag)
-    {
+    if (write_flag) {
         len = fa_bitstream_getbits_num(h_bs);
     } else {
         len = bits_sofar;

@@ -14,4 +14,6 @@ int  fa_bitstream_getbits(uintptr_t handle, unsigned int *value, int nbits);
 
 int  fa_bitstream_getbits_num(uintptr_t handle);
 
+int  fa_bitstream_getbufval(uintptr_t handle, unsigned char *buf_out);
+
 #endif

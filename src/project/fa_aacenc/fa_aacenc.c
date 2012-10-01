@@ -79,6 +79,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     f->cfg.ms_enable     = ms_enable;
     f->cfg.lfe_enable    = lfe_enable;
     f->cfg.tns_enable    = tns_enable;
+    f->cfg.sample_rate_index = get_samplerate_index(sample_rate);
 
     f->sample = (float *)malloc(sizeof(float)*chn_num*AAC_FRAME_LEN);
     memset(f->sample, 0, sizeof(float)*chn_num*AAC_FRAME_LEN);
@@ -91,10 +92,10 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
     bits_average  = (bit_rate*1024)/(sample_rate*chn_num);
     bits_res_maxsize = get_aac_bitreservoir_maxsize(bits_average, sample_rate);
+    f->h_bitstream = fa_bitstream_init((6144/8)*chn_num);
 
     /*init psy and mdct quant */
     for(i = 0; i < chn_num; i++) {
-        f->ctx[i].sample_rate_index = get_samplerate_index(sample_rate);
         f->ctx[i].block_type        = ONLY_LONG_BLOCK;
         f->ctx[i].window_shape      = SINE_WINDOW;
         f->ctx[i].common_scalefac   = 0;
@@ -109,7 +110,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].window_group_length[6] = 0;
         f->ctx[i].window_group_length[7] = 0;
 
-        f->ctx[i].used_bytes = 0;
+        f->ctx[i].used_bits= 0;
 
         f->ctx[i].bits_average     = bits_average;
         f->ctx[i].bits_res_maxsize = bits_res_maxsize;
@@ -144,7 +145,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         memset(f->ctx[i].mdct_line, 0, sizeof(float)*2*AAC_FRAME_LEN);
 
-        f->ctx[i].max_pred_sfb = get_max_pred_sfb(f->ctx[i].sample_rate_index);
+        f->ctx[i].max_pred_sfb = get_max_pred_sfb(f->cfg.sample_rate_index);
 
         f->ctx[i].quant_ok = 0;
     }
@@ -297,11 +298,7 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                     }
 
 #if 1  
-                    counted_bits  = fa_bits_count(&f->cfg, s, NULL);
-                    if (counted_bits == 0) {
-                        counted_bits += 1;
-                    }
-
+                    counted_bits  = fa_bits_count(f->h_bitstream, &f->cfg, s, NULL);
 
                     available_bits = get_avaiable_bits(s->bits_average, s->bits_more, s->bits_res_size, s->bits_res_maxsize);
                     if (counted_bits > available_bits) 
@@ -327,6 +324,7 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
         /*} while(0) ;// (quant_change == 0);*/
          
         if (!s->quant_ok) {
+            s->used_bits = counted_bits;
             s->bits_res_size += s->bits_average - counted_bits;
             if (s->bits_res_size >= s->bits_res_maxsize)
                 s->bits_res_size = s->bits_res_maxsize;
@@ -633,6 +631,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         s->common_scalefac = s->scalefactor[0][0];
     }
 
+    fa_write_bitstream(f);
+
     for(i = 0; i < 1024; i++) {
         if(s->mdct_line[i] >= 0)
             s->mdct_line_sig[i] = 1;
@@ -640,5 +640,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             s->mdct_line_sig[i] = -1;
     }
 
+    *outlen = fa_bitstream_getbufval(f->h_bitstream, buf_out);
+
+    fa_bitstream_reset(f->h_bitstream);
 
 }
