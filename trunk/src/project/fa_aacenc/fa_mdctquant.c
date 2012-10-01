@@ -27,6 +27,7 @@ typedef struct _fa_mdctquant_t {
     float mdct_line[NUM_MDCT_LINE_MAX];
     float xr_pow[NUM_MDCT_LINE_MAX];
     float mdct_scaled[NUM_MDCT_LINE_MAX];
+    int   mdct_line_sign[NUM_MDCT_LINE_MAX];
 
     float xmin[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX][NUM_WINDOWS_MAX];
     float error_energy[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX][NUM_WINDOWS_MAX];
@@ -52,6 +53,7 @@ uintptr_t fa_mdctquant_init(int mdct_line_num, int sfb_num, int *swb_low, int bl
     memset(f->xr_pow     , 0, sizeof(float)*NUM_MDCT_LINE_MAX);
     memset(f->mdct_scaled, 0, sizeof(float)*NUM_MDCT_LINE_MAX);
     memset(f->xmin       , 0, sizeof(float)*NUM_WINDOW_GROUPS_MAX*NUM_SFB_MAX*NUM_WINDOWS_MAX);
+    memset(f->mdct_line_sign, 0, sizeof(int)*NUM_MDCT_LINE_MAX);
 
     f->sfb_num = sfb_num;
     memset(f->swb_low    , 0, sizeof(int)*(FA_SWB_NUM_MAX+1));
@@ -85,7 +87,8 @@ void      fa_mdctquant_uninit(uintptr_t handle)
 
 }
 
-static void xr_pow34_calculate(float *mdct_line, float mdct_line_num, float *xr_pow)
+static void xr_pow34_calculate(float *mdct_line, float mdct_line_num, 
+                               float *xr_pow, int *mdct_line_sign)
 {
     int i;
     float tmp;
@@ -93,6 +96,19 @@ static void xr_pow34_calculate(float *mdct_line, float mdct_line_num, float *xr_
     for(i = 0; i < mdct_line_num; i++) {
         tmp = fabsf(mdct_line[i]); 
         xr_pow[i] = sqrtf(tmp*sqrtf(tmp));
+#if 0 
+        if (mdct_line[i] > 0)
+            mdct_line_sign[i] = 1;
+        else if (mdct_line[i] < 0)
+            mdct_line_sign[i] = -1;
+        else 
+            mdct_line_sign[i] = 0;
+#else 
+        if (mdct_line[i] < 0)
+            xr_pow[i] = -xr_pow[i];
+
+#endif 
+
     }
 }
 
@@ -136,7 +152,8 @@ void fa_mdctline_pow34(uintptr_t handle)
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
 
-    xr_pow34_calculate(f->mdct_line, f->block_type_cof*f->mdct_line_num, f->xr_pow);
+    xr_pow34_calculate(f->mdct_line, f->block_type_cof*f->mdct_line_num, 
+                       f->xr_pow, f->mdct_line_sign);
 
 }
 
@@ -177,7 +194,11 @@ void fa_mdctline_quant(uintptr_t handle,
 
     for(i = 0; i < f->block_type_cof*f->mdct_line_num; i++) {
         cof_quant = powf(2, (-3./16)*common_scalefac);
-        x_quant[i] = (int)(mdct_scaled[i] * cof_quant + MAGIC_NUMBER);
+        /*x_quant[i] = (int)(mdct_scaled[i] * cof_quant + MAGIC_NUMBER);*/
+        if (mdct_scaled[i] > 0)
+            x_quant[i] = (int)(mdct_scaled[i] * cof_quant + MAGIC_NUMBER);
+        else 
+            x_quant[i] = -1 * (int)(fabs(mdct_scaled[i]) * cof_quant + MAGIC_NUMBER);
     }
 }
 
@@ -224,7 +245,7 @@ void fa_calculate_quant_noise(uintptr_t handle,
                 f->error_energy[gr][sfb][win] = 0;
                 for(i = 0; i < swb_width; i++) {
                     inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));
-                    tmp_xq = (float)x_quant[mdct_line_offset+i];
+                    tmp_xq = (float)(x_quant[mdct_line_offset+i]);
                     inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof; 
                     tmp = fabsf(mdct_line[mdct_line_offset+i]) - inv_x_quant;
                     f->error_energy[gr][sfb][win] += tmp*tmp;  
@@ -433,7 +454,7 @@ int fa_mdctline_iquantize(uintptr_t handle,
                 for(i = 0; i < swb_width; i++) {
                     /*inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));*/
                     inv_cof = powf(2, 0.25*(scalefactor[gr][sfb] - SF_OFFSET));
-                    tmp_xq = (float)x_quant[mdct_line_offset+i];
+                    tmp_xq = (float)fabsf(x_quant[mdct_line_offset+i]);
                     inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof; 
                     mdct_line[mdct_line_offset+i] = inv_x_quant;
                 }
@@ -571,6 +592,7 @@ int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, i
     int *x_quant_gr;
     int *x_quant_code_gr;
     int *x_quant_bits_gr;
+    int *x_quant_sign_gr;
     int spectral_count;
 
     int group_offset;
@@ -580,6 +602,7 @@ int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, i
     x_quant_gr          = x_quant;
     x_quant_code_gr     = x_quant_code;
     x_quant_bits_gr     = x_quant_bits;
+    x_quant_sign_gr     = f->mdct_line_sign;
     group_offset = 0;
     spectral_count = 0;
     for (gr = 0; gr < num_window_groups; gr++) {
@@ -587,9 +610,9 @@ int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, i
         x_quant_code_gr     += group_offset;
         x_quant_bits_gr     += group_offset;
 
-        fa_noiseless_huffman_bitcount(x_quant_gr, sfb_num,  f->sfb_low[gr],
+        fa_noiseless_huffman_bitcount(x_quant_gr, x_quant_sign_gr, sfb_num,  f->sfb_low[gr],
                                       quant_hufftab_no[gr], x_quant_bits_gr);
-        spectral_count += fa_huffman_encode_mdctline(x_quant_gr, sfb_num, f->sfb_low[gr], 
+        spectral_count += fa_huffman_encode_mdctline(x_quant_gr, x_quant_sign_gr,sfb_num, f->sfb_low[gr], 
                                                      quant_hufftab_no[gr], x_quant_code_gr, x_quant_bits_gr);
         group_offset += mdct_line_num * window_group_length[gr];
     }

@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
             fa_mdctline_iquantize(h_mdctiq_short, 
                                   num_window_groups, window_group_length, 
                                   f->ctx[0].scalefactor,
-                                  f->ctx[0].x_quant, mdct_line_inv);
+                                  f->ctx[0].x_quant);
             fa_mdctline_sfb_iarrange(h_mdctiq_short, mdct_line_inv, f->ctx[0].mdct_line_sig,
                                      num_window_groups, window_group_length);
         }else {
