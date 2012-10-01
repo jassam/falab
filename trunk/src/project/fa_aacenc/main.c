@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
 
 	FILE  * destfile;
 	FILE  * sourcefile;
+    FILE  * aacfile;
 	fa_wavfmt_t fmt;
     int sample_rate;
     int chn_num;
@@ -81,7 +82,7 @@ int main(int argc, char *argv[])
     int ms_enable = MS_DEFAULT;
     int lfe_enable = LFE_DEFAULT;
     int tns_enable = TNS_DEFAULT;
-    int block_switch_enable = BLOCK_SWITCH_DEFAULT;
+    int block_switch_enable = 0;//BLOCK_SWITCH_DEFAULT;
 
     fa_aacenc_ctx_t *f;
 
@@ -89,6 +90,11 @@ int main(int argc, char *argv[])
     if(ret) return -1;
 
     if ((destfile = fopen(opt_outputfile, "w+b")) == NULL) {
+		printf("output file can not be opened\n");
+		return 0; 
+	}                         
+
+    if ((aacfile = fopen("outaac.aac", "w+b")) == NULL) {
 		printf("output file can not be opened\n");
 		return 0; 
 	}                         
@@ -107,7 +113,7 @@ int main(int argc, char *argv[])
     sample_rate = fmt.samplerate;
     chn_num     = fmt.channels;
 
-    h_aacenc = fa_aacenc_init(sample_rate, 48000, chn_num,
+    h_aacenc = fa_aacenc_init(sample_rate, 96000, chn_num,
                               2, LOW, 
                               ms_enable, lfe_enable, tns_enable, block_switch_enable);
 
@@ -147,6 +153,8 @@ int main(int argc, char *argv[])
 
         /*analysis and encode*/
         fa_aacenc_encode(h_aacenc, wavsamples_in, chn_num*2*read_len, aac_buf, &aac_out_len);
+        fwrite(aac_buf, 1, aac_out_len, aacfile);
+
         f = (fa_aacenc_ctx_t *)h_aacenc;
 
         /*synthesis*/

@@ -134,6 +134,7 @@ typedef struct _aaccfg_t  {
 
     int sample_rate;
 
+    int sample_rate_index;
 }aaccfg_t;
 
 

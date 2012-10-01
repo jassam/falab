@@ -63,6 +63,7 @@ void fa_bitstream_reset(uintptr_t handle)
 {
     fa_bitstream_t *f = (fa_bitstream_t *)handle;
     memset(f->data, 0, sizeof(unsigned char)*f->num_bytes);
+    fa_bitbuffer_init(&f->bitbuf, f->data, f->num_bytes);
 }
 
 /*fill the bitstream buffer using buf, return how many bytes filled*/
@@ -114,3 +115,14 @@ int fa_bitstream_getbits_num(uintptr_t handle)
     return nbits;
 }
 
+int  fa_bitstream_getbufval(uintptr_t handle, unsigned char *buf_out)
+{
+    fa_bitstream_t *f = (fa_bitstream_t *)handle;
+    int bytes_num;
+
+    bytes_num = fa_getbits_num(&f->bitbuf)/8;
+
+    memcpy(buf_out, f->data, bytes_num);
+
+    return bytes_num;
+}
