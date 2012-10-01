@@ -246,7 +246,7 @@ void fa_calculate_quant_noise(uintptr_t handle,
                 for(i = 0; i < swb_width; i++) {
                     inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));
                     tmp_xq = (float)(x_quant[mdct_line_offset+i]);
-                    inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof; 
+                    inv_x_quant = powf(fabsf(tmp_xq), 4./3.) * inv_cof; 
                     tmp = fabsf(mdct_line[mdct_line_offset+i]) - inv_x_quant;
                     f->error_energy[gr][sfb][win] += tmp*tmp;  
                 }
