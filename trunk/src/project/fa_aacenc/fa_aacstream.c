@@ -159,6 +159,7 @@ int fa_write_bitstream(fa_aacenc_ctx_t *f)
         if (s->chn_info.cpe == 1) {
             chn = 2;
             total_bits += s->used_bits;
+            total_bits += fa_bits_count(f->h_bitstream, &f->cfg, &(f->ctx[i]), &(f->ctx[i+1]));
 
         } else if (s->chn_info.sce == 1) {
             chn = 1;
@@ -309,9 +310,9 @@ static int write_icsinfo(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
     bits += LEN_WIN_SEQ;
     bits += LEN_WIN_SH;
 
-    s->max_sfb = 49;
     /* For short windows, write out max_sfb and scale_factor_grouping */
     if(s->block_type == ONLY_SHORT_BLOCK){
+        s->max_sfb = 14;
         if(write_flag) {
             fa_bitstream_putbits(h_bs, s->max_sfb, LEN_MAX_SFBS);
             grouping_bits = find_grouping_bits(s);
@@ -320,6 +321,7 @@ static int write_icsinfo(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
         bits += LEN_MAX_SFBS;
         bits += MAX_SHORT_WINDOWS - 1;
     } else { /* Otherwise, write out max_sfb and predictor data */
+        s->max_sfb = 49;
         if(write_flag) {
             fa_bitstream_putbits(h_bs, s->max_sfb, LEN_MAX_SFBL);
         }

@@ -130,11 +130,13 @@ static void aacblocktype_switch(float pe, int prev_block_type, int *cur_block_ty
         *cur_block_type = ONLY_SHORT_BLOCK;
     else 
         *cur_block_type = LONG_STOP_BLOCK;
+
+    /**cur_block_type = LONG_STOP_BLOCK;//ONLY_LONG_BLOCK;*/
 }
 
 
 /*this function used in aac encode*/
-void fa_aacblocktype_switch(uintptr_t h_fltbank, uintptr_t h_psy, float pe)
+int fa_aacblocktype_switch(uintptr_t h_fltbank, uintptr_t h_psy, float pe)
 {
     fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)h_fltbank;
     int prev_block_type;
@@ -157,6 +159,8 @@ void fa_aacblocktype_switch(uintptr_t h_fltbank, uintptr_t h_psy, float pe)
 #endif
         
     f->block_type = cur_block_type;
+
+    return cur_block_type;
 }
 
 int  fa_get_aacblocktype(uintptr_t handle)
