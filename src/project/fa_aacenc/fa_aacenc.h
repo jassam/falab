@@ -97,6 +97,8 @@ typedef struct _aacenc_ctx_t{
 
     //the coding status variable 
 
+    float pe;
+
     int block_type;
 
     int window_shape;
@@ -133,7 +135,7 @@ typedef struct _aacenc_ctx_t{
     int common_scalefac;
     int quant_change;
     int x_quant[1024];
-    int mdct_line_sig[1024];
+    int mdct_line_sign[1024];
 
     int bits_alloc;
     int bits_average;
