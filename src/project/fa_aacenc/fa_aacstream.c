@@ -158,7 +158,7 @@ int fa_write_bitstream(fa_aacenc_ctx_t *f)
 
         if (s->chn_info.cpe == 1) {
             chn = 2;
-            total_bits += s->used_bits;
+            /*total_bits += s->used_bits;*/
             total_bits += fa_bits_count(f->h_bitstream, &f->cfg, &(f->ctx[i]), &(f->ctx[i+1]));
 
         } else if (s->chn_info.sce == 1) {

@@ -141,9 +141,9 @@ int main(int argc, char *argv[])
         if(is_last)
             break;
 
-        memset(wavsamples_in, 0, 2*opt_framelen);
-        read_len = fread(wavsamples_in, 2, opt_framelen, sourcefile);
-        if(read_len < opt_framelen)
+        memset(wavsamples_in, 0, 2*opt_framelen*chn_num);
+        read_len = fread(wavsamples_in, 2, opt_framelen*chn_num, sourcefile);
+        if(read_len < (opt_framelen*chn_num))
             is_last = 1;
        
         for(i = 0 ; i < read_len; i++) {
