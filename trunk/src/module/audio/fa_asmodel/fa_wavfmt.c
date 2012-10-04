@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/08 18:33 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
   comment : only support pcm data now
 
@@ -122,7 +123,7 @@ fa_wavfmt_t fa_wavfmt_readheader(FILE *fp)
 	}
 	fread(temp, sizeof(*temp), SIZE_ID, fp);
     /* skip chunks except for "fmt " or "data" */
-	while(memcmp(temp, "fmt ", (size_t)SIZE_ID)!=0) {
+	while (memcmp(temp, "fmt ", (size_t)SIZE_ID)!=0) {
 		nskip = fa_read_u32(fp);
 		if (nskip!=0) {
 			fseek(fp, nskip, SEEK_CUR);
@@ -156,7 +157,7 @@ fa_wavfmt_t fa_wavfmt_readheader(FILE *fp)
 
 	/* skip chunks except for "data" */
 	fread(temp, sizeof(*temp), SIZE_ID, fp);
-	while(memcmp(temp, "data", SIZE_ID)!=0) {
+	while (memcmp(temp, "data", SIZE_ID)!=0) {
 		nskip = fa_read_u32(fp);                                /* read chunk size */
 		fseek(fp, nskip, SEEK_CUR);
 		fread(temp, sizeof(*temp), SIZE_ID, fp);
