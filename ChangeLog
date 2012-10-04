@@ -1,3 +1,12 @@
+2012-10-04    llz
+	* update module source code 
+	* add fa_aacenc project (now support mono and stereo encoding, but need to do 
+	  more test, and I will add ms encoding and do speed optimization, now is 
+	  very slow, I don't like this speed). 
+	* I think the fa_aacenc audio quality performance is better than faac (I tested)
+	* package the fft, mdct, resample, fir and upload
+
+			 
 2012-09-10    llz
 	* long time no log, add many source code to google code under control by
 	  svn
