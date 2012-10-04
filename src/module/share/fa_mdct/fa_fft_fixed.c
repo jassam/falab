@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/15 14:14 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
   WARN    : for the fix precision reason, 
             the input data(int *data) CAN NOT LARGER THAN 2^25
@@ -86,12 +87,12 @@ static void dif_butterfly_fixed(int *data, long size, short *cos_ang, short *sin
 
     astep = 1;
     end   = data + size + size;
-    for(dl = size; dl > 1; dl >>= 1, astep += astep) {
+    for (dl = size; dl > 1; dl >>= 1, astep += astep) {
         l1 = data;
         l2 = data + dl;
-        for(; l2 < end; l1 = l2, l2 = l2 + dl) {
+        for (; l2 < end; l1 = l2, l2 = l2 + dl) {
             ol2 = l2;
-            for(angle = 0; l1 < ol2; l1 += 2, l2 += 2) {
+            for (angle = 0; l1 < ol2; l1 += 2, l2 += 2) {
                 wr = cos_ang[angle];
                 wi = -sin_ang[angle];
 
@@ -132,12 +133,12 @@ static void inverse_dit_butterfly_fixed(int *data, long size, short *cos_ang, sh
 
     astep = size >> 1;
     end   = data + size + size;
-    for(dl = 2; astep > 0; dl += dl, astep >>= 1) {
+    for (dl = 2; astep > 0; dl += dl, astep >>= 1) {
         l1 = data;
         l2 = data + dl;
-        for(;l2 < end; l1 = l2, l2 = l2 + dl) {
+        for (;l2 < end; l1 = l2, l2 = l2 + dl) {
             ol2 = l2;
-            for(angle = 0; l1 < ol2; l1 += 2, l2 += 2) {
+            for (angle = 0; l1 < ol2; l1 += 2, l2 += 2) {
                 wr = cos_ang[angle];
                 wi = sin_ang[angle];
                 xr = *l1;
@@ -180,7 +181,7 @@ void fa_fft_fixed(uintptr_t handle, int *data)
 
     dif_butterfly_fixed(data,size,cos_ang,sin_ang);
 
-    for(i = 0 ; i < size ; i++) {
+    for (i = 0 ; i < size ; i++) {
         bit = bit_rvs[i];
         temp[i+i] = data[bit+bit]; temp[i+i+1] = data[bit+bit+1];
     }
@@ -214,7 +215,7 @@ void fa_ifft_fixed(uintptr_t handle, int * data)
 
     int base = f->base;
 
-    for(i = 0 ; i < size ; i++) {
+    for (i = 0 ; i < size ; i++) {
         bit = bit_rvs[i];
         temp[i+i] = data[bit+bit]; temp[i+i+1] = data[bit+bit+1];
     }
@@ -247,7 +248,7 @@ uintptr_t fa_fft_fixed_init(int size)
     f->length  = size;
     f->base    = (int)(log(size)/log(2));
 
-    if((1<<f->base) < size)
+    if ((1<<f->base) < size)
         f->base += 1;
 
     f->bit_rvs  = (int *)malloc(sizeof(int)*size);

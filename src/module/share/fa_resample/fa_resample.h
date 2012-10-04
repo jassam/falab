@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/12 20:42 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
   Note    : this source code is written by the reference article 
             [
@@ -36,6 +37,12 @@
 #define _RESAMPLE_H
 
 #include "fa_fir.h"
+
+#ifdef __cplusplus 
+extern "C"
+{ 
+#endif  
+
 
 typedef unsigned uintptr_t;
 
@@ -60,5 +67,11 @@ int fa_interp(uintptr_t handle, unsigned char *sample_in, int sample_in_size,
                                 unsigned char *sample_out, int *sample_out_size);
 int fa_resample(uintptr_t handle, unsigned char *sample_in, int sample_in_size,
                                   unsigned char *sample_out, int *sample_out_size);
+
+
+#ifdef __cplusplus 
+}
+#endif  
+
 
 #endif

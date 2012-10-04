@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/14 22:14 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
 */
 
@@ -32,7 +33,7 @@
 #include "fa_fft_fixed.h"
 
 #define N 256 //32
-#define FA_FFT_FIXED
+//#define FA_FFT_FIXED
 
 int main(int argc, char *argv[])
 {
@@ -60,7 +61,7 @@ int main(int argc, char *argv[])
 	}
 
 #ifdef		FA_FFT_FIXED
-	handle = fa_fft_init_fixed(N);
+	handle = fa_fft_fixed_init(N);
 	fa_fft_fixed(handle, fft_inbuf);
 	fa_ifft_fixed(handle, fft_inbuf);
 #else
@@ -79,7 +80,7 @@ int main(int argc, char *argv[])
 
 
 #ifdef  FA_FFT_FIXED
-	fa_fft_uninit_fixed(handle);
+	fa_fft_fixed_uninit(handle);
 #else
 	fa_fft_uninit(handle);
 #endif

@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/15 14:14 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
 */
 
@@ -28,6 +29,13 @@
 #define _FA_FFT_FIXED_H
 
 #include <math.h>
+
+#ifdef __cplusplus 
+extern "C"
+{ 
+#endif  
+
+
 
 
 #ifndef _FA_INTTYPES_H
@@ -84,5 +92,11 @@ void fa_fft_fixed_uninit(uintptr_t handle);
 
 void fa_fft_fixed(uintptr_t handle, int *data);
 void fa_ifft_fixed(uintptr_t handle, int* data);
+
+#ifdef __cplusplus 
+}
+#endif  
+
+
 
 #endif
