@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/21 - 2012/07/23  
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
 */
 
@@ -125,7 +126,7 @@ uintptr_t fa_analysis_fft_init(int overlap_hint, int frame_len, win_t win_type)
     fa_asmodel_fft_t * f = (fa_asmodel_fft_t *)malloc(sizeof(fa_asmodel_fft_t));
 
     f->frame_len = frame_len;
-    switch(overlap_hint) {
+    switch (overlap_hint) {
         case FA_OVERLAP_HIGH:
             f->fft_len = frame_len << 2;
             f->magic_num = 0.812;
@@ -144,7 +145,7 @@ uintptr_t fa_analysis_fft_init(int overlap_hint, int frame_len, win_t win_type)
     f->h_fft = fa_fft_init(f->fft_len);
     f->window = (float *)malloc(sizeof(float)*f->fft_len);
 
-    switch(win_type) {
+    switch (win_type) {
         case HAMMING:
             fa_hamming(f->window, f->fft_len);
             break;
@@ -164,23 +165,23 @@ void      fa_analysis_fft_uninit(uintptr_t handle)
 {
     fa_asmodel_fft_t *f = (fa_asmodel_fft_t *)handle;
 
-    if(f) {
-        if(f->x_buf) {
+    if (f) {
+        if (f->x_buf) {
             free(f->x_buf);
             f->x_buf = NULL;
         }
 
-        if(f->fft_buf) {
+        if (f->fft_buf) {
             free(f->fft_buf);
             f->fft_buf = NULL;
         }
 
-        if(f->window) {
+        if (f->window) {
             free(f->window);
             f->window = NULL;
         }
 
-        if(f->h_fft) {
+        if (f->h_fft) {
             fa_fft_uninit(f->h_fft);
         }
 
@@ -197,19 +198,19 @@ void      fa_analysis_fft(uintptr_t handle, float *x, float *re, float *im)
     int i;
 
     /*update x_buf, copy the remain data to the beginning position*/
-    for(i = 0; i < (fft_len-frame_len); i++) 
+    for (i = 0; i < (fft_len-frame_len); i++) 
         f->x_buf[i] = f->x_buf[i+frame_len];
-    for(i = 0; i < frame_len; i++)
+    for (i = 0; i < frame_len; i++)
         f->x_buf[i+fft_len-frame_len] = x[i];
 
-    for(i = 0; i < fft_len; i++) {
+    for (i = 0; i < fft_len; i++) {
         f->fft_buf[i+i]   = f->x_buf[i] * w[i];
         f->fft_buf[i+i+1] = 0;
     }
 
     fa_fft(f->h_fft, f->fft_buf);
 
-    for(i = 0; i < (fft_len>>1)+1; i++) {
+    for (i = 0; i < (fft_len>>1)+1; i++) {
         re[i] = f->fft_buf[i+i];
         im[i] = f->fft_buf[i+i+1];
     }
@@ -221,7 +222,7 @@ uintptr_t fa_synthesis_fft_init(int overlap_hint, int frame_len, win_t win_type)
     fa_asmodel_fft_t * f = (fa_asmodel_fft_t *)malloc(sizeof(fa_asmodel_fft_t));
 
     f->frame_len = frame_len;
-    switch(overlap_hint) {
+    switch (overlap_hint) {
         case FA_OVERLAP_HIGH:
             f->fft_len = frame_len << 2;
             f->magic_num = 0.812;
@@ -240,7 +241,7 @@ uintptr_t fa_synthesis_fft_init(int overlap_hint, int frame_len, win_t win_type)
     f->h_fft = fa_fft_init(f->fft_len);
     f->window = (float *)malloc(sizeof(float)*f->fft_len);
 
-    switch(win_type) {
+    switch (win_type) {
         case HAMMING:
             fa_hamming(f->window, f->fft_len);
             break;
@@ -261,23 +262,23 @@ void      fa_synthesis_fft_uninit(uintptr_t handle)
 {
     fa_asmodel_fft_t *f = (fa_asmodel_fft_t *)handle;
 
-    if(f) {
-        if(f->x_buf) {
+    if (f) {
+        if (f->x_buf) {
             free(f->x_buf);
             f->x_buf = NULL;
         }
 
-        if(f->fft_buf) {
+        if (f->fft_buf) {
             free(f->fft_buf);
             f->fft_buf = NULL;
         }
 
-        if(f->window) {
+        if (f->window) {
             free(f->window);
             f->window = NULL;
         }
 
-        if(f->h_fft) {
+        if (f->h_fft) {
             fa_fft_uninit(f->h_fft);
         }
 
@@ -294,12 +295,12 @@ void      fa_synthesis_fft(uintptr_t handle, float *re, float *im, float *x)
     float magic_num = f->magic_num;
     int i, j;
 
-    for(i = 0; i < (fft_len>>1)+1; i++) {
+    for (i = 0; i < (fft_len>>1)+1; i++) {
         f->fft_buf[i+i]   = re[i];
         f->fft_buf[i+i+1] = im[i];
     }
     /*real parts is symmetric, the image parts is asymmetric*/
-    for(i = 0, j = (fft_len>>1)-1; i < (fft_len>>1)-1; i++,j--) {
+    for (i = 0, j = (fft_len>>1)-1; i < (fft_len>>1)-1; i++,j--) {
         f->fft_buf[fft_len+2+2*i]   = re[j];
         f->fft_buf[fft_len+2+2*i+1] = -im[j];
     }
@@ -307,17 +308,17 @@ void      fa_synthesis_fft(uintptr_t handle, float *re, float *im, float *x)
     fa_ifft(f->h_fft, f->fft_buf);
 
     /*OLA*/
-    for(i = 0; i < fft_len; i++) 
+    for (i = 0; i < fft_len; i++) 
         f->x_buf[i] += f->fft_buf[i+i] * w[i] ;
 
     /*magic_num to scale the output signal*/
-    for(i = 0; i < frame_len; i++)
+    for (i = 0; i < frame_len; i++)
         x[i] = magic_num * f->x_buf[i];
 
     /*update x_buf*/
-    for(i = 0; i < (fft_len-frame_len); i++) 
+    for (i = 0; i < (fft_len-frame_len); i++) 
         f->x_buf[i] = f->x_buf[i+frame_len];
-    for(i = 0; i < frame_len; i++)
+    for (i = 0; i < frame_len; i++)
         f->x_buf[i+fft_len-frame_len] = 0;
 
 }
@@ -337,7 +338,7 @@ uintptr_t fa_analysis_mdct_init(int frame_len, mdct_win_t win_type)
     f->h_mdct = fa_mdct_init(MDCT_FFT4, f->mdct_len);
     f->window = (float *)malloc(sizeof(float)*f->mdct_len);
 
-    switch(win_type) {
+    switch (win_type) {
         case MDCT_SINE:
             fa_mdct_sine(f->window, f->mdct_len);
             break;
@@ -354,18 +355,18 @@ void      fa_analysis_mdct_uninit(uintptr_t handle)
 {
     fa_asmodel_mdct_t *f = (fa_asmodel_mdct_t *)handle;
 
-    if(f) {
-        if(f->x_buf) {
+    if (f) {
+        if (f->x_buf) {
             free(f->x_buf);
             f->x_buf = NULL;
         }
 
-        if(f->mdct_buf) {
+        if (f->mdct_buf) {
             free(f->mdct_buf);
             f->mdct_buf = NULL;
         }
 
-        if(f->window) {
+        if (f->window) {
             free(f->window);
             f->window = NULL;
         }
@@ -384,12 +385,12 @@ void      fa_analysis_mdct(uintptr_t handle, float *x, float *X)
     int i;
 
     /*update x_buf, 50% overlap, copy the remain half data to the beginning position*/
-    for(i = 0; i < frame_len; i++) 
+    for (i = 0; i < frame_len; i++) 
         f->x_buf[i] = f->x_buf[i+frame_len];
-    for(i = 0; i < frame_len; i++)
+    for (i = 0; i < frame_len; i++)
         f->x_buf[i+frame_len] = x[i];
 
-    for(i = 0; i < f->mdct_len; i++) 
+    for (i = 0; i < f->mdct_len; i++) 
         f->mdct_buf[i] = f->x_buf[i] * w[i];
 
     fa_mdct(f->h_mdct, f->mdct_buf, X);
@@ -412,7 +413,7 @@ uintptr_t fa_synthesis_mdct_init(int frame_len, mdct_win_t win_type)
     f->h_mdct = fa_mdct_init(MDCT_FFT4, f->mdct_len);
     f->window = (float *)malloc(sizeof(float)*f->mdct_len);
 
-    switch(win_type) {
+    switch (win_type) {
         case MDCT_SINE:
             fa_mdct_sine(f->window, f->mdct_len);
             break;
@@ -430,18 +431,18 @@ void      fa_synthesis_mdct_uninit(uintptr_t handle)
 {
     fa_asmodel_mdct_t *f = (fa_asmodel_mdct_t *)handle;
 
-    if(f) {
-        if(f->x_buf) {
+    if (f) {
+        if (f->x_buf) {
             free(f->x_buf);
             f->x_buf = NULL;
         }
 
-        if(f->mdct_buf) {
+        if (f->mdct_buf) {
             free(f->mdct_buf);
             f->mdct_buf = NULL;
         }
 
-        if(f->window) {
+        if (f->window) {
             free(f->window);
             f->window = NULL;
         }
@@ -461,16 +462,16 @@ void      fa_synthesis_mdct(uintptr_t handle, float *X, float *x)
     fa_imdct(f->h_mdct, X, f->mdct_buf);
 
     /*OLA and TDAC*/
-    for(i = 0; i < f->mdct_len; i++) 
+    for (i = 0; i < f->mdct_len; i++) 
         f->x_buf[i] += f->mdct_buf[i] * w[i];
 
-    for(i = 0; i < frame_len; i++)
+    for (i = 0; i < frame_len; i++)
         x[i] = f->x_buf[i];
 
     /*update x_buf, copy the remain data to the beginning position*/
-    for(i = 0; i < frame_len; i++) 
+    for (i = 0; i < frame_len; i++) 
         f->x_buf[i] = f->x_buf[i+frame_len];
-    for(i = 0; i < frame_len; i++)
+    for (i = 0; i < frame_len; i++)
         f->x_buf[i+frame_len] = 0;
 
 }

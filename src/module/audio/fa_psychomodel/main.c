@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/22 23:43
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
   this main.c is the a good study tools to let you know how the fir 
   filter working, and how we use these filter to process signal.
@@ -32,7 +33,7 @@
 #include <memory.h>
 #include "fa_wavfmt.h"
 #include "fa_parseopt.h"
-#include "fa_psychomodel.h"
+#include "fa_psychomodel1.h"
 
 #define FRAME_SIZE_MAX  2048 
 
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
     /*init*/
     h_fft = fa_fft_init(FRAME_LEN);
     fa_hamming(win, FRAME_LEN);
-    h_psy = fa_psychomodel_init(fmt.samplerate, FRAME_LEN);
+    h_psy = fa_psychomodel1_init(fmt.samplerate, FRAME_LEN);
     opt_framelen = FRAME_LEN;
 
     while(1)

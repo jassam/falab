@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/08 18:33 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
   comment : only support pcm data now
 
@@ -30,6 +31,12 @@
 #define	_FA_WAVFMT_H
 
 #include <stdio.h>
+
+#ifdef __cplusplus 
+extern "C"
+{ 
+#endif  
+
 
 typedef struct _fa_wavfmt_t
 {
@@ -50,6 +57,11 @@ typedef struct _fa_wavfmt_t
 
 fa_wavfmt_t  fa_wavfmt_readheader (FILE *fp);
 void         fa_wavfmt_writeheader(fa_wavfmt_t fmt, FILE *fp);
+
+#ifdef __cplusplus 
+}
+#endif  
+
 
 
 #endif

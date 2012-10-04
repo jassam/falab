@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/09 23:38 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
 */
 
@@ -120,9 +121,9 @@ float fa_kaiser_atten2beta(float atten)
 {
 	float beta;
 
-	if(atten <= 21.)
+	if (atten <= 21.)
 		beta = 0.;
-	else if(atten < 50.)
+	else if (atten < 50.)
 		beta = (float)0.5842 * (float)pow(atten-21. , 0.4) + (float)0.07886 * (float)(atten-21.);
 	else
 		beta = (float)0.1102 * (float)(atten - 8.7);
@@ -198,7 +199,7 @@ int fa_kaiser_cof_num(float ftrans, float atten)
 {
     int cof_num;
 
-	if(atten <= 21.)
+	if (atten <= 21.)
 		cof_num = (int)((0.9222*2.)/ftrans);
 	else
 		cof_num = (int)(((atten - 7.95)*2.)/(14.36*ftrans));
@@ -219,7 +220,7 @@ static int fir_lowpass(float *h, float *w, int N, float fc)
 	
     delay = (float)(N - 1)/2;
 
-    for(i = 0, j = N-1; i <= delay; i++,j--) {
+    for (i = 0, j = N-1; i <= delay; i++,j--) {
         h[i] = (float)fc*sinc(fc*(i-delay))* w[i];
         h[j] = h[i];
     }
@@ -236,7 +237,7 @@ static int fir_highpass(float *h, float *w, int N, float fc)
     assert(N&1);
     delay = (N - 1)/2;
 
-    for(i = 0, j = N-1; i <= delay; i++,j--) {
+    for (i = 0, j = N-1; i <= delay; i++,j--) {
         h[i] = -(float)fc*sinc(fc*(i-delay))* w[i];
         h[j] = h[i];
     }
@@ -254,7 +255,7 @@ static int fir_bandpass(float *h, float *w, int N, float fc1, float fc2)
     assert(N&1);
     delay = (N - 1)/2;
 
-    for(i = 0, j = N-1; i <= delay; i++,j--) {
+    for (i = 0, j = N-1; i <= delay; i++,j--) {
         h[i] = ((float)fc2*sinc(fc2*(i-delay))-(float)fc1*sinc(fc1*(i-delay)))* w[i];
         h[j] = h[i];
     }
@@ -272,7 +273,7 @@ static int fir_bandstop(float *h, float *w, int N, float fc1, float fc2)
     assert(N&1);
     delay = (N - 1)/2;
 
-    for(i = 0, j = N-1; i <= delay; i++,j--) {
+    for (i = 0, j = N-1; i <= delay; i++,j--) {
         h[i] = -((float)fc2*sinc(fc2*(i-delay))-(float)fc1*sinc(fc1*(i-delay)))* w[i];
         h[j] = h[i];
     }
@@ -289,7 +290,7 @@ int fa_fir_lpf_cof(float **h, int N, float fc, win_t win_type)
 
 
 	w = (float *)malloc(sizeof(float)*N);
-    switch(win_type) {
+    switch (win_type) {
         case HAMMING:
             fa_hamming(w, N);
             break;
@@ -317,11 +318,11 @@ int fa_fir_hpf_cof(float **h, int N, float fc, win_t win_type)
     int odd;
 
     odd = N&1;
-    if(!odd)
+    if (!odd)
         N = N+1;
 
 	w = (float *)malloc(sizeof(float)*N);
-    switch(win_type) {
+    switch (win_type) {
         case HAMMING:
             fa_hamming(w, N);
             break;
@@ -349,11 +350,11 @@ int fa_fir_bandpass_cof(float **h, int N, float fc1, float fc2, win_t win_type)
     int odd;
 
     odd = N&1;
-    if(!odd)
+    if (!odd)
         N = N+1;
 
 	w = (float *)malloc(sizeof(float)*N);
-    switch(win_type) {
+    switch (win_type) {
         case HAMMING:
             fa_hamming(w, N);
             break;
@@ -381,11 +382,11 @@ int fa_fir_bandstop_cof(float **h, int N, float fc1, float fc2, win_t win_type)
     int odd;
 
     odd = N&1;
-    if(!odd)
+    if (!odd)
         N = N+1;
 
 	w = (float *)malloc(sizeof(float)*N);
-    switch(win_type) {
+    switch (win_type) {
         case HAMMING:
             fa_hamming(w, N);
             break;
@@ -433,7 +434,7 @@ float fa_conv(const float *x, const float h[], int h_len)
     y = 0.0;
     xp = x - (h_len-1);
         
-    for(i = 0, j = h_len-1; i < h_len; i++, j--)
+    for (i = 0, j = h_len-1; i < h_len; i++, j--)
         y += h[i] * xp[j]; // y[n] += h[i]*xp[n-i]
 
     return y;
@@ -570,14 +571,14 @@ int fa_fir_filter(uintptr_t handle, float *buf_in, float *buf_out, int frame_len
 
     /*move the old datas (flt_len-1) to the buf[0]*/
     offset = buf_len - flt_len + 1;
-    for(i = 0; i < flt_len-1; i++) 
+    for (i = 0; i < flt_len-1; i++) 
         buf[i] = buf[offset+i];
-    for(i = 0; i < frame_len; i++)
+    for (i = 0; i < frame_len; i++)
         buf[flt_len-1+i] = buf_in[i];
 
     /*set the xp point to the first sample*/
     xp = &(buf[flt_len -1]);
-	for(i = 0 ; i < frame_len ; ++i){
+	for (i = 0 ; i < frame_len ; ++i){
         /*
          *  x[0] x[1] x[2] ... x[n-1] x[n]
          *                 ... z(-1)  z(0)  z-transform
@@ -613,13 +614,13 @@ int fa_fir_filter_flush(uintptr_t handle, float *buf_out)
 
     /*move the old datas (flt_len-1) to the buf[0]*/
     offset = buf_len - flt_len + 1;
-    for(i = 0; i < flt_len-1; i++) 
+    for (i = 0; i < flt_len-1; i++) 
         buf[i] = buf[offset+i];
-    for(i = 0; i < frame_len; i++)
+    for (i = 0; i < frame_len; i++)
         buf[flt_len-1+i] = 0;
 
     xp = &(buf[flt_len -1]);
-	for(i = 0 ; i < flt_len-1 ; ++i){
+	for (i = 0 ; i < flt_len-1 ; ++i){
         /*
          *  x[0] x[1] x[2] ... x[n-1] x[n]
          *                 ... z(-1)  z(0)  z-transform

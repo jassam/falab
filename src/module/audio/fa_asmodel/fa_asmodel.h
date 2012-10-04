@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/21 - 2012/07/23  
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
 */
 
@@ -30,6 +31,12 @@
 #include "fa_fir.h"
 #include "fa_fft.h"
 #include "fa_mdct.h"
+
+#ifdef __cplusplus 
+extern "C"
+{ 
+#endif  
+
 
 enum {
     FA_OVERLAP_HIGH = 0,       //3/4 overlap
@@ -58,5 +65,10 @@ void      fa_analysis_mdct(uintptr_t handle, float *x, float *X);
 uintptr_t fa_synthesis_mdct_init(int frame_len, mdct_win_t win_type);
 void      fa_synthesis_mdct_uninit(uintptr_t handle);
 void      fa_synthesis_mdct(uintptr_t handle, float *X, float *x);
+
+#ifdef __cplusplus 
+}
+#endif  
+
 
 #endif
