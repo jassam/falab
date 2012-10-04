@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/09 23:01 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
 */
 
@@ -30,6 +31,12 @@
 #ifndef		M_PI
 #define		M_PI							3.14159265358979323846
 #endif
+
+#ifdef __cplusplus 
+extern "C"
+{ 
+#endif  
+
 
 typedef unsigned uintptr_t;
 typedef int win_t;
@@ -69,6 +76,7 @@ int fa_fir_filter_flush(uintptr_t handle, float *buf_out);
 /*
     three main ascending cos window
 */
+
 int   fa_hamming(float *w,const int N);
 
 int   fa_blackman(float *w,const int N);
@@ -101,5 +109,10 @@ int fa_fir_bandpass_cof(float **h, int N, float fc1, float fc2, win_t win_type);
 int fa_fir_bandstop_cof(float **h, int N, float fc1, float fc2, win_t win_type);
 
 float fa_conv(const float *x, const float *h, int h_len);
+
+#ifdef __cplusplus 
+}
+#endif  
+
 
 #endif

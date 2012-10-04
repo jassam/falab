@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/12 20:42 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
   Note    : this source code is written by the reference article 
             [
@@ -116,11 +117,11 @@ static float ** matrix_init(int Nrow, int Ncol)
 static void matrix_uninit(float **A)
 {
     /*free the Nrow*Ncol data space*/
-    if(A[0])
+    if (A[0])
         free(A[0]);
 
     /*free the row pointers*/
-    if(A)
+    if (A)
         free(A);
 
 }
@@ -136,11 +137,11 @@ static int polyphase_filter_init(fa_polyphase_filter_t *ppflt, int m,
     int n, k;
     float ftrans;
 
-    if(gain == 0)
+    if (gain == 0)
         gain = 1.0;
     
     ftrans = 0.15*fc;           /*common sense: transition band = 0.15*pi (pi~fm=0.5fs)*/
-    switch(win_type) {
+    switch (win_type) {
         case HAMMING:
            n = fa_hamming_cof_num(ftrans);
            break;
@@ -160,7 +161,7 @@ static int polyphase_filter_init(fa_polyphase_filter_t *ppflt, int m,
     ppflt->p = (float **)matrix_init(ppflt->m, ppflt->k);
     ppflt->gain = gain;
 
-    switch(win_type) {
+    switch (win_type) {
         case HAMMING:
             fa_fir_lpf_cof(&(ppflt->h), ppflt->n, fc, HAMMING);
             break;
@@ -172,9 +173,9 @@ static int polyphase_filter_init(fa_polyphase_filter_t *ppflt, int m,
             break;
     }
     
-    for(i = 0; i < ppflt->m; i++)
-        for(j = 0; j < ppflt->k; j++) {
-            if(ppflt->m * j + i < ppflt->n)
+    for (i = 0; i < ppflt->m; i++)
+        for (j = 0; j < ppflt->k; j++) {
+            if (ppflt->m * j + i < ppflt->n)
                 ppflt->p[i][j] = gain * ppflt->h[ppflt->m * j + i];
             else
                 ppflt->p[i][j] = 0;
@@ -189,7 +190,7 @@ static int polyphase_filter_uninit(fa_polyphase_filter_t *ppflt)
     matrix_uninit(ppflt->p);
     ppflt->p = NULL;
     
-    if(ppflt->h) {
+    if (ppflt->h) {
         free(ppflt->h);
         ppflt->h = NULL;
     }
@@ -206,11 +207,11 @@ static int timevary_filter_init(fa_timevary_filter_t *tvflt, int l, int m,
     int u;
     float ftrans;
 
-    if(gain == 0)
+    if (gain == 0)
         gain = 1.0;
     
     ftrans = 0.15*fc;           /*common sense: transition band = 0.15*pi (pi~fm=0.5fs)*/
-    switch(win_type) {
+    switch (win_type) {
         case HAMMING:
            n = fa_hamming_cof_num(ftrans);
            break;
@@ -231,7 +232,7 @@ static int timevary_filter_init(fa_timevary_filter_t *tvflt, int l, int m,
     tvflt->g = (float **)matrix_init(tvflt->l, tvflt->k);
     tvflt->gain = gain;
 
-    switch(win_type) {
+    switch (win_type) {
         case HAMMING:
             fa_fir_lpf_cof(&(tvflt->h), tvflt->n, fc, HAMMING);
             break;
@@ -243,8 +244,8 @@ static int timevary_filter_init(fa_timevary_filter_t *tvflt, int l, int m,
             break;
     }
     
-    for(i = 0; i < tvflt->l; i++)
-        for(j = 0; j < tvflt->k; j++) {
+    for (i = 0; i < tvflt->l; i++)
+        for (j = 0; j < tvflt->k; j++) {
             /*
              * gl(n)= h(nL + <lM>L)
              * gl(n): g(i)(j), i is l(l phase), j is n(the l pahse subfilter cofficients)
@@ -253,7 +254,7 @@ static int timevary_filter_init(fa_timevary_filter_t *tvflt, int l, int m,
              */
             u = j*tvflt->l + (i*tvflt->m)%tvflt->l;
 //            u = j*tvflt->l + i; //you can try this, you will find phase err(study this)
-            if(u < tvflt->n)
+            if (u < tvflt->n)
                 tvflt->g[i][j] = gain * tvflt->h[u];
             else
                 tvflt->g[i][j] = 0;
@@ -268,7 +269,7 @@ static int timevary_filter_uninit(fa_timevary_filter_t *tvflt)
     matrix_uninit(tvflt->g);
     tvflt->g = NULL;
     
-    if(tvflt->h) {
+    if (tvflt->h) {
         free(tvflt->h);
         tvflt->h = NULL;
     }
@@ -283,7 +284,7 @@ uintptr_t fa_decimate_init(int M, float gain, win_t win_type)
 
     resflt = (fa_resample_filter_t *)malloc(sizeof(fa_resample_filter_t));
 
-    if(M > FA_RATIO_MAX) 
+    if (M > FA_RATIO_MAX) 
         return -1;
 
     resflt->L = 1;
@@ -313,8 +314,8 @@ void fa_decimate_uninit(uintptr_t handle)
 {
     fa_resample_filter_t *resflt = (fa_resample_filter_t *)handle;
 
-    if(resflt) {
-        if(resflt->buf) {
+    if (resflt) {
+        if (resflt->buf) {
             free(resflt->buf);
             resflt->buf = NULL;
         }
@@ -331,7 +332,7 @@ uintptr_t fa_interp_init(int L, float gain, win_t win_type)
 
     resflt = (fa_resample_filter_t *)malloc(sizeof(fa_resample_filter_t));
 
-    if(L > FA_RATIO_MAX) 
+    if (L > FA_RATIO_MAX) 
         return -1;
 
     resflt->L = L;
@@ -360,8 +361,8 @@ void fa_interp_uninit(uintptr_t handle)
 {
     fa_resample_filter_t *resflt = (fa_resample_filter_t *)handle;
 
-    if(resflt) {
-        if(resflt->buf) {
+    if (resflt) {
+        if (resflt->buf) {
             free(resflt->buf);
             resflt->buf = NULL;
         }
@@ -381,7 +382,7 @@ uintptr_t fa_resample_filter_init(int L, int M, float gain, win_t win_type)
     resflt = (fa_resample_filter_t *)malloc(sizeof(fa_resample_filter_t));
 
     ratio = ((float)L)/M;
-    if((ratio      > FA_RATIO_MAX) || 
+    if ((ratio      > FA_RATIO_MAX) || 
        ((1./ratio) > FA_RATIO_MAX))
         return -1;
 
@@ -400,7 +401,7 @@ uintptr_t fa_resample_filter_init(int L, int M, float gain, win_t win_type)
     /*L*M/lm_gcd is the lowest multiplier of L&M*/
     /*resflt->num_in = ((L*M)/lm_gcd)*RES_DEFAULT_NUM_IN;*/
     resflt->num_in = ((L*M)/lm_gcd);
-    while(resflt->num_in < FA_DEFAULT_FRAMELEN)
+    while (resflt->num_in < FA_DEFAULT_FRAMELEN)
         resflt->num_in *= 2;
 
     resflt->num_out = (resflt->num_in*L)/M;
@@ -418,8 +419,8 @@ void fa_resample_filter_uninit(uintptr_t handle)
 {
     fa_resample_filter_t *resflt = (fa_resample_filter_t *)handle;
 
-    if(resflt) {
-        if(resflt->buf) {
+    if (resflt) {
+        if (resflt->buf) {
             free(resflt->buf);
             resflt->buf = NULL;
         }
@@ -460,21 +461,21 @@ int fa_decimate(uintptr_t handle, unsigned char *sample_in, int sample_in_size,
     /*move the old datas (flt_len-1) to the buf[0]*/
     offset = resflt->buf_len/resflt->bytes_per_sample - flt_len;
     
-    for(i = 0; i < flt_len; i++) 
+    for (i = 0; i < flt_len; i++) 
         pbuf[i] = pbuf[offset+i];
-    for(i = 0; i < resflt->num_in; i++)
+    for (i = 0; i < resflt->num_in; i++)
         pbuf[flt_len+i] = psample_in[i];
     
 
     /*set the xp point to the first sample*/
     x = &(pbuf[flt_len]);
 
-    for(i = 0; i < resflt->num_out; i++) {
+    for (i = 0; i < resflt->num_out; i++) {
         float y= 0.0;
 
-		for(m = 0 ; m < M; m++){
+		for (m = 0 ; m < M; m++){
 			xp = x + m;     /* delay */
-			for(k = 0 ; k < resflt->ppflt.k; k++)
+			for (k = 0 ; k < resflt->ppflt.k; k++)
 				y += xp[M*k-flt_len] * resflt->ppflt.p[m][k]; /* decimate by M */
 //				y += xp[M*k] * resflt->ppflt.p[m][k]; //maybe right maybe wrong, because of the symmetric of the filter
 //				                                      //but I am afraid the subfilter maybe not symmetric, so maybe wrong
@@ -482,9 +483,9 @@ int fa_decimate(uintptr_t handle, unsigned char *sample_in, int sample_in_size,
 
         y *= gain;
 
-        if(y > 32767)
+        if (y > 32767)
             y = 32767;
-        if(y < -32768)
+        if (y < -32768)
             y = -32768;
 
         psample_out[i] = (short)y;
@@ -522,19 +523,19 @@ int fa_interp(uintptr_t handle, unsigned char *sample_in, int sample_in_size,
     /*set the xp point to the first sample*/
     x = psample_in;
 
-    for(i = 0; i < resflt->num_in; i++) {
+    for (i = 0; i < resflt->num_in; i++) {
         float y= 0.0;
 
-		for(m = 0 ; m < L; m++){
+		for (m = 0 ; m < L; m++){
             y = 0.0;
-			for(k = 0 ; k < resflt->ppflt.k; k++)
+			for (k = 0 ; k < resflt->ppflt.k; k++)
 				y += x[k] * resflt->ppflt.p[m][k];
 
             y *= gain;
 
-            if(y > 32767)
+            if (y > 32767)
                 y = 32767;
-            if(y < -32768)
+            if (y < -32768)
                 y = -32768;
             psample_out[i*L+(L-1-m)] = y;       /* interp by L , place y into L position */
            
@@ -578,9 +579,9 @@ int fa_resample(uintptr_t handle, unsigned char *sample_in, int sample_in_size,
     /*move the old datas (flt_len-1) to the buf[0]*/
     offset = resflt->buf_len/resflt->bytes_per_sample - Q;
    
-    for(i = 0; i < Q; i++) 
+    for (i = 0; i < Q; i++) 
         pbuf[i] = pbuf[offset+i];
-    for(i = 0; i < resflt->num_in; i++)
+    for (i = 0; i < resflt->num_in; i++)
         pbuf[Q+i] = psample_in[i];
    
 
@@ -588,22 +589,22 @@ int fa_resample(uintptr_t handle, unsigned char *sample_in, int sample_in_size,
     x = &(pbuf[Q]);
     *sample_out_size =0;
 
-    for(i = 0; i < resflt->num_out; i++) {
+    for (i = 0; i < resflt->num_out; i++) {
         float y= 0.0;
 
         xp = x + (i*M)/L;
         l = resflt->out_index%L; 
         resflt->out_index++;
 
-		for(k = 0 ; k < Q; k++) {
+		for (k = 0 ; k < Q; k++) {
 			y += xp[-k] * resflt->tvflt.g[l][k]; /* decimate by M */
         }
 
         y *= gain;
 
-        if(y > 32767)
+        if (y > 32767)
             y = 32767;
-        if(y < -32768)
+        if (y < -32768)
             y = -32768;
 
         psample_out[i] = (short)y;

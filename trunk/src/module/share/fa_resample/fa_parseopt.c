@@ -42,8 +42,8 @@ char  opt_inputfile[256]  = "";
 char  opt_outputfile[256] = "";
 int   opt_type      = FA_RESAMPLE;
 /*default resample is 48kHz->44.1kHz*/
-int   opt_downfactor= 160;
-int   opt_upfactor  = 147;
+int   opt_downfactor= 147;//160;
+int   opt_upfactor  = 160;//147;
 float opt_gain      = 1.0;
 
 static int input_downfactor = 0;
