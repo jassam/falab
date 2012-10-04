@@ -1,3 +1,30 @@
+/*
+  falab - free algorithm lab 
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+  filename: fa_aacstream.c 
+  version : v1.0.0
+  time    : 2012/08/22 - 2012/10/05 
+  author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
+
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "fa_aacstream.h"
@@ -85,7 +112,6 @@ int get_aac_bitreservoir_maxsize(int bit_rate, int sample_rate)
     return (6144 - (int)((float)bit_rate/(float)sample_rate*1024));
 }
 
-#if 1 
 int fa_write_bitstream_onechn(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
 {
 
@@ -207,7 +233,6 @@ int fa_write_bitstream(fa_aacenc_ctx_t *f)
     return total_bits;
 }
 
-#endif 
 
 int fa_bits_count(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
 {
@@ -311,9 +336,9 @@ static int write_icsinfo(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
     bits += LEN_WIN_SH;
 
     /* For short windows, write out max_sfb and scale_factor_grouping */
-    if(s->block_type == ONLY_SHORT_BLOCK){
+    if (s->block_type == ONLY_SHORT_BLOCK){
         s->max_sfb = 14;
-        if(write_flag) {
+        if (write_flag) {
             fa_bitstream_putbits(h_bs, s->max_sfb, LEN_MAX_SFBS);
             grouping_bits = find_grouping_bits(s);
             fa_bitstream_putbits(h_bs, grouping_bits, MAX_SHORT_WINDOWS - 1);  /* the grouping bits */
@@ -322,20 +347,20 @@ static int write_icsinfo(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
         bits += MAX_SHORT_WINDOWS - 1;
     } else { /* Otherwise, write out max_sfb and predictor data */
         s->max_sfb = 49;
-        if(write_flag) {
+        if (write_flag) {
             fa_bitstream_putbits(h_bs, s->max_sfb, LEN_MAX_SFBL);
         }
         bits += LEN_MAX_SFBL;
-        if(objtype == LTP)
+        if (objtype == LTP)
         {
             bits++;
-            if(write_flag)
+            if (write_flag)
                 fa_bitstream_putbits(h_bs, s->ltpInfo.global_pred_flag, 1); /* Prediction Global used */
 
             bits += write_ltp_predictor_data(h_bs, s, write_flag);
             if (common_window)
                 bits += write_ltp_predictor_data(h_bs, s, write_flag);
-        }else {
+        } else {
             bits++;
             if (write_flag)
                 fa_bitstream_putbits(h_bs, s->pred_global_flag, LEN_PRED_PRES);  /* predictor_data_present */
@@ -387,7 +412,7 @@ static int write_cpe(uintptr_t h_bs, aacenc_ctx_t *s, aacenc_ctx_t *sr, int aac_
     chn_info_t *p_chn_info = &(s->chn_info);
     int bits = 0;
 
-    if(write_flag) {
+    if (write_flag) {
         /* write ID_CPE, single_element_channel() identifier */
         fa_bitstream_putbits(h_bs, ID_CPE, LEN_SE_ID);
 
@@ -493,15 +518,15 @@ static int find_grouping_bits(aacenc_ctx_t *s)
     int i, j;
     int index = 0;
 
-    for(i = 0; i < s->num_window_groups; i++){
+    for (i = 0; i < s->num_window_groups; i++){
         for (j = 0; j < s->window_group_length[i]; j++){
             tmp[index++] = i;
         }
     }
 
-    for(i = 1; i < 8; i++){
+    for (i = 1; i < 8; i++){
         grouping_bits = grouping_bits << 1;
-        if(tmp[i] == tmp[i-1]) {
+        if (tmp[i] == tmp[i-1]) {
             grouping_bits++;
         }
     }
@@ -522,18 +547,18 @@ static int write_ltp_predictor_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_f
     if (ltpInfo->global_pred_flag)
     {
 
-        if(write_flag)
+        if (write_flag)
             fa_bitstream_putbits(h_bs, 1, 1); /* LTP used */
         bits++;
 
-        switch(s->block_type)
+        switch (s->block_type)
         {
         case ONLY_LONG_BLOCK:
         case LONG_START_BLOCK:
         case LONG_STOP_BLOCK:
             bits += LEN_LTP_LAG;
             bits += LEN_LTP_COEF;
-            if(write_flag)
+            if (write_flag)
             {
                 fa_bitstream_putbits(h_bs, ltpInfo->delay[0], LEN_LTP_LAG);
                 fa_bitstream_putbits(h_bs, ltpInfo->weight_idx,  LEN_LTP_COEF);
@@ -543,7 +568,7 @@ static int write_ltp_predictor_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_f
                 s->nr_of_sfb : MAX_LT_PRED_LONG_SFB);
 
             bits += last_band;
-            if(write_flag)
+            if (write_flag)
                 for (i = 0; i < last_band; i++)
                     fa_bitstream_putbits(h_bs, ltpInfo->sfb_prediction_used[i], LEN_LTP_LONG_USED);
             break;
@@ -717,14 +742,14 @@ static int write_spectral_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
     int* x_quant_bits = s->x_quant_bits;
 
     if (write_flag) {
-        for(i = 0; i < s->spectral_count; i++) {
+        for (i = 0; i < s->spectral_count; i++) {
             if (x_quant_bits[i] > 0) {  /* only send out non-zero codebook data */
                 fa_bitstream_putbits(h_bs, x_quant_code[i], x_quant_bits[i]); /* write data */
                 bits += x_quant_bits[i];
             }
         }
     } else {
-        for(i = 0; i < s->spectral_count; i++) {
+        for (i = 0; i < s->spectral_count; i++) {
             bits += x_quant_bits[i];
         }
     }
@@ -948,7 +973,7 @@ static int write_bits_for_bytealign(uintptr_t h_bs, aacenc_ctx_t *s, int bits_so
 
     if ((len % 8) == 0) j = 0;
     if (write_flag) {
-        for(i = 0; i < j; i++) {
+        for (i = 0; i < j; i++) {
             fa_bitstream_putbits(h_bs, 0, 1);
         }
     }

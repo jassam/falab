@@ -1,3 +1,30 @@
+/*
+  falab - free algorithm lab 
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+  filename: fa_bitbuffer.c 
+  version : v1.0.0
+  time    : 2012/08/22 - 2012/10/05 
+  author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
+
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -98,7 +125,7 @@ void fa_bitbuffer_init(fa_bitbuffer_t *bitbuf, unsigned char *start, int sizeofb
 
     bitbuf->buf_size = sizeofbyte * 8;
 
-    if(bitbuf)
+    if (bitbuf)
         bitbuf->is_valid = 1;
 
     bitbuf->start =  start;		
@@ -137,7 +164,7 @@ int  fa_putbits(fa_bitbuffer_t * bitbuf, unsigned int wValue, int nbits)
 
     bitbuf->nbits += nbits;
 
-    while(nbits) {
+    while (nbits) {
         short          bits_to_shift;
         unsigned char  tmp, msk;
 
@@ -153,11 +180,11 @@ int  fa_putbits(fa_bitbuffer_t * bitbuf, unsigned int wValue, int nbits)
         bitbuf->wpos_of_byte = bitbuf->wpos_of_byte - bitsToWrite;
         nbits = nbits - bitsToWrite;
 
-        if(bitbuf->wpos_of_byte<0) {
+        if (bitbuf->wpos_of_byte<0) {
             bitbuf->wpos_of_byte = bitbuf->wpos_of_byte + 8;
             bitbuf->pNextWrite++;
 
-            if(bitbuf->pNextWrite > bitbuf->end) {
+            if (bitbuf->pNextWrite > bitbuf->end) {
                 bitbuf->pNextWrite = bitbuf->start;
             }
         }
@@ -185,7 +212,7 @@ int  fa_getbits(fa_bitbuffer_t * bitbuf, short noBitsToRead)
         bitbuf->pNextRead++;                                                               
 
 
-        if(bitbuf->pNextRead > bitbuf->end) {
+        if (bitbuf->pNextRead > bitbuf->end) {
             bitbuf->pNextRead = bitbuf->start;                                        
         }
 

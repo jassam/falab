@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/08 18:42 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
 */
 
@@ -40,7 +41,7 @@
 
 /*global option vaule*/
 /*char  opt_inputfile[256]  = "xs-mono.wav";*/
-char  opt_inputfile[256]  = "xs.wav";
+char  opt_inputfile[256]  = "mfs.wav";
 char  opt_outputfile[256] = "xs-out.wav";
 int   opt_framelen  = 1024;
 

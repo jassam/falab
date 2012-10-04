@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
   version : v1.0.0
   time    : 2012/07/08 01:01 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
   comment : this file is the simple template which will be used in falab,
             it will be changed according to the project.
@@ -28,6 +29,12 @@
 
 #ifndef _FA_GETOPT_H
 #define _FA_GETOPT_H
+
+#ifdef __cplusplus 
+extern "C"
+{ 
+#endif  
+
 
 
 /*
@@ -54,5 +61,10 @@ extern int   opt_mdctwintype ;
 
 
 int fa_parseopt(int argc, char *argv[]);
+
+#ifdef __cplusplus 
+}
+#endif  
+
 
 #endif
