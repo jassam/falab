@@ -1,3 +1,30 @@
+/*
+  falab - free algorithm lab 
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+  filename: fa_aacpsy.c 
+  version : v1.0.0
+  time    : 2012/08/22 - 2012/10/05 
+  author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
+
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -36,7 +63,7 @@ uintptr_t fa_aacpsy_init(int sample_rate)
     /*f->bit_alloc   = 0;*/
     /*f->block_type  = LONG_CODING_BLOCK;*/
 
-    switch(sample_rate) {
+    switch (sample_rate) {
         case 32000:
             f->h_psy2_long  = fa_psychomodel2_init(FA_PSY_32k_LONG_NUM,fa_psy_32k_long_wlow,fa_psy_32k_long_barkval,fa_psy_32k_long_qsthr,
                                                    FA_SWB_32k_LONG_NUM,fa_swb_32k_long_offset,
@@ -93,29 +120,29 @@ void update_psy_long_previnfo(uintptr_t handle)
 
     /*update mag_prev1*/
     fa_psychomodel2_get_mag_prev1(f->h_psy2_short, f->mag_prev1_short, &len);
-    for(i = 0; i < len; i++) 
-        for(j = 0; j < 8; j++) 
+    for (i = 0; i < len; i++) 
+        for (j = 0; j < 8; j++) 
             f->mag_prev1_long[8*i+j] = 64*f->mag_prev1_short[i];
     fa_psychomodel2_set_mag_prev1(f->h_psy2_long , f->mag_prev1_long , 8*len);
 
     /*update mag_prev2*/
     fa_psychomodel2_get_mag_prev2(f->h_psy2_short, f->mag_prev2_short, &len);
-    for(i = 0; i < len; i++) 
-        for(j = 0; j < 8; j++) 
+    for (i = 0; i < len; i++) 
+        for (j = 0; j < 8; j++) 
             f->mag_prev2_long[8*i+j] = 64*f->mag_prev2_short[i];
     fa_psychomodel2_set_mag_prev2(f->h_psy2_long , f->mag_prev2_long , 8*len);
 
     /*update mag_phi1, */
     fa_psychomodel2_get_phi_prev1(f->h_psy2_short, f->phi_prev1_short, &len);
-    for(i = 0; i < len; i++) 
-        for(j = 0; j < 8; j++) 
+    for (i = 0; i < len; i++) 
+        for (j = 0; j < 8; j++) 
             f->phi_prev1_long[8*i+j] = f->phi_prev1_short[i];
     fa_psychomodel2_set_phi_prev1(f->h_psy2_long , f->phi_prev1_long , 8*len);
 
     /*update mag_phi2*/
     fa_psychomodel2_get_phi_prev2(f->h_psy2_short, f->phi_prev2_short, &len);
-    for(i = 0; i < len; i++) 
-        for(j = 0; j < 8; j++) 
+    for (i = 0; i < len; i++) 
+        for (j = 0; j < 8; j++) 
             f->phi_prev2_long[8*i+j] = f->phi_prev2_short[i];
     fa_psychomodel2_set_phi_prev2(f->h_psy2_long , f->phi_prev2_long , 8*len);
 
@@ -134,9 +161,9 @@ void update_psy_short_previnfo(uintptr_t handle)
 
     /*update mag_prev1*/
     fa_psychomodel2_get_mag_prev1(f->h_psy2_long , f->mag_prev1_long, &len);
-    for(i = 0; i < (len>>3); i++) {
+    for (i = 0; i < (len>>3); i++) {
         tmp = 0;
-        for(j = 0; j < 8; j++) 
+        for (j = 0; j < 8; j++) 
             tmp = tmp + f->mag_prev1_long[8*i+j];
         f->mag_prev1_short[i] = tmp/(64*8);
     }
@@ -144,9 +171,9 @@ void update_psy_short_previnfo(uintptr_t handle)
 
     /*update mag_prev2*/
     fa_psychomodel2_get_mag_prev2(f->h_psy2_long , f->mag_prev2_long, &len);
-    for(i = 0; i < (len>>3); i++) {
+    for (i = 0; i < (len>>3); i++) {
         tmp = 0;
-        for(j = 0; j < 8; j++) 
+        for (j = 0; j < 8; j++) 
             tmp = tmp + f->mag_prev2_long[8*i+j];
         f->mag_prev2_short[i] = tmp/(64*8);
     }
@@ -154,13 +181,13 @@ void update_psy_short_previnfo(uintptr_t handle)
 
     /*update phi_prev1, use the phi of the lowest mag line to simulate*/
     fa_psychomodel2_get_phi_prev1(f->h_psy2_long , f->phi_prev1_long, &len);
-    for(i = 0; i < (len>>3); i++) 
+    for (i = 0; i < (len>>3); i++) 
         f->phi_prev1_short[i] = f->phi_prev1_long[8*i];
     fa_psychomodel2_set_mag_prev1(f->h_psy2_short, f->mag_prev1_short, (len>>3));
 
     /*update mag_prev2*/
     fa_psychomodel2_get_mag_prev2(f->h_psy2_long , f->mag_prev2_long, &len);
-    for(i = 0; i < (len>>3); i++) 
+    for (i = 0; i < (len>>3); i++) 
         f->phi_prev2_short[i] = f->phi_prev2_long[8*i];
     fa_psychomodel2_set_mag_prev2(f->h_psy2_short, f->mag_prev2_short, (len>>3));
 
@@ -196,14 +223,14 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
     float pe_sum;
     fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
 
-    if(block_type == ONLY_SHORT_BLOCK) {
+    if (block_type == ONLY_SHORT_BLOCK) {
         pe_sum = 0;
-        for(win = 0; win < 8; win++) {
+        for (win = 0; win < 8; win++) {
             xp = x + AAC_BLOCK_TRANS_LEN + win*128;
             fa_psychomodel2_calculate_pe(f->h_psy2_short, xp, &pe);
             pe_sum += pe;
         }
-    }else {
+    } else {
         fa_psychomodel2_calculate_pe(f->h_psy2_long , x, &pe);
         pe_sum = pe;
     }
@@ -216,10 +243,10 @@ void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type
     int k;
     fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
 
-    if(block_type == ONLY_SHORT_BLOCK) {
-        for(k = 0; k < 8; k++) 
+    if (block_type == ONLY_SHORT_BLOCK) {
+        for (k = 0; k < 8; k++) 
             fa_psychomodel2_calculate_xmin(f->h_psy2_short, mdct_line+k*AAC_BLOCK_SHORT_LEN, &(xmin[k][0]));
-    }else {
+    } else {
         fa_psychomodel2_calculate_xmin(f->h_psy2_long, mdct_line, &(xmin[0][0]));
     }
 }

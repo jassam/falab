@@ -1,3 +1,30 @@
+/*
+  falab - free algorithm lab 
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+  filename: fa_aacenc.c 
+  version : v1.0.0
+  time    : 2012/08/22 - 2012/10/05 
+  author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
+
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -14,6 +41,7 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
+#define GAIN_ADJUST 4
 
 /* Returns the sample rate index */
 int get_samplerate_index(int sample_rate)
@@ -95,7 +123,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     f->h_bitstream = fa_bitstream_init((6144/8)*chn_num);
 
     /*init psy and mdct quant */
-    for(i = 0; i < chn_num; i++) {
+    for (i = 0; i < chn_num; i++) {
         f->ctx[i].pe                = 0.0;
         f->ctx[i].block_type        = ONLY_LONG_BLOCK;
         f->ctx[i].window_shape      = SINE_WINDOW;
@@ -123,7 +151,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         memcpy(&(f->ctx[i].chn_info), &(chn_info_tmp[i]), sizeof(chn_info_t));
 
-        switch(sample_rate) {
+        switch (sample_rate) {
             case 48000:
                 f->ctx[i].h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_48k_LONG_NUM ,fa_swb_48k_long_offset, 1);
                 f->ctx[i].h_mdctq_short= fa_mdctquant_init(128 , FA_SWB_48k_SHORT_NUM,fa_swb_48k_short_offset, 8);
@@ -161,8 +189,8 @@ void fa_aacenc_uninit(uintptr_t handle)
 {
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)handle;
 
-    if(f) {
-        if(f->sample) {
+    if (f) {
+        if (f->sample) {
             free(f->sample);
             f->sample = NULL;
         }
@@ -191,6 +219,7 @@ static void calculate_start_common_scalefac(fa_aacenc_ctx_t *f)
             sl = s;
             sr = &(f->ctx[i+1]);
             if (0) {// (sl->block_type == sr->block_type) {
+//            if (sl->block_type == sr->block_type) {
                 float max_mdct_line;
                 sl->chn_info.common_window = 1;
                 sr->chn_info.common_window = 1;
@@ -324,7 +353,7 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                 sl->quant_change >>= 1;
                 sr->quant_change >>= 1;
 
-                if(sl->quant_change == 0 && sr->quant_change == 0 &&
+                if (sl->quant_change == 0 && sr->quant_change == 0 &&
                    counted_bits>available_bits) {
                    sl->quant_change = 1;
                    sr->quant_change = 1;
@@ -361,7 +390,7 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
 
                 s->quant_change >>= 1;
 
-                if(s->quant_change == 0 && 
+                if (s->quant_change == 0 && 
                    counted_bits>available_bits)
                     s->quant_change = 1;
 #endif 
@@ -609,23 +638,23 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
     sample_in = (short *)buf_in;
     /*ith sample, jth chn*/
-    for(i = 0; i < AAC_FRAME_LEN; i++) 
-        for(j = 0; j < chn_num; j++) 
+    for (i = 0; i < AAC_FRAME_LEN; i++) 
+        for (j = 0; j < chn_num; j++) 
             f->sample[i+j*AAC_FRAME_LEN] = (float)(sample_in[i*chn_num+j]);
 
     block_switch_en = f->block_switch_en;
 
     /*psy analysis and use filterbank to generate mdctline*/
-    for(i = 0; i < chn_num; i++) {
+    for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
         sample_buf = f->sample+i*AAC_FRAME_LEN;
         /*analysis*/
-        if(block_switch_en) {
+        if (block_switch_en) {
             s->block_type = fa_aacblocktype_switch(s->h_aac_analysis, s->h_aacpsy, s->pe);
             s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
             s->bits_more  = s->bits_alloc - 90;
             /*printf("block_type=%d, pe=%f, bits_alloc=%d\n", s->block_type, s->pe, s->bits_alloc);*/
-        }else {
+        } else {
             s->block_type = ONLY_LONG_BLOCK;
         }
 
@@ -643,7 +672,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         }
 
         /*use mdct transform*/
-        if(s->block_type == ONLY_SHORT_BLOCK) {
+        if (s->block_type == ONLY_SHORT_BLOCK) {
+#if 0
             s->num_window_groups = 1;
             s->window_group_length[0] = 8;
             s->window_group_length[1] = 0;
@@ -653,6 +683,17 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             s->window_group_length[5] = 0;
             s->window_group_length[6] = 0;
             s->window_group_length[7] = 0;
+#else 
+            s->num_window_groups = 4;
+            s->window_group_length[0] = 2;
+            s->window_group_length[1] = 2;
+            s->window_group_length[2] = 2;
+            s->window_group_length[3] = 2;
+            s->window_group_length[4] = 0;
+            s->window_group_length[5] = 0;
+            s->window_group_length[6] = 0;
+            s->window_group_length[7] = 0;
+#endif
             fa_mdctline_sfb_arrange(s->h_mdctq_short, s->mdct_line, 
                                     s->num_window_groups, s->window_group_length);
             fa_xmin_sfb_arrange(s->h_mdctq_short, xmin,
@@ -661,7 +702,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_mdctline_pow34(s->h_mdctq_short);
 
             memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
-        }else {
+        } else {
             s->num_window_groups = 1;
             s->window_group_length[0] = 1;
             fa_mdctline_sfb_arrange(s->h_mdctq_long, s->mdct_line, 
@@ -694,8 +735,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
         for (gr = 0; gr < s->num_window_groups; gr++) {
             for (sfb = 0; sfb < sfb_num; sfb++) {
-                /*s->scalefactor[gr][sfb] = s->common_scalefac - s->scalefactor[gr][sfb] +4+ SF_OFFSET;*/
-                s->scalefactor[gr][sfb] = s->common_scalefac - s->scalefactor[gr][sfb] +4+ SF_OFFSET;
+                s->scalefactor[gr][sfb] = s->common_scalefac - s->scalefactor[gr][sfb] + GAIN_ADJUST + SF_OFFSET;
             }
         }
         s->common_scalefac = s->scalefactor[0][0];
@@ -703,8 +743,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
     fa_write_bitstream(f);
 
-    for(i = 0; i < 1024; i++) {
-        if(s->mdct_line[i] >= 0)
+    for (i = 0; i < 1024; i++) {
+        if (s->mdct_line[i] >= 0)
             s->mdct_line_sign[i] = 1;
         else
             s->mdct_line_sign[i] = -1;

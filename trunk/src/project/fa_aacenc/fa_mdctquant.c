@@ -1,3 +1,30 @@
+/*
+  falab - free algorithm lab 
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+  filename: fa_mdctquant.c 
+  version : v1.0.0
+  time    : 2012/08/22 - 2012/10/05 
+  author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
+
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -59,10 +86,10 @@ uintptr_t fa_mdctquant_init(int mdct_line_num, int sfb_num, int *swb_low, int bl
     memset(f->sfb_low    , 0, sizeof(int)*(FA_SWB_NUM_MAX+1)*NUM_WINDOW_GROUPS_MAX);
     memset(f->sfb_high   , 0, sizeof(int)*FA_SWB_NUM_MAX*NUM_WINDOW_GROUPS_MAX);
 
-    for(swb = 0; swb < sfb_num; swb++) {
+    for (swb = 0; swb < sfb_num; swb++) {
         f->swb_low[swb] = swb_low[swb];
 /*
-        if(swb == sfb_num - 1)
+        if (swb == sfb_num - 1)
             f->swb_high[swb] = mdct_line_num-1;
         else 
             f->swb_high[swb] = swb_low[swb+1] - 1;
@@ -78,7 +105,7 @@ void      fa_mdctquant_uninit(uintptr_t handle)
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
 
-    if(f) {
+    if (f) {
         free(f);
         f = NULL;
     }
@@ -91,7 +118,7 @@ static void xr_pow34_calculate(float *mdct_line, float mdct_line_num,
     int i;
     float tmp;
 
-    for(i = 0; i < mdct_line_num; i++) {
+    for (i = 0; i < mdct_line_num; i++) {
         tmp = fabsf(mdct_line[i]); 
         xr_pow[i] = sqrtf(tmp*sqrtf(tmp));
 
@@ -111,9 +138,9 @@ float fa_mdctline_getmax(uintptr_t handle)
     max_mdct_line = 0;
 
     /*calculate max mdct_line*/
-    for(i = 0; i < (f->block_type_cof*f->mdct_line_num); i++) {
+    for (i = 0; i < (f->block_type_cof*f->mdct_line_num); i++) {
         abs_mdct_line = fabsf(mdct_line[i]);
-        if(abs_mdct_line > max_mdct_line)
+        if (abs_mdct_line > max_mdct_line)
             max_mdct_line = abs_mdct_line;
     }
 
@@ -162,10 +189,10 @@ void fa_mdctline_scaled(uintptr_t handle,
     xr_pow       = f->xr_pow;
     mdct_scaled  = f->mdct_scaled;
 
-    for(gr = 0; gr < num_window_groups; gr++) {
-        for(sfb = 0; sfb < sfb_num; sfb++) {
+    for (gr = 0; gr < num_window_groups; gr++) {
+        for (sfb = 0; sfb < sfb_num; sfb++) {
             cof_scale = powf(2, (3./16.) * scalefactor[gr][sfb]);
-            for(i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) 
+            for (i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) 
                 mdct_scaled[i] = xr_pow[i] * cof_scale;
         }
     }
@@ -180,7 +207,7 @@ void fa_mdctline_quant(uintptr_t handle,
     float *mdct_scaled = f->mdct_scaled;
     float cof_quant;
 
-    for(i = 0; i < f->block_type_cof*f->mdct_line_num; i++) {
+    for (i = 0; i < f->block_type_cof*f->mdct_line_num; i++) {
         cof_quant = powf(2, (-3./16)*common_scalefac);
         /*x_quant[i] = (int)(mdct_scaled[i] * cof_quant + MAGIC_NUMBER);*/
         if (mdct_scaled[i] > 0)
@@ -225,13 +252,13 @@ void fa_calculate_quant_noise(uintptr_t handle,
 
     /*calculate error_energy*/
     mdct_line_offset = 0;
-    for(gr = 0; gr < num_window_groups; gr++) {
-        for(sfb = 0; sfb < sfb_num; sfb++) {
+    for (gr = 0; gr < num_window_groups; gr++) {
+        for (sfb = 0; sfb < sfb_num; sfb++) {
             swb_width = swb_high[sfb] - swb_low[sfb] + 1;
-            for(win = 0; win < window_group_length[gr]; win++) {
+            for (win = 0; win < window_group_length[gr]; win++) {
                 float tmp_xq;
                 f->error_energy[gr][sfb][win] = 0;
-                for(i = 0; i < swb_width; i++) {
+                for (i = 0; i < swb_width; i++) {
                     inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));
                     tmp_xq = (float)(x_quant[mdct_line_offset+i]);
                     inv_x_quant = powf(fabsf(tmp_xq), 4./3.) * inv_cof; 
@@ -279,14 +306,14 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
     memset(sfb_allscale     , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
 
     /*judge if scalefactor increase or not*/
-    for(gr = 0; gr < num_window_groups; gr++) {
-        for(sfb = 0; sfb < sfb_num; sfb++) {
-            for(win = 0; win < window_group_length[gr]; win++) {
-                if(f->error_energy[gr][sfb][win] > f->xmin[gr][sfb][win]) {
+    for (gr = 0; gr < num_window_groups; gr++) {
+        for (sfb = 0; sfb < sfb_num; sfb++) {
+            for (win = 0; win < window_group_length[gr]; win++) {
+                if (f->error_energy[gr][sfb][win] > f->xmin[gr][sfb][win]) {
                     scalefactor[gr][sfb] += 1;
                     sfb_scale_cnt[gr]++;
                     break;
-                }else {
+                } else {
                     energy_err_ok_cnt[gr]++;
                 }
             }
@@ -294,16 +321,16 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
     }
 
     /*every scalefactor band has good energy distorit;*/
-    for(gr = 0; gr < num_window_groups; gr++) {
-        if(energy_err_ok_cnt[gr] >= sfb_num*window_group_length[gr])
+    for (gr = 0; gr < num_window_groups; gr++) {
+        if (energy_err_ok_cnt[gr] >= sfb_num*window_group_length[gr])
             energy_err_ok[gr] = 1;
         else 
             energy_err_ok[gr] = 0;
 
-        if(sfb_scale_cnt[gr] >= sfb_num) {
+        if (sfb_scale_cnt[gr] >= sfb_num) {
             sfb_allscale[gr] = 1;
             /*recover the scalefactor*/
-            for(sfb = 0; sfb < sfb_num; sfb++) {
+            for (sfb = 0; sfb < sfb_num; sfb++) {
                 scalefactor[gr][sfb] -= 1;
             }
         }
@@ -311,8 +338,8 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
             sfb_allscale[gr] = 0;
     }
 
-    for(gr = 0; gr < num_window_groups; gr++) {
-        if((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
+    for (gr = 0; gr < num_window_groups; gr++) {
+        if ((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
             for (sfb = 1; sfb < sfb_num; sfb++) {
                 if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 40)
                     return 1;
@@ -363,15 +390,15 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
     memset(sfb_allscale     , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
 
     /*judge if scalefactor increase or not*/
-    for(gr = 0; gr < num_window_groups; gr++) {
-        for(sfb = 0; sfb < sfb_num; sfb++) {
-            for(win = 0; win < window_group_length[gr]; win++) {
-                if((f1->error_energy[gr][sfb][win] > f1->xmin[gr][sfb][win]) ||
+    for (gr = 0; gr < num_window_groups; gr++) {
+        for (sfb = 0; sfb < sfb_num; sfb++) {
+            for (win = 0; win < window_group_length[gr]; win++) {
+                if ((f1->error_energy[gr][sfb][win] > f1->xmin[gr][sfb][win]) ||
                    (f2->error_energy[gr][sfb][win] > f2->xmin[gr][sfb][win])) {
                     scalefactor[gr][sfb] += 1;
                     sfb_scale_cnt[gr]++;
                     break;
-                }else {
+                } else {
                     energy_err_ok_cnt[gr]++;
                 }
             }
@@ -379,16 +406,16 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
     }
 
     /*every scalefactor band has good energy distorit;*/
-    for(gr = 0; gr < num_window_groups; gr++) {
-        if(energy_err_ok_cnt[gr] >= sfb_num*window_group_length[gr])
+    for (gr = 0; gr < num_window_groups; gr++) {
+        if (energy_err_ok_cnt[gr] >= sfb_num*window_group_length[gr])
             energy_err_ok[gr] = 1;
         else 
             energy_err_ok[gr] = 0;
 
-        if(sfb_scale_cnt[gr] >= sfb_num) {
+        if (sfb_scale_cnt[gr] >= sfb_num) {
             sfb_allscale[gr] = 1;
             /*recover the scalefactor*/
-            for(sfb = 0; sfb < sfb_num; sfb++) {
+            for (sfb = 0; sfb < sfb_num; sfb++) {
                 scalefactor[gr][sfb] -= 1;
             }
         }
@@ -396,8 +423,8 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
             sfb_allscale[gr] = 0;
     }
 
-    for(gr = 0; gr < num_window_groups; gr++) {
-        if((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
+    for (gr = 0; gr < num_window_groups; gr++) {
+        if ((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
             for (sfb = 1; sfb < sfb_num; sfb++) {
                 if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 40)
                     return 1;
@@ -445,11 +472,11 @@ int fa_mdctline_iquantize(uintptr_t handle,
     swb_high = f->swb_high;
 
     mdct_line_offset = 0;
-    for(gr = 0; gr < num_window_groups; gr++) {
-        for(sfb = 0; sfb < sfb_num; sfb++) {
+    for (gr = 0; gr < num_window_groups; gr++) {
+        for (sfb = 0; sfb < sfb_num; sfb++) {
             swb_width = swb_high[sfb] - swb_low[sfb] + 1;
-            for(win = 0; win < window_group_length[gr]; win++) {
-                for(i = 0; i < swb_width; i++) {
+            for (win = 0; win < window_group_length[gr]; win++) {
+                for (i = 0; i < swb_width; i++) {
                     /*inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));*/
                     inv_cof = powf(2, 0.25*(scalefactor[gr][sfb] - SF_OFFSET));
                     tmp_xq = (float)fabsf(x_quant[mdct_line_offset+i]);
@@ -475,9 +502,9 @@ void fa_xmin_sfb_arrange(uintptr_t handle, float xmin_swb[NUM_WINDOW_GROUPS_MAX]
     int win_offset;
 
     win_offset = 0;
-    for(gr = 0; gr < num_window_groups; gr++) {
-        for(swb = 0; swb < sfb_num; swb++) {
-            for(win = 0; win < window_group_length[gr]; win++) {
+    for (gr = 0; gr < num_window_groups; gr++) {
+        for (swb = 0; swb < sfb_num; swb++) {
+            for (win = 0; win < window_group_length[gr]; win++) {
                 f->xmin[gr][swb][win] = xmin_swb[win_offset+win][swb];
             }
         }
@@ -506,11 +533,11 @@ void fa_mdctline_sfb_arrange(uintptr_t handle, float *mdct_line_swb,
     k = 0;
     group_offset = 0;
     /*order rearrage:  swb[gr][win][sfb][k] ---> sfb[gr][sfb][win][k]*/
-    for(gr = 0; gr < num_window_groups; gr++) {
-        for(swb = 0; swb < sfb_num; swb++) {
+    for (gr = 0; gr < num_window_groups; gr++) {
+        for (swb = 0; swb < sfb_num; swb++) {
             swb_width = swb_high[swb] - swb_low[swb] + 1;
-            for(win = 0; win < window_group_length[gr]; win++) {
-                for(i = 0; i < swb_width; i++) {
+            for (win = 0; win < window_group_length[gr]; win++) {
+                for (i = 0; i < swb_width; i++) {
                     index = group_offset + swb_low[swb] + win*mdct_line_num + i;
                     mdct_line_sfb[k++] = mdct_line_swb[index];
                 }
@@ -521,10 +548,10 @@ void fa_mdctline_sfb_arrange(uintptr_t handle, float *mdct_line_swb,
 
     /*calcualte sfb width and sfb_low and sfb_high*/
     group_offset = 0;
-    for(gr = 0; gr < num_window_groups; gr++) {
+    for (gr = 0; gr < num_window_groups; gr++) {
         sfb = 0;
         f->sfb_low[gr][sfb++] = group_offset;
-        for(swb = 0; swb < sfb_num; swb++) {
+        for (swb = 0; swb < sfb_num; swb++) {
             swb_width           = swb_high[swb]  - swb_low[swb] + 1;
             f->sfb_low[gr][sfb]    = f->sfb_low[gr][sfb-1] + swb_width*window_group_length[gr];
             f->sfb_high[gr][sfb-1] = f->sfb_low[gr][sfb]   - 1;
@@ -560,11 +587,11 @@ void fa_mdctline_sfb_iarrange(uintptr_t handle, float *mdct_line_swb, int *mdct_
     group_offset = 0;
 
     /*order rearrage:  sfb[gr][sb][win][k] ---> swb[gr][win][sb][k]*/
-    for(gr = 0; gr < num_window_groups; gr++) {
-        for(swb = 0; swb < sfb_num; swb++) {
+    for (gr = 0; gr < num_window_groups; gr++) {
+        for (swb = 0; swb < sfb_num; swb++) {
             swb_width = swb_high[swb] - swb_low[swb] + 1;
-            for(win = 0; win < window_group_length[gr]; win++) {
-                for(i = 0; i < swb_width; i++) {
+            for (win = 0; win < window_group_length[gr]; win++) {
+                for (i = 0; i < swb_width; i++) {
                     index = group_offset + swb_low[swb] + win*mdct_line_num + i;
                     mdct_line_swb[index] = mdct_line_sfb[k++];
                 }
@@ -573,7 +600,7 @@ void fa_mdctline_sfb_iarrange(uintptr_t handle, float *mdct_line_swb, int *mdct_
         group_offset += mdct_line_num * window_group_length[gr];
     }
 
-    for(i = 0; i < 1024; i++)
+    for (i = 0; i < 1024; i++)
         mdct_line_swb[i] = mdct_line_swb[i] * mdct_line_sign[i];
 
 }

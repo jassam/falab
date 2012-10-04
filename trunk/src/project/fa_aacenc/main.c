@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,11 +20,28 @@
   version : v1.0.0
   time    : 2012/07/22 23:43
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
 
-  this main.c is the a good study tools to let you know how the fir 
-  filter working, and how we use these filter to process signal.
 */
 
+
+/*
+TODO:
+   TASK                                STATUS                SUPPORT 
+    ------------------------------------------------------------------
+    mono                               complete               yes
+    stereo(common_window=0)            complete               yes
+    stereo(ms)                         doing                  no 
+    lfe                                no schecdule           no(easy, need test)
+    high frequency optimize            doing 
+    bitrate control fixed              doing 
+    TNS                                no schecdule           no(I think no useless, waste time, no need support)
+    LTP                                no schecdule           no(very slow, no need support)
+    add fast xmin/pe caculate method   doing                 
+    add new quantize fast method       doing 
+    optimize the speed performance     doing 
+     (maybe not use psy)
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,7 +122,6 @@ int main(int argc, char *argv[])
     }
 
     fmt = fa_wavfmt_readheader(sourcefile);
-    fseek(sourcefile,44,0);
     fseek(destfile, 0, SEEK_SET);
     fa_wavfmt_writeheader(fmt, destfile);
     printf("\n\nsamplerate=%d\n", fmt.samplerate);
