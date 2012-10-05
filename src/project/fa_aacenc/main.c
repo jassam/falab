@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     int ms_enable = MS_DEFAULT;
     int lfe_enable = LFE_DEFAULT;
     int tns_enable = TNS_DEFAULT;
-    int block_switch_enable = BLOCK_SWITCH_DEFAULT;
+    int block_switch_enable = 0;//BLOCK_SWITCH_DEFAULT;
 
     fa_aacenc_ctx_t *f;
 
