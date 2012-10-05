@@ -57,6 +57,9 @@ TODO:
 
 #define FRAME_SIZE_MAX  2048 
 
+/*note: debug decode can only work in mono, just test inverse quantize and synthesis*/
+/*#define DEBUG_DECODE*/
+
 int main(int argc, char *argv[])
 {
     int ret;
@@ -77,8 +80,11 @@ int main(int argc, char *argv[])
 
     uintptr_t h_aacenc;
 
+#ifdef DEBUG_DECODE
     uintptr_t  h_aac_synthesis;
     uintptr_t h_mdctiq_long, h_mdctiq_short;
+#endif
+
     int block_type;
 
     int average_bits, more_bits, bitres_bits, maximum_bitreservoir_size; 
@@ -106,10 +112,12 @@ int main(int argc, char *argv[])
     ret = fa_parseopt(argc, argv);
     if(ret) return -1;
 
+#ifdef DEBUG_DECODE
     if ((destfile = fopen(opt_outputfile, "w+b")) == NULL) {
 		printf("output file can not be opened\n");
 		return 0; 
 	}                         
+#endif
 
     if ((aacfile = fopen("outaac.aac", "w+b")) == NULL) {
 		printf("output file can not be opened\n");
@@ -122,8 +130,10 @@ int main(int argc, char *argv[])
     }
 
     fmt = fa_wavfmt_readheader(sourcefile);
+#ifdef DEBUG_DECODE
     fseek(destfile, 0, SEEK_SET);
     fa_wavfmt_writeheader(fmt, destfile);
+#endif
     printf("\n\nsamplerate=%d\n", fmt.samplerate);
 
     sample_rate = fmt.samplerate;
@@ -133,7 +143,7 @@ int main(int argc, char *argv[])
                               2, LOW, 
                               ms_enable, lfe_enable, tns_enable, block_switch_enable);
 
-
+#ifdef DEBUG_DECODE
     h_aac_synthesis = fa_aacfilterbank_init(block_switch_enable);
 
     switch(fmt.samplerate) {
@@ -150,7 +160,7 @@ int main(int argc, char *argv[])
             h_mdctiq_short= fa_mdctquant_init(128 , FA_SWB_32k_SHORT_NUM,fa_swb_32k_short_offset, 8);
             break;
     }
-
+#endif
 
     while(1)
     {
@@ -171,6 +181,7 @@ int main(int argc, char *argv[])
         fa_aacenc_encode(h_aacenc, wavsamples_in, chn_num*2*read_len, aac_buf, &aac_out_len);
         fwrite(aac_buf, 1, aac_out_len, aacfile);
 
+#ifdef DEBUG_DECODE
         f = (fa_aacenc_ctx_t *)h_aacenc;
 
         /*synthesis*/
@@ -227,6 +238,7 @@ int main(int argc, char *argv[])
         fwrite(wavsamples_out, 2, opt_framelen, destfile);
 
         write_total_size += 2 * opt_framelen;
+#endif
 
         frame_index++;
         if (frame_index == 30) {
@@ -235,12 +247,15 @@ int main(int argc, char *argv[])
         fprintf(stderr,"\rthe frame = [%d]", frame_index);
     }
 
+#ifdef DEBUG_DECODE
     fmt.data_size=write_total_size/fmt.block_align;
     fseek(destfile, 0, SEEK_SET);
     fa_wavfmt_writeheader(fmt,destfile);
+    fclose(destfile);
+#endif
 
     fclose(sourcefile);
-    fclose(destfile);
+    fclose(aacfile);
 
     printf("\n");
 
