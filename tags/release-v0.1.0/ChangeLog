@@ -1,0 +1,41 @@
+2012-10-04    llz
+	* update module source code 
+	* add fa_aacenc project (now support mono and stereo encoding, but need to do 
+	  more test, and I will add ms encoding and do speed optimization, now is 
+	  very slow, I don't like this speed). 
+	* I think the fa_aacenc audio quality performance is better than faac (I tested)
+	* package the fft, mdct, resample, fir and upload
+
+			 
+2012-09-10    llz
+	* long time no log, add many source code to google code under control by
+	  svn
+
+2012-07-29    llz
+	* add fa_psychomodel in audo 
+
+2012-07-22~25 llz
+	* add fa_asmodel module in audio, this model is the prototype of analysis 
+	  and synthesis model for learning audio signal processing, it can be also
+	  used in video too, but I only write it for audio for I familar with
+	  audio processing.
+
+2012-07-18~21 llz
+	* add the fa_fft&fa_mdct module in share, also add fixed point mdct
+
+2012-07-15 llz
+	* add the fa_resample module in share
+
+2012-07-10 llz
+	* add the fa_fir module in share 
+
+2012-07-09 llz
+	* add the fa_print module in utils
+	* add the fa_wavfmt modult in audio
+
+2012-07-08 llz
+	* add fa_parseopt module in utils
+
+2012-07-07 llz
+	* build the directory of falab project
+	* will add some signal processing basis module into module directory
