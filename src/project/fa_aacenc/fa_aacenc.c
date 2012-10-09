@@ -95,11 +95,11 @@ typedef struct _rate_cutoff {
 /*reference to 48000kHz sample rate*/
 static rate_cutoff_t rate_cutoff[] = 
 {
-    {16000, 8000},
-    {24000, 10000},
-    {32000, 11000},
-    {38000, 13000},
-    {48000, 15000},
+    {16000, 5000},
+    {24000, 5000},
+    {32000, 8000},
+    {38000, 12000},
+    {48000, 20000},
     {64000, 20000},
     {0    , 0},
 };
@@ -120,8 +120,14 @@ static int get_bandwidth(int chn, int sample_rate, int bit_rate)
             break;
     }
 
-    bandwidth = rate_cutoff[i].cutoff;
+    if (i > 0)
+        bandwidth = rate_cutoff[i-1].cutoff;
+    else 
+        bandwidth = 5000;
 
+    if (bandwidth == 0)
+        bandwidth = 20000;
+    printf("bandwidth = %d\n", bandwidth);
     assert(bandwidth > 0 && bandwidth <= 20000);
 
     return bandwidth;

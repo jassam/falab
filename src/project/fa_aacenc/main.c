@@ -33,7 +33,7 @@ TODO:
     stereo(common_window=0)            complete               yes
     stereo(ms)                         doing                  no 
     lfe                                no schecdule           no(easy, need test)
-    high frequency optimize            doing 
+    high frequency optimize            done                   yes(bandwith limited now)
     bitrate control fixed              doing 
     TNS                                no schecdule           no(I think no useless, waste time, no need support)
     LTP                                no schecdule           no(very slow, no need support)
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
     sample_rate = fmt.samplerate;
     chn_num     = fmt.channels;
 
-    h_aacenc = fa_aacenc_init(sample_rate, 48000, chn_num,
+    h_aacenc = fa_aacenc_init(sample_rate, 96000, chn_num,
                               2, LOW, 
                               ms_enable, lfe_enable, tns_enable, block_switch_enable);
 
