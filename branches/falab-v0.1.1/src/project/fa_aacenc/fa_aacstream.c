@@ -346,7 +346,7 @@ static int write_icsinfo(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
         bits += LEN_MAX_SFBS;
         bits += MAX_SHORT_WINDOWS - 1;
     } else { /* Otherwise, write out max_sfb and predictor data */
-        s->max_sfb = s->sfb_num_long;
+        /*s->max_sfb = s->sfb_num_long;*/
         if (write_flag) {
             fa_bitstream_putbits(h_bs, s->max_sfb, LEN_MAX_SFBL);
         }
@@ -830,11 +830,13 @@ static int write_hufftab_no(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
     if (s->block_type == ONLY_SHORT_BLOCK){
         max = 7;
         bit_len = 3;
-        sfb_num = s->sfb_num_short;
+        /*sfb_num = s->sfb_num_short;*/
+        sfb_num = s->max_sfb;
     } else {  /* the block_type is a long,start, or stop window */
         max = 31;
         bit_len = 5;
-        sfb_num = s->sfb_num_long;
+        /*sfb_num = s->sfb_num_long;*/
+        sfb_num = s->max_sfb;
     }
 
     for (gr = 0; gr < s->num_window_groups; gr++) {
@@ -913,9 +915,11 @@ static int write_scalefactor(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
     int sfb_num;
 
     if (s->block_type == ONLY_SHORT_BLOCK) {
-        sfb_num = s->sfb_num_short;
+        /*sfb_num = s->sfb_num_short;*/
+        sfb_num = s->max_sfb;
     } else {
-        sfb_num = s->sfb_num_long;
+        /*sfb_num = s->sfb_num_long;*/
+        sfb_num = s->max_sfb;
     }
 
     previous_scale_factor = s->common_scalefac;

@@ -392,17 +392,17 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                     if (s->block_type == ONLY_SHORT_BLOCK) {
                         fa_mdctline_quant(sl->h_mdctq_short, sl->common_scalefac, sl->x_quant);
                         sl->spectral_count = fa_mdctline_encode(sl->h_mdctq_short, sl->x_quant, sl->num_window_groups, sl->window_group_length, 
-                                                                sl->hufftab_no, sl->x_quant_code, sl->x_quant_bits);
+                                                                sl->hufftab_no, &(sl->max_sfb), sl->x_quant_code, sl->x_quant_bits);
                         fa_mdctline_quant(sr->h_mdctq_short, sr->common_scalefac, sr->x_quant);
                         sr->spectral_count = fa_mdctline_encode(sr->h_mdctq_short, sr->x_quant, sr->num_window_groups, sr->window_group_length, 
-                                                                sr->hufftab_no, sr->x_quant_code, sr->x_quant_bits);
+                                                                sr->hufftab_no, &(sr->max_sfb), sr->x_quant_code, sr->x_quant_bits);
                     } else {
                         fa_mdctline_quant(sl->h_mdctq_long, sl->common_scalefac, sl->x_quant);
                         sl->spectral_count = fa_mdctline_encode(sl->h_mdctq_long, sl->x_quant, sl->num_window_groups, sl->window_group_length, 
-                                                                sl->hufftab_no, sl->x_quant_code, sl->x_quant_bits);
+                                                                sl->hufftab_no, &(sl->max_sfb), sl->x_quant_code, sl->x_quant_bits);
                         fa_mdctline_quant(sr->h_mdctq_long, sr->common_scalefac, sr->x_quant);
                         sr->spectral_count = fa_mdctline_encode(sr->h_mdctq_long, sr->x_quant, sr->num_window_groups, sr->window_group_length, 
-                                                                sr->hufftab_no, sr->x_quant_code, sr->x_quant_bits);
+                                                                sr->hufftab_no, &(sr->max_sfb), sr->x_quant_code, sr->x_quant_bits);
                     }
 
                 } else {
@@ -412,21 +412,21 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                     if (sl->block_type == ONLY_SHORT_BLOCK) {
                         fa_mdctline_quant(sl->h_mdctq_short, sl->common_scalefac, sl->x_quant);
                         sl->spectral_count = fa_mdctline_encode(sl->h_mdctq_short, sl->x_quant, sl->num_window_groups, sl->window_group_length, 
-                                                                sl->hufftab_no, sl->x_quant_code, sl->x_quant_bits);
+                                                                sl->hufftab_no, &(sl->max_sfb), sl->x_quant_code, sl->x_quant_bits);
                     } else {
                         fa_mdctline_quant(sl->h_mdctq_long, sl->common_scalefac, sl->x_quant);
                         sl->spectral_count = fa_mdctline_encode(sl->h_mdctq_long, sl->x_quant, sl->num_window_groups, sl->window_group_length, 
-                                                                sl->hufftab_no, sl->x_quant_code, sl->x_quant_bits);
+                                                                sl->hufftab_no, &(sl->max_sfb), sl->x_quant_code, sl->x_quant_bits);
                     }
 
                     if (sr->block_type == ONLY_SHORT_BLOCK) {
                         fa_mdctline_quant(sr->h_mdctq_short, sr->common_scalefac, sr->x_quant);
                         sr->spectral_count = fa_mdctline_encode(sr->h_mdctq_short, sr->x_quant, sr->num_window_groups, sr->window_group_length, 
-                                                                sr->hufftab_no, sr->x_quant_code, sr->x_quant_bits);
+                                                                sr->hufftab_no, &(sr->max_sfb), sr->x_quant_code, sr->x_quant_bits);
                     } else {
                         fa_mdctline_quant(sr->h_mdctq_long, sr->common_scalefac, sr->x_quant);
                         sr->spectral_count = fa_mdctline_encode(sr->h_mdctq_long, sr->x_quant, sr->num_window_groups, sr->window_group_length, 
-                                                                sr->hufftab_no, sr->x_quant_code, sr->x_quant_bits);
+                                                                sr->hufftab_no, &(sr->max_sfb), sr->x_quant_code, sr->x_quant_bits);
                     }
 
                 }
@@ -467,11 +467,11 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                 if (s->block_type == ONLY_SHORT_BLOCK) {
                     fa_mdctline_quant(s->h_mdctq_short, s->common_scalefac, s->x_quant);
                     s->spectral_count = fa_mdctline_encode(s->h_mdctq_short, s->x_quant, s->num_window_groups, s->window_group_length, 
-                                                           s->hufftab_no, s->x_quant_code, s->x_quant_bits);
+                                                           s->hufftab_no, &(s->max_sfb), s->x_quant_code, s->x_quant_bits);
                 } else {
                     fa_mdctline_quant(s->h_mdctq_long, s->common_scalefac, s->x_quant);
                     s->spectral_count = fa_mdctline_encode(s->h_mdctq_long, s->x_quant, s->num_window_groups, s->window_group_length, 
-                                                           s->hufftab_no, s->x_quant_code, s->x_quant_bits);
+                                                           s->hufftab_no, &(s->max_sfb), s->x_quant_code, s->x_quant_bits);
                 }
 #if 1  
                 counted_bits  = fa_bits_count(f->h_bitstream, &f->cfg, s, NULL);
