@@ -337,7 +337,7 @@ static int write_icsinfo(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
 
     /* For short windows, write out max_sfb and scale_factor_grouping */
     if (s->block_type == ONLY_SHORT_BLOCK){
-        s->max_sfb = s->sfb_num_short;
+        /*s->max_sfb = s->sfb_num_short;*/
         if (write_flag) {
             fa_bitstream_putbits(h_bs, s->max_sfb, LEN_MAX_SFBS);
             grouping_bits = find_grouping_bits(s);
