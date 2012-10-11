@@ -142,6 +142,7 @@ int fa_write_bitstream_onechn(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aace
     /* Compute how many fill bits are needed to avoid overflowing bit reservoir */
     /* Save room for ID_END terminator */
     if (bits < (8 - LEN_SE_ID) ) {
+        exit(0);
         num_fill_bits = 8 - LEN_SE_ID - bits;
     } else {
         num_fill_bits = 0;

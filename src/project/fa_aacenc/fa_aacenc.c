@@ -757,7 +757,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             s->block_type = fa_aacblocktype_switch(s->h_aac_analysis, s->h_aacpsy, s->pe);
             s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
             s->bits_more  = s->bits_alloc - 90;
-            /*printf("block_type=%d, pe=%f, bits_alloc=%d\n", s->block_type, s->pe, s->bits_alloc);*/
+            /*printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);*/
         } else {
             s->block_type = ONLY_LONG_BLOCK;
         }
@@ -779,7 +779,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
         /*use mdct transform*/
         if (s->block_type == ONLY_SHORT_BLOCK) {
-#if 0
+#if 1 
             s->num_window_groups = 1;
             s->window_group_length[0] = 8;
             s->window_group_length[1] = 0;
@@ -823,6 +823,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
         s->quant_ok = 0;
     }
+    /*printf("\n");*/
 
     /*check common_window and start_common_scalefac*/
     calculate_start_common_scalefac(f);
