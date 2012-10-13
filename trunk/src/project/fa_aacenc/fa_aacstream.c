@@ -142,6 +142,7 @@ int fa_write_bitstream_onechn(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aace
     /* Compute how many fill bits are needed to avoid overflowing bit reservoir */
     /* Save room for ID_END terminator */
     if (bits < (8 - LEN_SE_ID) ) {
+        exit(0);
         num_fill_bits = 8 - LEN_SE_ID - bits;
     } else {
         num_fill_bits = 0;
@@ -337,7 +338,7 @@ static int write_icsinfo(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
 
     /* For short windows, write out max_sfb and scale_factor_grouping */
     if (s->block_type == ONLY_SHORT_BLOCK){
-        s->max_sfb = 14;
+        /*s->max_sfb = s->sfb_num_short;*/
         if (write_flag) {
             fa_bitstream_putbits(h_bs, s->max_sfb, LEN_MAX_SFBS);
             grouping_bits = find_grouping_bits(s);
@@ -346,7 +347,7 @@ static int write_icsinfo(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
         bits += LEN_MAX_SFBS;
         bits += MAX_SHORT_WINDOWS - 1;
     } else { /* Otherwise, write out max_sfb and predictor data */
-        s->max_sfb = 49;
+        /*s->max_sfb = s->sfb_num_long;*/
         if (write_flag) {
             fa_bitstream_putbits(h_bs, s->max_sfb, LEN_MAX_SFBL);
         }
@@ -826,20 +827,23 @@ static int write_hufftab_no(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
     int sfb_num;
 
     /* Set local pointers to coderInfo elements */
-
+#if 1 
+    /*max is the escape value = (1<<bit_len)-1*/
     if (s->block_type == ONLY_SHORT_BLOCK){
         max = 7;
         bit_len = 3;
-        sfb_num = s->sfb_num_short;
+        /*sfb_num = s->sfb_num_short;*/
+        sfb_num = s->max_sfb;
     } else {  /* the block_type is a long,start, or stop window */
         max = 31;
         bit_len = 5;
-        sfb_num = s->sfb_num_long;
+        /*sfb_num = s->sfb_num_long;*/
+        sfb_num = s->max_sfb;
     }
+#endif 
 
     for (gr = 0; gr < s->num_window_groups; gr++) {
         repeat_counter=1;
-
         previous = s->hufftab_no[gr][0];
         if (write_flag) {
             fa_bitstream_putbits(h_bs, s->hufftab_no[gr][0],sect_cb_bits);
@@ -913,9 +917,11 @@ static int write_scalefactor(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
     int sfb_num;
 
     if (s->block_type == ONLY_SHORT_BLOCK) {
-        sfb_num = s->sfb_num_short;
+        /*sfb_num = s->sfb_num_short;*/
+        sfb_num = s->max_sfb;
     } else {
-        sfb_num = s->sfb_num_long;
+        /*sfb_num = s->sfb_num_long;*/
+        sfb_num = s->max_sfb;
     }
 
     previous_scale_factor = s->common_scalefac;

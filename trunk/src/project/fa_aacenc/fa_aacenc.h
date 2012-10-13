@@ -161,6 +161,11 @@ typedef struct _aacenc_ctx_t{
     float max_mdct_line;
     float mdct_line[2*AAC_FRAME_LEN];
 
+    int cutoff_line_long;
+    int cutoff_sfb_long;
+    int cutoff_line_short;
+    int cutoff_sfb_short;
+
     int spectral_count;
 
     int scalefactor[8][FA_SWB_NUM_MAX];
@@ -218,6 +223,8 @@ typedef struct _fa_aacenc_ctx_t{
 
     //encode ctx for each channel
     aacenc_ctx_t ctx[MAX_CHANNELS];
+
+    int band_width;
 
     uintptr_t h_bitstream;
     int used_bytes;
