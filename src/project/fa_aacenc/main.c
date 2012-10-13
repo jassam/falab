@@ -187,6 +187,7 @@ int main(int argc, char *argv[])
         /*synthesis*/
         memset(mdct_line_inv, 0, FRAME_SIZE_MAX*sizeof(float));
         if(f->ctx[0].block_type == ONLY_SHORT_BLOCK) {
+#if 0 
             num_window_groups = 1;
             window_group_length[0] = 8;
             window_group_length[1] = 0;
@@ -196,6 +197,18 @@ int main(int argc, char *argv[])
             window_group_length[5] = 0;
             window_group_length[6] = 0;
             window_group_length[7] = 0;
+#else 
+            num_window_groups = 2;
+            window_group_length[0] = 4;
+            window_group_length[1] = 4;
+            window_group_length[2] = 0;
+            window_group_length[3] = 0;
+            window_group_length[4] = 0;
+            window_group_length[5] = 0;
+            window_group_length[6] = 0;
+            window_group_length[7] = 0;
+
+#endif
  
             fa_mdctline_iquantize(h_mdctiq_short, 
                                   num_window_groups, window_group_length, 
