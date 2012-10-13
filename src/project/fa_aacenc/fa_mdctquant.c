@@ -607,7 +607,8 @@ void fa_mdctline_sfb_iarrange(uintptr_t handle, float *mdct_line_swb, int *mdct_
 
 
 int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, int *window_group_length, 
-                        int quant_hufftab_no[8][FA_SWB_NUM_MAX], int *x_quant_code, int *x_quant_bits)
+                        int quant_hufftab_no[8][FA_SWB_NUM_MAX], 
+                        int *max_sfb, int *x_quant_code, int *x_quant_bits)
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
     int quant_bits;
@@ -618,26 +619,30 @@ int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, i
     int *x_quant_code_gr;
     int *x_quant_bits_gr;
     int spectral_count;
-
     int group_offset;
+
     int gr;
+    int gr_max_sfb;
 
 
     x_quant_gr          = x_quant;
     x_quant_code_gr     = x_quant_code;
     x_quant_bits_gr     = x_quant_bits;
-    group_offset = 0;
     spectral_count = 0;
+    *max_sfb = 0;
+    gr_max_sfb = 0;
+    group_offset = 0;
+
     for (gr = 0; gr < num_window_groups; gr++) {
-        x_quant_gr          += group_offset;
         x_quant_code_gr     += group_offset;
         x_quant_bits_gr     += group_offset;
 
         fa_noiseless_huffman_bitcount(x_quant_gr, sfb_num,  f->sfb_low[gr],
                                       quant_hufftab_no[gr], x_quant_bits_gr);
-        spectral_count += fa_huffman_encode_mdctline(x_quant_gr, sfb_num, f->sfb_low[gr], 
-                                                     quant_hufftab_no[gr], x_quant_code_gr, x_quant_bits_gr);
-        group_offset += mdct_line_num * window_group_length[gr];
+        group_offset = fa_huffman_encode_mdctline(x_quant_gr, sfb_num, f->sfb_low[gr], 
+                                                     quant_hufftab_no[gr], &gr_max_sfb, x_quant_code_gr, x_quant_bits_gr);
+        spectral_count += group_offset;
+        *max_sfb = FA_MAX(*max_sfb, gr_max_sfb);
     }
 
     return spectral_count;

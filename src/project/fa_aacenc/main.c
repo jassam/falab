@@ -33,7 +33,7 @@ TODO:
     stereo(common_window=0)            complete               yes
     stereo(ms)                         doing                  no 
     lfe                                no schecdule           no(easy, need test)
-    high frequency optimize            doing 
+    high frequency optimize            done                   yes(bandwith limited now)
     bitrate control fixed              doing 
     TNS                                no schecdule           no(I think no useless, waste time, no need support)
     LTP                                no schecdule           no(very slow, no need support)
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     int ms_enable = MS_DEFAULT;
     int lfe_enable = LFE_DEFAULT;
     int tns_enable = TNS_DEFAULT;
-    int block_switch_enable = 0;//BLOCK_SWITCH_DEFAULT;
+    int block_switch_enable = BLOCK_SWITCH_DEFAULT;
 
     fa_aacenc_ctx_t *f;
 
@@ -187,6 +187,7 @@ int main(int argc, char *argv[])
         /*synthesis*/
         memset(mdct_line_inv, 0, FRAME_SIZE_MAX*sizeof(float));
         if(f->ctx[0].block_type == ONLY_SHORT_BLOCK) {
+#if 0 
             num_window_groups = 1;
             window_group_length[0] = 8;
             window_group_length[1] = 0;
@@ -196,6 +197,18 @@ int main(int argc, char *argv[])
             window_group_length[5] = 0;
             window_group_length[6] = 0;
             window_group_length[7] = 0;
+#else 
+            num_window_groups = 2;
+            window_group_length[0] = 4;
+            window_group_length[1] = 4;
+            window_group_length[2] = 0;
+            window_group_length[3] = 0;
+            window_group_length[4] = 0;
+            window_group_length[5] = 0;
+            window_group_length[6] = 0;
+            window_group_length[7] = 0;
+
+#endif
  
             fa_mdctline_iquantize(h_mdctiq_short, 
                                   num_window_groups, window_group_length, 

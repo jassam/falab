@@ -285,7 +285,7 @@ int fa_noiseless_huffman_bitcount(int *x_quant, int sfb_num,  int *sfb_offset,
 
 
 int fa_huffman_encode_mdctline(int *x_quant, int sfb_num, int *sfb_offset, int *quant_hufftab_no,
-                               int *x_quant_code, int *x_quant_bits)
+                               int *max_sfb, int *x_quant_code, int *x_quant_bits)
 {
     int sfb;
     int sequence_esc;
@@ -299,14 +299,31 @@ int fa_huffman_encode_mdctline(int *x_quant, int sfb_num, int *sfb_offset, int *
     int bits;
 
     int hufftab_no;
+    int hufftab_no_zero_cnt;
 
     counter = 0;
     bits    = 0;
+    hufftab_no_zero_cnt = 0;
 
     for (sfb = 0; sfb < sfb_num; sfb++) {
         offset     = sfb_offset[sfb];
         length     = sfb_offset[sfb+1] - sfb_offset[sfb];
         hufftab_no = quant_hufftab_no[sfb];
+
+#if 0
+        if (hufftab_no) {
+            *max_sfb = sfb+1;
+            hufftab_no_zero_cnt = 0;
+        } else {
+            hufftab_no_zero_cnt++;
+        }
+#else 
+        if (hufftab_no) {
+            *max_sfb = sfb+1;
+        }
+
+#endif
+
         switch(hufftab_no) {
             case 0:
             case INTENSITY_HCB:
@@ -522,7 +539,12 @@ int fa_huffman_encode_mdctline(int *x_quant, int sfb_num, int *sfb_offset, int *
                     }
                 }
         }
+         
     }
+#if 0
+    if (hufftab_no_zero_cnt)
+        counter = counter - hufftab_no_zero_cnt + 1 ;
+#endif
 
     /*return bits;*/
     return counter;
