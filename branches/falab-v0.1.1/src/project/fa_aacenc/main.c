@@ -58,7 +58,7 @@ TODO:
 #define FRAME_SIZE_MAX  2048 
 
 /*note: debug decode can only work in mono, just test inverse quantize and synthesis*/
-/*#define DEBUG_DECODE*/
+#define DEBUG_DECODE
 
 int main(int argc, char *argv[])
 {
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
         /*synthesis*/
         memset(mdct_line_inv, 0, FRAME_SIZE_MAX*sizeof(float));
         if(f->ctx[0].block_type == ONLY_SHORT_BLOCK) {
-#if 0 
+#if 1 
             num_window_groups = 1;
             window_group_length[0] = 8;
             window_group_length[1] = 0;

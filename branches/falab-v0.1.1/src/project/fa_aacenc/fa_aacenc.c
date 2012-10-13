@@ -41,7 +41,7 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
-#define GAIN_ADJUST 4
+#define GAIN_ADJUST   4 
 
 /* Returns the sample rate index */
 int get_samplerate_index(int sample_rate)
@@ -473,6 +473,8 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                     s->spectral_count = fa_mdctline_encode(s->h_mdctq_long, s->x_quant, s->num_window_groups, s->window_group_length, 
                                                            s->hufftab_no, &(s->max_sfb), s->x_quant_code, s->x_quant_bits);
                 }
+
+
 #if 1  
                 counted_bits  = fa_bits_count(f->h_bitstream, &f->cfg, s, NULL);
 
@@ -598,6 +600,7 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
 
         /*inner loop, search common_scalefac to fit the available_bits*/
         quant_innerloop(f, outer_loop_count);
+
 
         /*calculate quant noise */
         for (i = 0; i < chn_num; i++) {
@@ -757,18 +760,20 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             s->block_type = fa_aacblocktype_switch(s->h_aac_analysis, s->h_aacpsy, s->pe);
             s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
             s->bits_more  = s->bits_alloc - 90;
-            /*printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);*/
+#if 1
+            if (s->block_type != 0)
+                printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
+#endif
         } else {
             s->block_type = ONLY_LONG_BLOCK;
         }
 
         fa_aacfilterbank_analysis(s->h_aac_analysis, sample_buf, s->mdct_line);
-#if  1 
+
         if (s->block_type == ONLY_SHORT_BLOCK) 
             zero_cutoff(s->mdct_line, 128, s->cutoff_line_short);
         else
             zero_cutoff(s->mdct_line, 1024, s->cutoff_line_long);
-#endif
 
         /* calculate xmin and pe
          * use current sample_buf calculate pe to decide which block used in the next frame*/
