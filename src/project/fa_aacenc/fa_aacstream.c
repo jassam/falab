@@ -443,7 +443,8 @@ static int write_cpe(uintptr_t h_bs, aacenc_ctx_t *s, aacenc_ctx_t *sr, int aac_
                 int b;
                 for (gr = 0; gr < num_windows; gr++) {
                     for (b = 0; b < max_sfb; b++) {
-                        fa_bitstream_putbits(h_bs, p_chn_info->ms_info.ms_used[gr*max_sfb+b], LEN_MASK);
+                        /*fa_bitstream_putbits(h_bs, p_chn_info->ms_info.ms_used[gr*max_sfb+b], LEN_MASK);*/
+                        fa_bitstream_putbits(h_bs, p_chn_info->ms_info.ms_used[gr][b], LEN_MASK);
                     }
                 }
             }

@@ -46,6 +46,16 @@ typedef unsigned uintptr_t;
 
 #define SF_OFFSET             100 //105 //100
 
+
+typedef struct _ms_info_t{
+
+    int is_present;
+
+    //int ms_used[MAX_SCFAC_BANDS];
+    int ms_used[8][FA_SWB_NUM_MAX];
+
+}ms_info_t;
+
 uintptr_t fa_mdctquant_init(int mdct_line_num, int sfb_num, int *swb_low, int block_type_cof);
 void      fa_mdctquant_uninit(uintptr_t handle);
 
@@ -82,6 +92,9 @@ void fa_mdctline_sfb_iarrange(uintptr_t handle, float *mdct_line_swb, int *mdct_
 int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, int *window_group_length, 
                         int quant_hufftab_no[8][FA_SWB_NUM_MAX], 
                         int *max_sfb, int *x_quant_code, int *x_quant_bits);
+
+void fa_mdctline_ms_encode(uintptr_t hl, uintptr_t hr, int num_window_groups,
+                           ms_info_t *ms_l, ms_info_t *ms_r);
 
 #ifdef __cplusplus 
 }

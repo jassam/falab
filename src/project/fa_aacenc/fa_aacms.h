@@ -16,53 +16,31 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-  filename: fa_aacchn.h 
+  filename: fa_aacms.h 
   version : v1.0.0
-  time    : 2012/08/22 - 2012/10/05 
+  time    : 2012-10-14 14:52 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
   code URL: http://code.google.com/p/falab/
 
 */
 
-#ifndef _FA_AACCHN_H
-#define _FA_AACCHN_H 
 
-#include "fa_aaccfg.h"
-#include "fa_mdctquant.h"
+#ifndef _FA_AACMS_H 
+#define _FA_AACMS_H 
 
 #ifdef __cplusplus 
 extern "C"
 { 
 #endif  
 
-typedef struct _chn_info_t{
+#include "fa_aacenc.h"
 
-    int present;
-
-    int tag;
-
-    int ch_is_left;
-
-    int paired_ch;
-
-    int common_window;
-
-    int cpe;
-
-    int sce;
-
-    int lfe;
-
-    ms_info_t ms_info;
-
-}chn_info_t;
-
-void get_aac_chn_info(chn_info_t *chn_info, int nchn, int lfe_enable);
-
+void fa_aacmsenc(fa_aacenc_ctx_t *f);
 
 #ifdef __cplusplus 
 }
 #endif  
+
 
 
 
