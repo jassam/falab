@@ -358,6 +358,7 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
 int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_loop_count,
                                int num_window_groups, int *window_group_length,
                                int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
+                               int scalefactor1[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
                                int *x_quant)
 {
     fa_mdctquant_t *f1 = (fa_mdctquant_t *)handle1;
@@ -396,6 +397,7 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
                 if ((f1->error_energy[gr][sfb][win] > f1->xmin[gr][sfb][win]) ||
                    (f2->error_energy[gr][sfb][win] > f2->xmin[gr][sfb][win])) {
                     scalefactor[gr][sfb] += 1;
+                    scalefactor1[gr][sfb] += 1;
                     sfb_scale_cnt[gr]++;
                     break;
                 } else {
@@ -417,6 +419,7 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
             /*recover the scalefactor*/
             for (sfb = 0; sfb < sfb_num; sfb++) {
                 scalefactor[gr][sfb] -= 1;
+                scalefactor1[gr][sfb] -= 1;
             }
         }
         else
@@ -647,3 +650,82 @@ int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, i
 
     return spectral_count;
 }
+
+               
+void fa_mdctline_ms_encode(uintptr_t hl, uintptr_t hr, int num_window_groups,
+                           ms_info_t *ms_l, ms_info_t *ms_r)
+{
+    fa_mdctquant_t *fl = (fa_mdctquant_t *)hl;
+    fa_mdctquant_t *fr = (fa_mdctquant_t *)hr;
+
+    /*the mdct_line_num and sfb_num now is same*/
+    int mdct_line_num = fl->mdct_line_num;
+    int sfb_num       = fl->sfb_num;
+    float *mdctline_l = fl->mdct_line;
+    float *mdctline_r = fr->mdct_line;
+
+    int gr;
+    int *sfb_offset;
+    int sfb;
+
+    for (gr = 0; gr < num_window_groups; gr++) {
+        sfb_offset = fl->sfb_low[gr];
+
+        for (sfb = 0; sfb < sfb_num; sfb++) {
+            int   ms = 0;
+            float sum, diff;
+            float enrgs, enrgd, enrgl, enrgr;
+            float maxs, maxd, maxl, maxr;
+            int offset, length;
+            int i;
+
+            offset     = sfb_offset[sfb];
+            length     = sfb_offset[sfb+1] - sfb_offset[sfb];
+
+            for (i = offset; i < offset+length; i++) {
+                float lx = mdctline_l[i];
+                float rx = mdctline_r[i];
+
+                sum  = 0.5 * (lx + rx);
+                diff = 0.5 * (lx - rx);
+
+                enrgs += sum * sum;
+                maxs = FA_MAX(maxs, fabs(sum));
+
+                enrgd += diff * diff;
+                maxd = FA_MAX(maxd, fabs(diff));
+
+                enrgl += lx * lx;
+                enrgr += rx * rx;
+
+                maxl = FA_MAX(maxl, fabs(lx));
+                maxr = FA_MAX(maxr, fabs(rx));
+
+            }
+
+            if ((FA_MIN(enrgs, enrgd) < FA_MIN(enrgl, enrgr))
+                 && (FA_MIN(maxs, maxd) < FA_MIN(maxl, maxr)))
+                ms = 1;
+
+            //printf("%d:%d\n", sfb, ms);
+
+            ms_l->ms_used[gr][sfb] = ms_r->ms_used[gr][sfb] = ms;
+            ms_l->is_present = 1;
+            ms_r->is_present = 1;
+
+            if (ms) {
+                for (i = offset; i < offset+length; i++) {
+                    sum  = mdctline_l[i] + mdctline_r[i];
+                    diff = mdctline_l[i] - mdctline_r[i];
+                    mdctline_l[i] = 0.5 * sum;
+                    mdctline_r[i] = 0.5 * diff;
+                }
+            }
+        }
+    }
+
+}
+
+
+
+

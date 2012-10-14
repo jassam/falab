@@ -58,7 +58,7 @@ TODO:
 #define FRAME_SIZE_MAX  2048 
 
 /*note: debug decode can only work in mono, just test inverse quantize and synthesis*/
-#define DEBUG_DECODE
+/*#define DEBUG_DECODE*/
 
 int main(int argc, char *argv[])
 {
