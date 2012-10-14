@@ -828,7 +828,6 @@ static int write_hufftab_no(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
     int sfb_num;
 
     /* Set local pointers to coderInfo elements */
-#if 1 
     /*max is the escape value = (1<<bit_len)-1*/
     if (s->block_type == ONLY_SHORT_BLOCK){
         max = 7;
@@ -841,7 +840,6 @@ static int write_hufftab_no(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
         /*sfb_num = s->sfb_num_long;*/
         sfb_num = s->max_sfb;
     }
-#endif 
 
     for (gr = 0; gr < s->num_window_groups; gr++) {
         repeat_counter=1;

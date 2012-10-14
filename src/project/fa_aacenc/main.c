@@ -31,7 +31,7 @@ TODO:
     ------------------------------------------------------------------
     mono                               complete               yes
     stereo(common_window=0)            complete               yes
-    stereo(ms)                         doing                  no 
+    stereo(ms)                         complete               yes 
     lfe                                no schecdule           no(easy, need test)
     high frequency optimize            done                   yes(bandwith limited now)
     bitrate control fixed              doing 
@@ -106,6 +106,8 @@ int main(int argc, char *argv[])
     int lfe_enable = LFE_DEFAULT;
     int tns_enable = TNS_DEFAULT;
     int block_switch_enable = BLOCK_SWITCH_DEFAULT;
+    int blockswitch_method = BLOCKSWITCH_PSY;
+    int quantize_method = QUANTIZE_LOOP;
 
     fa_aacenc_ctx_t *f;
 
@@ -141,7 +143,8 @@ int main(int argc, char *argv[])
 
     h_aacenc = fa_aacenc_init(sample_rate, 96000, chn_num,
                               2, LOW, 
-                              ms_enable, lfe_enable, tns_enable, block_switch_enable);
+                              ms_enable, lfe_enable, tns_enable, block_switch_enable,
+                              blockswitch_method, quantize_method);
 
 #ifdef DEBUG_DECODE
     h_aac_synthesis = fa_aacfilterbank_init(block_switch_enable);

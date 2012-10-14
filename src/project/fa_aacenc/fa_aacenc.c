@@ -44,6 +44,9 @@
 
 #define GAIN_ADJUST   4 
 
+static int blockswitch_psy(aacenc_ctx_t *s);
+static void quantize_loop(fa_aacenc_ctx_t *f);
+
 /* Returns the sample rate index */
 int get_samplerate_index(int sample_rate)
 {
@@ -164,7 +167,8 @@ static int get_cutoff_sfb(int sfb_offset_max, int *sfb_offset, int cutoff_line)
 
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
                          int mpeg_version, int aac_objtype, 
-                         int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable)
+                         int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable,
+                         int blockswitch_method, int quantize_method)
 {
     int i;
     int bits_average;
@@ -197,13 +201,44 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     bits_res_maxsize = get_aac_bitreservoir_maxsize(bits_average, sample_rate);
     f->h_bitstream = fa_bitstream_init((6144/8)*chn_num);
 
+
+    switch (blockswitch_method) {
+        case BLOCKSWITCH_PSY:
+            f->blockswitch_method = BLOCKSWITCH_PSY;
+            f->do_blockswitch  = blockswitch_psy;
+            break;
+        case BLOCKSWITCH_VAR:
+            break;
+        default:
+            f->blockswitch_method = BLOCKSWITCH_PSY;
+            f->do_blockswitch  = blockswitch_psy;
+            break;
+
+    }
+
+    switch (quantize_method) {
+        case QUANTIZE_LOOP:
+            f->quantize_method = QUANTIZE_LOOP;
+            f->do_quantize = quantize_loop;
+            break;
+        case QUANTIZE_FAST:
+            f->quantize_method = QUANTIZE_FAST;
+            break;
+        default:
+            f->quantize_method = QUANTIZE_LOOP;
+            f->do_quantize = quantize_loop;
+
+    }
+    /*f->do_quantize;*/
+
     /*init psy and mdct quant */
     for (i = 0; i < chn_num; i++) {
         f->ctx[i].pe                = 0.0;
         f->ctx[i].block_type        = ONLY_LONG_BLOCK;
         f->ctx[i].window_shape      = SINE_WINDOW;
         f->ctx[i].common_scalefac   = 0;
-        memset(f->ctx[i].scalefactor, 0, sizeof(int)*MAX_SCFAC_BANDS);
+        memset(f->ctx[i].scalefactor, 0, sizeof(int)*8*FA_SWB_NUM_MAX);
+
         f->ctx[i].num_window_groups = 1;
         f->ctx[i].window_group_length[0] = 1;
         f->ctx[i].window_group_length[1] = 0;
@@ -316,18 +351,12 @@ static void calculate_start_common_scalefac(fa_aacenc_ctx_t *f)
             chn = 2;
             sl = s;
             sr = &(f->ctx[i+1]);
-            /*if (0) {// (sl->block_type == sr->block_type) {*/
-           /*if (sl->block_type == sr->block_type) {*/
             if (sl->chn_info.common_window == 1) {
                 float max_mdct_line;
-                /*sl->chn_info.common_window = 1;*/
-                /*sr->chn_info.common_window = 1;*/
                 max_mdct_line = FA_MAX(sl->max_mdct_line, sr->max_mdct_line);
                 sl->start_common_scalefac = fa_get_start_common_scalefac(max_mdct_line);
                 sr->start_common_scalefac = sl->start_common_scalefac;
             } else {
-                /*sl->chn_info.common_window = 0;*/
-                /*sr->chn_info.common_window = 0;*/
                 sl->start_common_scalefac = fa_get_start_common_scalefac(sl->max_mdct_line);
                 sr->start_common_scalefac = fa_get_start_common_scalefac(sr->max_mdct_line);
             }
@@ -730,6 +759,47 @@ static void zero_cutoff(float *mdct_line, int mdct_line_num, int cutoff_line)
 
 }
 
+static int blockswitch_psy(aacenc_ctx_t *s)
+{
+    s->block_type = fa_aacblocktype_switch(s->h_aac_analysis, s->h_aacpsy, s->pe);
+    s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
+    s->bits_more  = s->bits_alloc - 90;
+
+    return s->block_type;
+}
+
+
+static void quantize_loop(fa_aacenc_ctx_t *f)
+{
+    int i;
+    int chn_num;
+    aacenc_ctx_t *s;
+
+    chn_num = f->cfg.chn_num;
+
+    for (i = 0; i < chn_num; i++) {
+        s = &(f->ctx[i]);
+        if (s->block_type == ONLY_SHORT_BLOCK) {
+            s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_short);
+            fa_mdctline_pow34(s->h_mdctq_short);
+            memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
+        } else {
+            s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_long);
+            fa_mdctline_pow34(s->h_mdctq_long);
+            memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
+        }
+    }
+     
+    /*check common_window and start_common_scalefac*/
+    calculate_start_common_scalefac(f);
+
+    /*outer loop*/
+    quant_outerloop(f);
+
+
+
+}
+
 void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int *outlen)
 {
     int i,j;
@@ -740,32 +810,33 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     short *sample_in;
     float *sample_buf;
     float xmin[8][FA_SWB_NUM_MAX];
+    int ms_enable;
     int block_switch_en;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)handle;
     aacenc_ctx_t *s, *sl, *sr;
 
+    ms_enable = f->cfg.ms_enable;
     chn_num = f->cfg.chn_num;
     sample_rate = f->cfg.sample_rate;
     bit_rate = f->cfg.bit_rate;
     /*assert(inlen == chn_num*AAC_FRAME_LEN*2);*/
 
+    /*update sample buffer, ith sample, jth chn*/
     sample_in = (short *)buf_in;
-    /*ith sample, jth chn*/
     for (i = 0; i < AAC_FRAME_LEN; i++) 
         for (j = 0; j < chn_num; j++) 
             f->sample[i+j*AAC_FRAME_LEN] = (float)(sample_in[i*chn_num+j]);
 
     block_switch_en = f->block_switch_en;
 
-    /*psy analysis and use filterbank to generate mdctline*/
+    /*block switch and use filterbank to generate mdctline*/
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
         sample_buf = f->sample+i*AAC_FRAME_LEN;
-        /*analysis*/
+
+        /*block switch */
         if (block_switch_en) {
-            s->block_type = fa_aacblocktype_switch(s->h_aac_analysis, s->h_aacpsy, s->pe);
-            s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
-            s->bits_more  = s->bits_alloc - 90;
+            f->do_blockswitch(s);
 #if 1
             if (s->block_type != 0)
                 printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
@@ -774,8 +845,10 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             s->block_type = ONLY_LONG_BLOCK;
         }
 
+        /*analysis*/
         fa_aacfilterbank_analysis(s->h_aac_analysis, sample_buf, s->mdct_line);
 
+        /*cutoff the frequence */
         if (s->block_type == ONLY_SHORT_BLOCK) 
             zero_cutoff(s->mdct_line, 128, s->cutoff_line_short);
         else
@@ -816,9 +889,6 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_xmin_sfb_arrange(s->h_mdctq_short, xmin,
                                 s->num_window_groups, s->window_group_length);
 
-            /*s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_short);*/
-            /*fa_mdctline_pow34(s->h_mdctq_short);*/
-            /*memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));*/
         } else {
             s->num_window_groups = 1;
             s->window_group_length[0] = 1;
@@ -827,36 +897,17 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_xmin_sfb_arrange(s->h_mdctq_long, xmin,
                                 s->num_window_groups, s->window_group_length);
 
-            /*s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_long);*/
-            /*fa_mdctline_pow34(s->h_mdctq_long);*/
-            /*memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));*/
         }
 
         s->quant_ok = 0;
     }
 
-    fa_aacmsenc(f);
-    for (i = 0; i < chn_num; i++) {
-        s = &(f->ctx[i]);
-        if (s->block_type == ONLY_SHORT_BLOCK) {
-            s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_short);
-            fa_mdctline_pow34(s->h_mdctq_short);
-            memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
-        } else {
-            s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_long);
-            fa_mdctline_pow34(s->h_mdctq_long);
-            memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
-        }
-    }
-     
+    /*mid/side encoding*/
+    if (ms_enable)
+        fa_aacmsenc(f);
 
-    /*printf("\n");*/
-
-    /*check common_window and start_common_scalefac*/
-    calculate_start_common_scalefac(f);
-
-    /*outer loop*/
-    quant_outerloop(f);
+    /*quantize*/
+    f->do_quantize(f);
 
     /* offset the difference of common_scalefac and scalefactors by SF_OFFSET  */
     for (i = 0; i < chn_num ; i++) {
@@ -875,6 +926,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         s->common_scalefac = s->scalefactor[0][0];
     }
 
+    /*format bitstream*/
     fa_write_bitstream(f);
 
     for (i = 0; i < 1024; i++) {
