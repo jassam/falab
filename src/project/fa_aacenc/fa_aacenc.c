@@ -259,7 +259,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].bits_res_size    = 0;
 
         f->ctx[i].h_aacpsy        = fa_aacpsy_init(sample_rate);
-        f->ctx[i].h_aac_analysis  = fa_aacfilterbank_init(block_switch_enable);
+        f->ctx[i].h_aac_analysis  = fa_aacfilterbank_init();
 
         memcpy(&(f->ctx[i].chn_info), &(chn_info_tmp[i]), sizeof(chn_info_t));
         f->ctx[i].chn_info.common_window = 0;
@@ -390,7 +390,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         }
 
         /*analysis*/
-        fa_aacfilterbank_analysis(s->h_aac_analysis, sample_buf, s->mdct_line);
+        fa_aacfilterbank_analysis(s->h_aac_analysis, s->block_type, &(s->window_shape),
+                                  sample_buf, s->mdct_line);
 
         /*cutoff the frequence */
         if (s->block_type == ONLY_SHORT_BLOCK) 
