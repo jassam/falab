@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
                               blockswitch_method, quantize_method);
 
 #ifdef DEBUG_DECODE
-    h_aac_synthesis = fa_aacfilterbank_init(block_switch_enable);
+    h_aac_synthesis = fa_aacfilterbank_init();
 
     switch(fmt.samplerate) {
         case 48000:
@@ -231,13 +231,12 @@ int main(int argc, char *argv[])
         }
 
         if(f->block_switch_en) {
-            block_type = fa_get_aacblocktype(f->ctx[0].h_aac_analysis);
-            fa_set_aacblocktype(h_aac_synthesis, block_type);
+            block_type = f->ctx[0].block_type;
         }else {
             block_type = ONLY_LONG_BLOCK;
         }
 
-        fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line_inv, buf_out);
+        fa_aacfilterbank_synthesis(h_aac_synthesis, block_type, mdct_line_inv, buf_out);
 
         for(i = 0 ; i < opt_framelen; i++) {
             float temp;
