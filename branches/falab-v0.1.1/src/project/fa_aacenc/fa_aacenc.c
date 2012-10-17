@@ -344,6 +344,74 @@ static void zero_cutoff(float *mdct_line, int mdct_line_num, int cutoff_line)
 
 }
 
+static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
+{
+
+    /*use mdct transform*/
+    if (s->block_type == ONLY_SHORT_BLOCK) {
+#if  1 
+        s->num_window_groups = 1;
+        s->window_group_length[0] = 8;
+        s->window_group_length[1] = 0;
+        s->window_group_length[2] = 0;
+        s->window_group_length[3] = 0;
+        s->window_group_length[4] = 0;
+        s->window_group_length[5] = 0;
+        s->window_group_length[6] = 0;
+        s->window_group_length[7] = 0;
+#else 
+        s->num_window_groups = 3;
+        s->window_group_length[0] = 6;
+        s->window_group_length[1] = 1;
+        s->window_group_length[2] = 1;
+        s->window_group_length[3] = 0;
+        s->window_group_length[4] = 0;
+        s->window_group_length[5] = 0;
+        s->window_group_length[6] = 0;
+        s->window_group_length[7] = 0;
+#endif
+        fa_mdctline_sfb_arrange(s->h_mdctq_short, s->mdct_line, 
+                s->num_window_groups, s->window_group_length);
+        fa_xmin_sfb_arrange(s->h_mdctq_short, xmin,
+                s->num_window_groups, s->window_group_length);
+
+    } else {
+        s->num_window_groups = 1;
+        s->window_group_length[0] = 1;
+        fa_mdctline_sfb_arrange(s->h_mdctq_long, s->mdct_line, 
+                s->num_window_groups, s->window_group_length);
+        fa_xmin_sfb_arrange(s->h_mdctq_long, xmin,
+                s->num_window_groups, s->window_group_length);
+
+    }
+
+}
+
+static void scalefactor_recalculate(fa_aacenc_ctx_t *f, int chn_num)
+{
+    int i;
+    int gr, sfb;
+    aacenc_ctx_t *s;
+
+    for (i = 0; i < chn_num ; i++) {
+        int gr, sfb, sfb_num;
+        s = &(f->ctx[i]);
+        if (s->block_type == ONLY_SHORT_BLOCK) 
+            sfb_num = fa_mdctline_get_sfbnum(s->h_mdctq_short);
+        else 
+            sfb_num = fa_mdctline_get_sfbnum(s->h_mdctq_long);
+
+        for (gr = 0; gr < s->num_window_groups; gr++) {
+            for (sfb = 0; sfb < sfb_num; sfb++) {
+                s->scalefactor[gr][sfb] = s->common_scalefac - s->scalefactor[gr][sfb] + GAIN_ADJUST + SF_OFFSET;
+            }
+        }
+        s->common_scalefac = s->scalefactor[0][0];
+    }
+
+
+}
+
 void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int *outlen)
 {
     int i,j;
@@ -359,10 +427,10 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)handle;
     aacenc_ctx_t *s, *sl, *sr;
 
-    ms_enable = f->cfg.ms_enable;
-    chn_num = f->cfg.chn_num;
+    ms_enable   = f->cfg.ms_enable;
+    chn_num     = f->cfg.chn_num;
     sample_rate = f->cfg.sample_rate;
-    bit_rate = f->cfg.bit_rate;
+    bit_rate    = f->cfg.bit_rate;
     /*assert(inlen == chn_num*AAC_FRAME_LEN*2);*/
 
     /*update sample buffer, ith sample, jth chn*/
@@ -376,6 +444,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     /*block switch and use filterbank to generate mdctline*/
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
+
+        /*get the input sample*/
         sample_buf = f->sample+i*AAC_FRAME_LEN;
 
         /*block switch */
@@ -393,56 +463,23 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         fa_aacfilterbank_analysis(s->h_aac_analysis, s->block_type, &(s->window_shape),
                                   sample_buf, s->mdct_line);
 
-        /*cutoff the frequence */
+        /*cutoff the frequence according to the bitrate*/
         if (s->block_type == ONLY_SHORT_BLOCK) 
             zero_cutoff(s->mdct_line, 128, s->cutoff_line_short);
         else
             zero_cutoff(s->mdct_line, 1024, s->cutoff_line_long);
 
-        /* calculate xmin and pe
-         * use current sample_buf calculate pe to decide which block used in the next frame*/
+        /* 
+           calculate xmin and pe
+           --use current sample_buf calculate pe to decide which block used in the next frame
+        */
         if (block_switch_en) {
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_buf, s->block_type, &s->pe);
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
         }
 
-        /*use mdct transform*/
-        if (s->block_type == ONLY_SHORT_BLOCK) {
-#if  1 
-            s->num_window_groups = 1;
-            s->window_group_length[0] = 8;
-            s->window_group_length[1] = 0;
-            s->window_group_length[2] = 0;
-            s->window_group_length[3] = 0;
-            s->window_group_length[4] = 0;
-            s->window_group_length[5] = 0;
-            s->window_group_length[6] = 0;
-            s->window_group_length[7] = 0;
-#else 
-            s->num_window_groups = 3;
-            s->window_group_length[0] = 6;
-            s->window_group_length[1] = 1;
-            s->window_group_length[2] = 1;
-            s->window_group_length[3] = 0;
-            s->window_group_length[4] = 0;
-            s->window_group_length[5] = 0;
-            s->window_group_length[6] = 0;
-            s->window_group_length[7] = 0;
-#endif
-            fa_mdctline_sfb_arrange(s->h_mdctq_short, s->mdct_line, 
-                                    s->num_window_groups, s->window_group_length);
-            fa_xmin_sfb_arrange(s->h_mdctq_short, xmin,
-                                s->num_window_groups, s->window_group_length);
-
-        } else {
-            s->num_window_groups = 1;
-            s->window_group_length[0] = 1;
-            fa_mdctline_sfb_arrange(s->h_mdctq_long, s->mdct_line, 
-                                    s->num_window_groups, s->window_group_length);
-            fa_xmin_sfb_arrange(s->h_mdctq_long, xmin,
-                                s->num_window_groups, s->window_group_length);
-
-        }
+        /*if is short block , recorder will arrange the mdctline to sfb-grouped*/
+        mdctline_reorder(s, xmin);
 
         s->quant_ok = 0;
     }
@@ -455,21 +492,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     f->do_quantize(f);
 
     /* offset the difference of common_scalefac and scalefactors by SF_OFFSET  */
-    for (i = 0; i < chn_num ; i++) {
-        int gr, sfb, sfb_num;
-        s = &(f->ctx[i]);
-        if (s->block_type == ONLY_SHORT_BLOCK) 
-            sfb_num = fa_mdctline_get_sfbnum(s->h_mdctq_short);
-        else 
-            sfb_num = fa_mdctline_get_sfbnum(s->h_mdctq_long);
-
-        for (gr = 0; gr < s->num_window_groups; gr++) {
-            for (sfb = 0; sfb < sfb_num; sfb++) {
-                s->scalefactor[gr][sfb] = s->common_scalefac - s->scalefactor[gr][sfb] + GAIN_ADJUST + SF_OFFSET;
-            }
-        }
-        s->common_scalefac = s->scalefactor[0][0];
-    }
+    scalefactor_recalculate(f, chn_num);
 
     /*format bitstream*/
     fa_write_bitstream(f);
