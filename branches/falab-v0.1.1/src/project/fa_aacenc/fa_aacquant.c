@@ -69,6 +69,38 @@ static void init_quant_change(int outer_loop_count, aacenc_ctx_t *s)
 
 }
 
+/*
+static int bit_more_est(int chn_num, int block_type, int common_window)
+{
+    int bits;
+    int common_sideinfo_bits;
+    int cpe_num;
+
+    bits = 0;
+    common_sideinfo_bits = 62/chn_num;
+    cpe_num = chn_num/2;
+
+    bits += common_sideinfo_bits;
+
+    if (chn_num == 1) {
+        bits += 15;
+        if (block_type == ONLY_SHORT_BLOCK)
+            bits += 15;
+        else 
+            bits += 10;
+    } else {
+        bits += cpe_num*16;
+        if (common_window)
+            bits += 15;
+        if (ms_enable) {
+            if (block_type == ONLY_SHORT_BLOCK)
+                bits += 15+
+        } else {
+        }
+    }
+}
+*/
+
 static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
 {
     int i, chn;
@@ -78,8 +110,10 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
     int available_bits;
     int available_bits_l, available_bits_r;
     int find_globalgain;
+    int head_end_sideinfo_avg;
 
     chn_num = f->cfg.chn_num;
+    head_end_sideinfo_avg = fa_bits_sideinfo_est(chn_num);
 
     i = 0;
     chn = 1;
@@ -150,7 +184,7 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
 
                 }
 
-                counted_bits  = fa_bits_count(f->h_bitstream, &f->cfg, sl, sr);
+                counted_bits  = fa_bits_count(f->h_bitstream, &f->cfg, sl, sr) + head_end_sideinfo_avg*2;
                 available_bits_l = get_avaiable_bits(sl->bits_average, sl->bits_more, sl->bits_res_size, sl->bits_res_maxsize);
                 available_bits_r = get_avaiable_bits(sr->bits_average, sr->bits_more, sr->bits_res_size, sr->bits_res_maxsize);
                 available_bits = available_bits_l + available_bits_r;
@@ -195,7 +229,7 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
 
 
 #if 1  
-                counted_bits  = fa_bits_count(f->h_bitstream, &f->cfg, s, NULL);
+                counted_bits  = fa_bits_count(f->h_bitstream, &f->cfg, s, NULL) + head_end_sideinfo_avg;
 
                 available_bits = get_avaiable_bits(s->bits_average, s->bits_more, s->bits_res_size, s->bits_res_maxsize);
                 if (counted_bits > available_bits) 
@@ -226,6 +260,28 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
             sl = s;
             sr = &(f->ctx[i+1]);
             sl->used_bits = counted_bits>>1;
+            sl->bits_res_size = available_bits_l - sl->used_bits;
+            if (sl->bits_res_size < 0)
+                sl->bits_res_size = 0;
+            if (sl->bits_res_size >= sl->bits_res_maxsize)
+                sl->bits_res_size = sl->bits_res_maxsize;
+            sr->used_bits = counted_bits - sl->used_bits;
+            sr->bits_res_size = available_bits_r - sr->used_bits;
+            if (sr->bits_res_size < 0)
+                sr->bits_res_size = 0;
+            if (sr->bits_res_size >= sr->bits_res_maxsize)
+                sr->bits_res_size = sr->bits_res_maxsize;
+        } else {
+            s->used_bits = counted_bits;
+            s->bits_res_size = available_bits - counted_bits;
+            if (s->bits_res_size >= s->bits_res_maxsize)
+                s->bits_res_size = s->bits_res_maxsize;
+        }
+#else 
+        if (s->chn_info.cpe == 1) {
+            sl = s;
+            sr = &(f->ctx[i+1]);
+            sl->used_bits = counted_bits>>1;
             sl->bits_res_size += sl->bits_average - sl->used_bits;
             if (sl->bits_res_size >= sl->bits_res_maxsize)
                 sl->bits_res_size = sl->bits_res_maxsize;
@@ -239,14 +295,6 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
             if (s->bits_res_size >= s->bits_res_maxsize)
                 s->bits_res_size = s->bits_res_maxsize;
         }
-#else 
-        if (!s->quant_ok) {
-            s->used_bits = counted_bits;
-            s->bits_res_size += s->bits_average - counted_bits;
-            if (s->bits_res_size >= s->bits_res_maxsize)
-                s->bits_res_size = s->bits_res_maxsize;
-        }
-
 
 #endif
 
