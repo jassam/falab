@@ -34,7 +34,7 @@ TODO:
     stereo(ms)                         complete               yes 
     lfe                                no schecdule           no(easy, need test)
     high frequency optimize            done                   yes(bandwith limited now)
-    bitrate control fixed              doing 
+    bitrate control fixed              done                   yes(constant bitrate CBR is OK) 
     TNS                                no schecdule           no(I think no useless, waste time, no need support)
     LTP                                no schecdule           no(very slow, no need support)
     add fast xmin/pe caculate method   doing                 

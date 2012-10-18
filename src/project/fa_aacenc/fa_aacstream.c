@@ -138,7 +138,7 @@ int fa_write_bitstream_onechn(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aace
             }
         }
     }
-
+#if 0
     /* Compute how many fill bits are needed to avoid overflowing bit reservoir */
     /* Save room for ID_END terminator */
     if (bits < (8 - LEN_SE_ID) ) {
@@ -159,6 +159,7 @@ int fa_write_bitstream_onechn(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aace
 
     /* Now byte align the bitstream */
     /*bits += write_bits_for_bytealign(h_bs, s, bits, 1);*/
+#endif 
 
     s->used_bits = bits; //bit2byte(bits);
 
@@ -234,6 +235,22 @@ int fa_write_bitstream(fa_aacenc_ctx_t *f)
     return total_bits;
 }
 
+int fa_bits_sideinfo_est(int chn_num)
+{
+    int bits;
+/*
+    int adts_bits;
+    int end_bits;
+    int bytsalign_bits;
+
+    adts_bits = 56;
+    end_bits  = 3;
+    bytsalign_bits = 5;
+*/
+    bits = 64/chn_num; 
+
+    return bits;
+}
 
 int fa_bits_count(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
 {
@@ -244,7 +261,6 @@ int fa_bits_count(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr
 
 
     /*bits += write_adtsheader(c, s, 0);*/
-
 
     if (p_chn_info->present) {
         /* Write out a single_channel_element */
@@ -263,7 +279,7 @@ int fa_bits_count(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr
             }
         }
     }
-
+#if 0
     /* Compute how many fill bits are needed to avoid overflowing bit reservoir */
     /* Save room for ID_END terminator */
     if (bits < (8 - LEN_SE_ID) ) {
@@ -281,6 +297,7 @@ int fa_bits_count(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr
 
     /* Now byte align the bitstream */
     /*bits += write_bits_for_bytealign(h_bs, s, bits, 0);*/
+#endif 
 
     s->used_bits = bits; //bit2byte(bits);
 
