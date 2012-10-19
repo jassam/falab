@@ -56,6 +56,8 @@ typedef struct _ms_info_t{
 
 }ms_info_t;
 
+void fa_mdctquant_rom_init();
+
 uintptr_t fa_mdctquant_init(int mdct_line_num, int sfb_num, int *swb_low, int block_type_cof);
 void      fa_mdctquant_uninit(uintptr_t handle);
 

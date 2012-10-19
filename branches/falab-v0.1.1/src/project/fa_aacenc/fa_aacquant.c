@@ -192,6 +192,8 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                 if (counted_bits > available_bits) { 
                     sl->common_scalefac += sl->quant_change;
                     sr->common_scalefac += sr->quant_change;
+                    sl->common_scalefac = FA_MIN(sl->common_scalefac, 255);
+                    sr->common_scalefac = FA_MIN(sr->common_scalefac, 255);
                 } else {
                     if (sl->quant_change > 1)
                         sl->common_scalefac -= sl->quant_change;
@@ -232,8 +234,10 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                 counted_bits  = fa_bits_count(f->h_bitstream, &f->cfg, s, NULL) + head_end_sideinfo_avg;
 
                 available_bits = get_avaiable_bits(s->bits_average, s->bits_more, s->bits_res_size, s->bits_res_maxsize);
-                if (counted_bits > available_bits) 
+                if (counted_bits > available_bits) {
                     s->common_scalefac += s->quant_change;
+                    s->common_scalefac = FA_MIN(s->common_scalefac, 255);
+                }
                 else {
                     if (s->quant_change > 1)
                         s->common_scalefac -= s->quant_change;

@@ -29,9 +29,9 @@
 TODO:
    TASK                                STATUS                SUPPORT 
     ------------------------------------------------------------------
-    mono                               complete               yes
-    stereo(common_window=0)            complete               yes
-    stereo(ms)                         complete               yes 
+    mono                               done                   yes
+    stereo(common_window=0)            done                   yes
+    stereo(ms)                         done                   yes 
     lfe                                no schecdule           no(easy, need test)
     high frequency optimize            done                   yes(bandwith limited now)
     bitrate control fixed              done                   yes(constant bitrate CBR is OK) 
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
     int ms_enable = MS_DEFAULT;
     int lfe_enable = LFE_DEFAULT;
     int tns_enable = TNS_DEFAULT;
-    int block_switch_enable = BLOCK_SWITCH_DEFAULT;
+    int block_switch_enable = 0;//BLOCK_SWITCH_DEFAULT;
     int blockswitch_method = BLOCKSWITCH_PSY;
     int quantize_method = QUANTIZE_LOOP;
 
