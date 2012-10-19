@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "fa_mdctquant.h"
+#include "fa_iqtab.h"
 
 #ifndef FA_MIN
 #define FA_MIN(a,b)  ( (a) < (b) ? (a) : (b) )
@@ -45,6 +46,12 @@
 #define MAX_QUANT             8191
 #define MAGIC_NUMBER          0.4054
 
+#define COF_SCALE_NUM         256
+
+/*ROM: table will be used*/
+static float rom_cof_scale[COF_SCALE_NUM];
+static float rom_cof_quant[COF_SCALE_NUM];
+static float rom_inv_cof[2*COF_SCALE_NUM];
 
 typedef struct _fa_mdctquant_t {
 
@@ -65,6 +72,21 @@ typedef struct _fa_mdctquant_t {
     int   sfb_high[NUM_WINDOW_GROUPS_MAX][FA_SWB_NUM_MAX];
 
 }fa_mdctquant_t;
+
+void fa_mdctquant_rom_init()
+{
+    int i;
+
+    for (i = 0; i < COF_SCALE_NUM; i++) {
+        rom_cof_scale[i] = powf(2, (3./16.) * i); 
+        rom_cof_quant[i] = 1./rom_cof_scale[i];
+    }
+
+    for (i = 0; i < 2*COF_SCALE_NUM; i++) {
+        rom_inv_cof[i] = powf(2, 0.25*(i-255)); 
+    }
+
+}
 
 uintptr_t fa_mdctquant_init(int mdct_line_num, int sfb_num, int *swb_low, int block_type_cof)
 {
@@ -191,7 +213,9 @@ void fa_mdctline_scaled(uintptr_t handle,
 
     for (gr = 0; gr < num_window_groups; gr++) {
         for (sfb = 0; sfb < sfb_num; sfb++) {
-            cof_scale = powf(2, (3./16.) * scalefactor[gr][sfb]);
+            /*cof_scale = powf(2, (3./16.) * scalefactor[gr][sfb]);*/
+            cof_scale = rom_cof_scale[scalefactor[gr][sfb]];
+
             for (i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) 
                 mdct_scaled[i] = xr_pow[i] * cof_scale;
         }
@@ -208,12 +232,12 @@ void fa_mdctline_quant(uintptr_t handle,
     float cof_quant;
 
     for (i = 0; i < f->block_type_cof*f->mdct_line_num; i++) {
-        cof_quant = powf(2, (-3./16)*common_scalefac);
-        /*x_quant[i] = (int)(mdct_scaled[i] * cof_quant + MAGIC_NUMBER);*/
+        /*cof_quant = powf(2, (-3./16)*common_scalefac);*/
+        cof_quant = rom_cof_quant[common_scalefac];
         if (mdct_scaled[i] > 0)
             x_quant[i] = (int)(mdct_scaled[i] * cof_quant + MAGIC_NUMBER);
         else 
-            x_quant[i] = -1 * (int)(fabs(mdct_scaled[i]) * cof_quant + MAGIC_NUMBER);
+            x_quant[i] = -1 * (int)(FA_ABS(mdct_scaled[i]) * cof_quant + MAGIC_NUMBER);
     }
 }
 
@@ -256,13 +280,16 @@ void fa_calculate_quant_noise(uintptr_t handle,
         for (sfb = 0; sfb < sfb_num; sfb++) {
             swb_width = swb_high[sfb] - swb_low[sfb] + 1;
             for (win = 0; win < window_group_length[gr]; win++) {
-                float tmp_xq;
+                int tmp_xq;
                 f->error_energy[gr][sfb][win] = 0;
                 for (i = 0; i < swb_width; i++) {
-                    inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));
-                    tmp_xq = (float)(x_quant[mdct_line_offset+i]);
-                    inv_x_quant = powf(fabsf(tmp_xq), 4./3.) * inv_cof; 
-                    tmp = fabsf(mdct_line[mdct_line_offset+i]) - inv_x_quant;
+                    /*inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));*/
+                    inv_cof = rom_inv_cof[common_scalefac - scalefactor[gr][sfb]+255];
+                    tmp_xq = (x_quant[mdct_line_offset+i]);
+                    /*inv_x_quant = powf(fabsf(tmp_xq), 4./3.) * inv_cof; */
+                    inv_x_quant = fa_iqtable[tmp_xq] * inv_cof; 
+
+                    tmp = FA_ABS(mdct_line[mdct_line_offset+i]) - inv_x_quant;
                     f->error_energy[gr][sfb][win] += tmp*tmp;  
                 }
                 mdct_line_offset += swb_width;
@@ -311,6 +338,7 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
             for (win = 0; win < window_group_length[gr]; win++) {
                 if (f->error_energy[gr][sfb][win] > f->xmin[gr][sfb][win]) {
                     scalefactor[gr][sfb] += 1;
+                    scalefactor[gr][sfb] = FA_MIN(scalefactor[gr][sfb], 255);
                     sfb_scale_cnt[gr]++;
                     break;
                 } else {

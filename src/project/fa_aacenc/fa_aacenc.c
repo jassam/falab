@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <memory.h>
 #include "fa_aacenc.h"
 #include "fa_aaccfg.h"
 #include "fa_aacpsy.h"
@@ -167,6 +168,11 @@ static int get_cutoff_sfb(int sfb_offset_max, int *sfb_offset, int cutoff_line)
     return (i+1);
 }
 
+static void fa_aacenc_rom_init()
+{
+    fa_mdctquant_rom_init();
+}
+
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
                          int mpeg_version, int aac_objtype, 
                          int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable,
@@ -177,6 +183,9 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     int bits_res_maxsize;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)malloc(sizeof(fa_aacenc_ctx_t));
     chn_info_t chn_info_tmp[MAX_CHANNELS];
+
+    /*init rom*/
+    fa_aacenc_rom_init();
 
     /*init configuration*/
     f->cfg.sample_rate   = sample_rate;
@@ -481,6 +490,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/
         mdctline_reorder(s, xmin);
 
+        /*reset the quantize status*/
         s->quant_ok = 0;
     }
 
