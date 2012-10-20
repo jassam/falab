@@ -50,8 +50,8 @@
 #define COF_SCALE_NUM         256
 
 /*ROM: table will be used*/
-static float rom_cof_scale[COF_SCALE_NUM];
-static float rom_cof_quant[COF_SCALE_NUM];
+static float rom_cof_scale[2*COF_SCALE_NUM];
+static float rom_cof_quant[2*COF_SCALE_NUM];
 static float rom_inv_cof[2*COF_SCALE_NUM];
 
 typedef struct _fa_mdctquant_t {
@@ -78,8 +78,8 @@ void fa_mdctquant_rom_init()
 {
     int i;
 
-    for (i = 0; i < COF_SCALE_NUM; i++) {
-        rom_cof_scale[i] = powf(2, (3./16.) * i); 
+    for (i = 0; i < 2*COF_SCALE_NUM; i++) {
+        rom_cof_scale[i] = powf(2, (3./16.) * (i-255)); 
         rom_cof_quant[i] = 1./rom_cof_scale[i];
     }
 
@@ -175,12 +175,15 @@ int fa_get_start_common_scalefac(float max_mdct_line)
     int start_common_scalefac;
     float tmp;
 
-    if (max_mdct_line == 0)
+    if (max_mdct_line == 0.)
         return 0;
 
     tmp = ceilf(16./3 * (log2f((powf(max_mdct_line, 0.75))/MAX_QUANT)));
     start_common_scalefac = (int)tmp;
-
+/*
+    start_common_scalefac = FA_MIN(start_common_scalefac, 255);
+    start_common_scalefac = FA_MAX(start_common_scalefac, 0);
+*/
     return start_common_scalefac;
 }
 
@@ -215,7 +218,7 @@ void fa_mdctline_scaled(uintptr_t handle,
     for (gr = 0; gr < num_window_groups; gr++) {
         for (sfb = 0; sfb < sfb_num; sfb++) {
             /*cof_scale = powf(2, (3./16.) * scalefactor[gr][sfb]);*/
-            cof_scale = rom_cof_scale[scalefactor[gr][sfb]];
+            cof_scale = rom_cof_scale[scalefactor[gr][sfb]+255];
 
             for (i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) 
                 mdct_scaled[i] = xr_pow[i] * cof_scale;
@@ -235,11 +238,12 @@ void fa_mdctline_quant(uintptr_t handle,
     FA_CLOCK_START(5);
     for (i = 0; i < f->block_type_cof*f->mdct_line_num; i++) {
         /*cof_quant = powf(2, (-3./16)*common_scalefac);*/
-        cof_quant = rom_cof_quant[common_scalefac];
+        cof_quant = rom_cof_quant[common_scalefac+255];
         if (mdct_scaled[i] > 0)
             x_quant[i] = (int)(mdct_scaled[i] * cof_quant + MAGIC_NUMBER);
         else 
             x_quant[i] = -1 * (int)(FA_ABS(mdct_scaled[i]) * cof_quant + MAGIC_NUMBER);
+
     }
 
     FA_CLOCK_END(5);
@@ -290,9 +294,9 @@ void fa_calculate_quant_noise(uintptr_t handle,
                 for (i = 0; i < swb_width; i++) {
                     /*inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));*/
                     inv_cof = rom_inv_cof[common_scalefac - scalefactor[gr][sfb]+255];
-                    tmp_xq = (x_quant[mdct_line_offset+i]);
-                    /*inv_x_quant = powf(fabsf(tmp_xq), 4./3.) * inv_cof; */
-                    inv_x_quant = fa_iqtable[tmp_xq] * inv_cof; 
+                    tmp_xq = FA_ABS(x_quant[mdct_line_offset+i]);
+                    inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof;
+                    /*inv_x_quant = fa_iqtable[tmp_xq] * inv_cof; */
 
                     tmp = FA_ABS(mdct_line[mdct_line_offset+i]) - inv_x_quant;
                     f->error_energy[gr][sfb][win] += tmp*tmp;  

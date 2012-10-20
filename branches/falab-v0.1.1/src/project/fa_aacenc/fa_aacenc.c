@@ -177,7 +177,7 @@ static void fa_aacenc_rom_init()
 
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
                          int mpeg_version, int aac_objtype, 
-                         int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable,
+                         int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable, int psy_enable,
                          int blockswitch_method, int quantize_method)
 {
     int i;
@@ -204,6 +204,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     memset(f->sample, 0, sizeof(float)*chn_num*AAC_FRAME_LEN);
 
     f->block_switch_en = block_switch_enable;
+    f->psy_enable      = psy_enable;
 
     f->band_width = get_bandwidth(chn_num, sample_rate, bit_rate);
 
@@ -248,6 +249,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     for (i = 0; i < chn_num; i++) {
         f->ctx[i].pe                = 0.0;
         f->ctx[i].block_type        = ONLY_LONG_BLOCK;
+        f->ctx[i].psy_enable        = psy_enable;
         f->ctx[i].window_shape      = SINE_WINDOW;
         f->ctx[i].common_scalefac   = 0;
         memset(f->ctx[i].scalefactor, 0, sizeof(int)*8*FA_SWB_NUM_MAX);
@@ -435,6 +437,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     float xmin[8][FA_SWB_NUM_MAX];
     int ms_enable;
     int block_switch_en;
+    int psy_enable;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)handle;
     aacenc_ctx_t *s, *sl, *sr;
 
@@ -444,6 +447,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     bit_rate    = f->cfg.bit_rate;
     /*assert(inlen == chn_num*AAC_FRAME_LEN*2);*/
 
+    memset(xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
     /*update sample buffer, ith sample, jth chn*/
     sample_in = (short *)buf_in;
     for (i = 0; i < AAC_FRAME_LEN; i++) 
@@ -451,6 +455,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             f->sample[i+j*AAC_FRAME_LEN] = (float)(sample_in[i*chn_num+j]);
 
     block_switch_en = f->block_switch_en;
+    psy_enable      = f->psy_enable;
 
     /*block switch and use filterbank to generate mdctline*/
     for (i = 0; i < chn_num; i++) {
@@ -484,7 +489,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
            calculate xmin and pe
            --use current sample_buf calculate pe to decide which block used in the next frame
         */
-        if (block_switch_en) {
+        if (psy_enable) {
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_buf, s->block_type, &s->pe);
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
         }

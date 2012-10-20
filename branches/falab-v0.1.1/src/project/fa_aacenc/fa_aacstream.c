@@ -159,6 +159,16 @@ int fa_write_bitstream_onechn(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aace
 
     /* Now byte align the bitstream */
     /*bits += write_bits_for_bytealign(h_bs, s, bits, 1);*/
+#else 
+/*
+    if (s->bits_res_size == s->bits_res_maxsize) {
+        if (bits < s->bits_average) {
+            num_fill_bits = (s->bits_average - bits - 6);
+            bits_left_afterfill = write_aac_fillbits(h_bs, s, num_fill_bits, 1);
+            bits += num_fill_bits - bits_left_afterfill;
+        }
+    }
+*/
 #endif 
 
     s->used_bits = bits; //bit2byte(bits);
@@ -297,6 +307,17 @@ int fa_bits_count(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr
 
     /* Now byte align the bitstream */
     /*bits += write_bits_for_bytealign(h_bs, s, bits, 0);*/
+#else 
+/*
+    if (s->bits_res_size == s->bits_res_maxsize) {
+        if (bits < s->bits_average) {
+            num_fill_bits = (s->bits_average - bits - 6);
+            bits_left_afterfill = write_aac_fillbits(h_bs, s, num_fill_bits, 0);
+            bits += num_fill_bits - bits_left_afterfill;
+        }
+    }
+
+*/
 #endif 
 
     s->used_bits = bits; //bit2byte(bits);
