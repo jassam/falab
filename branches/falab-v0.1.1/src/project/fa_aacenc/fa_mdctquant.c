@@ -30,6 +30,7 @@
 #include <math.h>
 #include "fa_mdctquant.h"
 #include "fa_iqtab.h"
+#include "fa_timeprofile.h"
 
 #ifndef FA_MIN
 #define FA_MIN(a,b)  ( (a) < (b) ? (a) : (b) )
@@ -231,6 +232,7 @@ void fa_mdctline_quant(uintptr_t handle,
     float *mdct_scaled = f->mdct_scaled;
     float cof_quant;
 
+    FA_CLOCK_START(5);
     for (i = 0; i < f->block_type_cof*f->mdct_line_num; i++) {
         /*cof_quant = powf(2, (-3./16)*common_scalefac);*/
         cof_quant = rom_cof_quant[common_scalefac];
@@ -239,6 +241,9 @@ void fa_mdctline_quant(uintptr_t handle,
         else 
             x_quant[i] = -1 * (int)(FA_ABS(mdct_scaled[i]) * cof_quant + MAGIC_NUMBER);
     }
+
+    FA_CLOCK_END(5);
+    FA_CLOCK_COST(5);
 }
 
 void fa_calculate_quant_noise(uintptr_t handle,
@@ -664,6 +669,7 @@ int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, i
     gr_max_sfb = 0;
     group_offset = 0;
 
+    FA_CLOCK_START(4);
     for (gr = 0; gr < num_window_groups; gr++) {
         x_quant_code_gr     += group_offset;
         x_quant_bits_gr     += group_offset;
@@ -676,6 +682,8 @@ int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, i
         *max_sfb = FA_MAX(*max_sfb, gr_max_sfb);
     }
 
+    FA_CLOCK_END(4);
+    FA_CLOCK_COST(4);
     return spectral_count;
 }
 
