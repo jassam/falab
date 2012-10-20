@@ -44,6 +44,16 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
+
+static float rom_exp2_N[11];
+
+void fa_huffman_rom_init()
+{
+    int i;
+
+    for (i = 0; i < 11; i++)
+        rom_exp2_N[i] = powf(2, i-1);
+}
 /*
    This function takes an element that is larger than 16 and generates the base10 value of the
    equivalent escape sequence.  It returns the escape sequence in the variable, 'output'.  It
@@ -51,6 +61,7 @@
 */
 static int calculate_esc_sequence(int input, int *len_esc_sequence)
 {
+#if 1 
     float x, y;
     int   output;
     int   N;
@@ -67,6 +78,30 @@ static int calculate_esc_sequence(int input, int *len_esc_sequence)
     *len_esc_sequence = 2*N + 5;  /* the length of the escape sequence in bits */
 
     output = (int)((pow(2,N) - 1)*pow(2,N+5) + y - pow(2,N+4));
+
+#else 
+    int   x, y;
+    int   output;
+    int   N;
+
+    N = -1;
+    y = FA_ABS(input);
+    x = y >> 4;
+
+    while (x >= 1) {
+        N++;
+        x = x >> 1;
+    }
+
+    *len_esc_sequence = 2*N + 5;  /* the length of the escape sequence in bits */
+
+    /*output = (int)((pow(2,N) - 1)*pow(2,N+5) + y - pow(2,N+4));*/
+    output = (int)((rom_exp2_N[N+1] - 1)*rom_exp2_N[N+6] + y - rom_exp2_N[N+5]);
+
+
+
+
+#endif
 
     return(output);
 }

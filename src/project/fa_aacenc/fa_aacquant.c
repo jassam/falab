@@ -5,6 +5,7 @@
 #include "fa_aacpsy.h"
 #include "fa_swbtab.h"
 #include "fa_mdctquant.h"
+#include "fa_timeprofile.h"
 
 
 #ifndef FA_MIN
@@ -111,6 +112,7 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
     int available_bits_l, available_bits_r;
     int find_globalgain;
     int head_end_sideinfo_avg;
+    int inner_loop_cnt = 0;
 
     chn_num = f->cfg.chn_num;
     head_end_sideinfo_avg = fa_bits_sideinfo_est(chn_num);
@@ -118,6 +120,7 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
     i = 0;
     chn = 1;
     while (i < chn_num) {
+        inner_loop_cnt = 0;
         s = &(f->ctx[i]);
 
         if (s->chn_info.cpe == 1) {
@@ -258,7 +261,9 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                 ; // lfe left
             }
 
+            inner_loop_cnt++;
         } while (find_globalgain == 0);
+        /*printf("the %d chn inner loop cnt=%d\n", i, inner_loop_cnt);*/
 #if 1     
         if (s->chn_info.cpe == 1) {
             sl = s;
@@ -370,7 +375,11 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
         }
 
         /*inner loop, search common_scalefac to fit the available_bits*/
+
+        FA_CLOCK_START(3);
         quant_innerloop(f, outer_loop_count);
+        FA_CLOCK_END(3);
+        FA_CLOCK_COST(3);
 
 
         /*calculate quant noise */
@@ -484,6 +493,7 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
 
     } while (quant_ok_cnt < chn_num);
 
+    /*printf("outer loop cnt= %d\n", outer_loop_count);*/
 }
 
 
@@ -512,7 +522,11 @@ void fa_quantize_loop(fa_aacenc_ctx_t *f)
     calculate_start_common_scalefac(f);
 
     /*outer loop*/
+
+    FA_CLOCK_START(2);
     quant_outerloop(f);
+    FA_CLOCK_END(2);
+    FA_CLOCK_COST(2);
 
 
 

@@ -54,6 +54,7 @@ TODO:
 #include "fa_aacpsy.h"
 #include "fa_swbtab.h"
 #include "fa_aacfilterbank.h"
+#include "fa_timeprofile.h"
 
 #define FRAME_SIZE_MAX  2048 
 
@@ -141,7 +142,7 @@ int main(int argc, char *argv[])
     sample_rate = fmt.samplerate;
     chn_num     = fmt.channels;
 
-    h_aacenc = fa_aacenc_init(sample_rate, 96000, chn_num,
+    h_aacenc = fa_aacenc_init(sample_rate, 80000, chn_num,
                               2, LOW, 
                               ms_enable, lfe_enable, tns_enable, block_switch_enable,
                               blockswitch_method, quantize_method);
@@ -181,7 +182,11 @@ int main(int argc, char *argv[])
         }
 
         /*analysis and encode*/
+        FA_CLOCK_START(1);
         fa_aacenc_encode(h_aacenc, wavsamples_in, chn_num*2*read_len, aac_buf, &aac_out_len);
+        FA_CLOCK_END(1);
+        FA_CLOCK_COST(1);
+
         fwrite(aac_buf, 1, aac_out_len, aacfile);
 
 #ifdef DEBUG_DECODE
@@ -256,9 +261,12 @@ int main(int argc, char *argv[])
 #endif
 
         frame_index++;
-        if (frame_index == 30) {
-            i=i+1;
+#if 0
+        if (frame_index == 500) {
+            break;
         }
+#endif
+
         fprintf(stderr,"\rthe frame = [%d]", frame_index);
     }
 
@@ -272,7 +280,14 @@ int main(int argc, char *argv[])
     fclose(sourcefile);
     fclose(aacfile);
 
+
     printf("\n");
+
+    FA_GET_TIME_COST(1);
+    FA_GET_TIME_COST(2);
+    FA_GET_TIME_COST(3);
+    FA_GET_TIME_COST(4);
+    FA_GET_TIME_COST(5);
 
     return 0;
 }

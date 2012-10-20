@@ -38,6 +38,7 @@
 #include "fa_aacstream.h"
 #include "fa_aacms.h"
 #include "fa_aacquant.h"
+#include "fa_huffman.h"
 
 #ifndef FA_MIN
 #define FA_MIN(a,b)  ( (a) < (b) ? (a) : (b) )
@@ -171,6 +172,7 @@ static int get_cutoff_sfb(int sfb_offset_max, int *sfb_offset, int cutoff_line)
 static void fa_aacenc_rom_init()
 {
     fa_mdctquant_rom_init();
+    fa_huffman_rom_init();
 }
 
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
