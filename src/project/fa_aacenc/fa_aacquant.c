@@ -70,37 +70,6 @@ static void init_quant_change(int outer_loop_count, aacenc_ctx_t *s)
 
 }
 
-/*
-static int bit_more_est(int chn_num, int block_type, int common_window)
-{
-    int bits;
-    int common_sideinfo_bits;
-    int cpe_num;
-
-    bits = 0;
-    common_sideinfo_bits = 62/chn_num;
-    cpe_num = chn_num/2;
-
-    bits += common_sideinfo_bits;
-
-    if (chn_num == 1) {
-        bits += 15;
-        if (block_type == ONLY_SHORT_BLOCK)
-            bits += 15;
-        else 
-            bits += 10;
-    } else {
-        bits += cpe_num*16;
-        if (common_window)
-            bits += 15;
-        if (ms_enable) {
-            if (block_type == ONLY_SHORT_BLOCK)
-                bits += 15+
-        } else {
-        }
-    }
-}
-*/
 
 static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
 {
@@ -198,10 +167,14 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                     sl->common_scalefac = FA_MIN(sl->common_scalefac, 255);
                     sr->common_scalefac = FA_MIN(sr->common_scalefac, 255);
                 } else {
-                    if (sl->quant_change > 1)
+                    if (sl->quant_change > 1) {
                         sl->common_scalefac -= sl->quant_change;
-                    if (sr->quant_change > 1)
+                        sl->common_scalefac = FA_MAX(sl->common_scalefac, 0);
+                    }
+                    if (sr->quant_change > 1) {
                         sr->common_scalefac -= sr->quant_change;
+                        sr->common_scalefac = FA_MAX(sr->common_scalefac, 0);
+                    }
                 }
 
                 sl->quant_change >>= 1;
@@ -242,8 +215,10 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                     s->common_scalefac = FA_MIN(s->common_scalefac, 255);
                 }
                 else {
-                    if (s->quant_change > 1)
+                    if (s->quant_change > 1) {
                         s->common_scalefac -= s->quant_change;
+                        s->common_scalefac = FA_MAX(s->common_scalefac, 0);
+                    }
                 }
 
                 s->quant_change >>= 1;

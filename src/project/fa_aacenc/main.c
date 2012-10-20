@@ -106,9 +106,10 @@ int main(int argc, char *argv[])
     int ms_enable = MS_DEFAULT;
     int lfe_enable = LFE_DEFAULT;
     int tns_enable = TNS_DEFAULT;
-    int block_switch_enable = 0;//BLOCK_SWITCH_DEFAULT;
+    int block_switch_enable = BLOCK_SWITCH_DEFAULT;
     int blockswitch_method = BLOCKSWITCH_PSY;
     int quantize_method = QUANTIZE_LOOP;
+    int psy_enable = PSY_ENABLE;
 
     fa_aacenc_ctx_t *f;
 
@@ -142,9 +143,9 @@ int main(int argc, char *argv[])
     sample_rate = fmt.samplerate;
     chn_num     = fmt.channels;
 
-    h_aacenc = fa_aacenc_init(sample_rate, 80000, chn_num,
+    h_aacenc = fa_aacenc_init(sample_rate, 96000, chn_num,
                               2, LOW, 
-                              ms_enable, lfe_enable, tns_enable, block_switch_enable,
+                              ms_enable, lfe_enable, tns_enable, block_switch_enable, psy_enable, 
                               blockswitch_method, quantize_method);
 
 #ifdef DEBUG_DECODE
@@ -261,11 +262,17 @@ int main(int argc, char *argv[])
 #endif
 
         frame_index++;
-#if 0
+#if  0 
         if (frame_index == 500) {
             break;
         }
 #endif
+#if  1 
+        if (frame_index == 434) {
+            frame_index += 2;
+        }
+#endif
+
 
         fprintf(stderr,"\rthe frame = [%d]", frame_index);
     }

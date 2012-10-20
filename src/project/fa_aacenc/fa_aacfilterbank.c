@@ -389,9 +389,15 @@ static int aac_blockswitch_psy(uintptr_t h_fltbank, uintptr_t h_psy, int block_t
 
 int fa_blockswitch_psy(aacenc_ctx_t *s)
 {
-    s->block_type = aac_blockswitch_psy(s->h_aac_analysis, s->h_aacpsy, s->block_type, s->pe);
-    s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
-    s->bits_more  = s->bits_alloc - 100;
+    if (s->psy_enable) {
+        s->block_type = aac_blockswitch_psy(s->h_aac_analysis, s->h_aacpsy, s->block_type, s->pe);
+        s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
+        s->bits_more  = s->bits_alloc - 100;
+    } else {
+        s->block_type = ONLY_LONG_BLOCK;
+        s->bits_alloc = s->bits_average;
+        s->bits_more  = s->bits_alloc - 100;
+    }
 
     return s->block_type;
 }
