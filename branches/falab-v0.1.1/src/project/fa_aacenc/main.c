@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
     int block_switch_enable = BLOCK_SWITCH_DEFAULT;
     int blockswitch_method = BLOCKSWITCH_PSY;
     int quantize_method = QUANTIZE_LOOP;
-    int psy_enable = PSY_ENABLE;
+    int psy_enable = 0;//PSY_ENABLE;
 
     fa_aacenc_ctx_t *f;
 
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
     sample_rate = fmt.samplerate;
     chn_num     = fmt.channels;
 
-    h_aacenc = fa_aacenc_init(sample_rate, 128000, chn_num,
+    h_aacenc = fa_aacenc_init(sample_rate, 96000, chn_num,
                               2, LOW, 
                               ms_enable, lfe_enable, tns_enable, block_switch_enable, psy_enable, 
                               blockswitch_method, quantize_method);
@@ -295,6 +295,7 @@ int main(int argc, char *argv[])
     FA_GET_TIME_COST(3);
     FA_GET_TIME_COST(4);
     FA_GET_TIME_COST(5);
+    FA_GET_TIME_COST(6);
 
     return 0;
 }
