@@ -120,6 +120,7 @@ int fa_write_bitstream_onechn(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aace
     int bits = 0;
     int bits_left_afterfill, num_fill_bits;
 
+    /*printf("------shape=%d\n", s->window_shape);*/
 
     if (p_chn_info->present) {
         /* Write out a single_channel_element */
