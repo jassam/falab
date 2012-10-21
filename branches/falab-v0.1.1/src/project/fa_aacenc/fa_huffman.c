@@ -45,13 +45,13 @@
 #endif
 
 
-static float rom_exp2_N[13];
+static float rom_exp2_N[20];
 
 void fa_huffman_rom_init()
 {
     int i;
 
-    for (i = 0; i < 13; i++)
+    for (i = 0; i < 20; i++)
         rom_exp2_N[i] = powf(2, i-1);
 }
 /*
@@ -97,8 +97,6 @@ static int calculate_esc_sequence(int input, int *len_esc_sequence)
 
     /*output = (int)((pow(2,N) - 1)*pow(2,N+5) + y - pow(2,N+4));*/
     output = (int)((rom_exp2_N[N+1] - 1)*rom_exp2_N[N+6] + y - rom_exp2_N[N+5]);
-
-
 
 
 #endif

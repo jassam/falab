@@ -142,7 +142,7 @@ static void xr_pow34_calculate(float *mdct_line, float mdct_line_num,
     float tmp;
 
     for (i = 0; i < mdct_line_num; i++) {
-        tmp = fabsf(mdct_line[i]); 
+        tmp = FA_ABS(mdct_line[i]); 
         xr_pow[i] = sqrtf(tmp*sqrtf(tmp));
 
         if (mdct_line[i] < 0)
@@ -162,7 +162,7 @@ float fa_mdctline_getmax(uintptr_t handle)
 
     /*calculate max mdct_line*/
     for (i = 0; i < (f->block_type_cof*f->mdct_line_num); i++) {
-        abs_mdct_line = fabsf(mdct_line[i]);
+        abs_mdct_line = FA_ABS(mdct_line[i]);
         if (abs_mdct_line > max_mdct_line)
             max_mdct_line = abs_mdct_line;
     }
@@ -180,10 +180,10 @@ int fa_get_start_common_scalefac(float max_mdct_line)
 
     tmp = ceilf(16./3 * (log2f((powf(max_mdct_line, 0.75))/MAX_QUANT)));
     start_common_scalefac = (int)tmp;
-/*
+
     start_common_scalefac = FA_MIN(start_common_scalefac, 255);
     start_common_scalefac = FA_MAX(start_common_scalefac, 0);
-*/
+
     return start_common_scalefac;
 }
 
@@ -244,6 +244,11 @@ void fa_mdctline_quant(uintptr_t handle,
         else 
             x_quant[i] = -1 * (int)(FA_ABS(mdct_scaled[i]) * cof_quant + MAGIC_NUMBER);
 
+        if (x_quant[i] > 8191) {
+            x_quant[i] = 8191;
+        } else if(x_quant[i] < -8191) {
+            x_quant[i] = -8191;
+        }
     }
 
     FA_CLOCK_END(5);
@@ -295,8 +300,8 @@ void fa_calculate_quant_noise(uintptr_t handle,
                     /*inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));*/
                     inv_cof = rom_inv_cof[common_scalefac - scalefactor[gr][sfb]+255];
                     tmp_xq = FA_ABS(x_quant[mdct_line_offset+i]);
-                    inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof;
-                    /*inv_x_quant = fa_iqtable[tmp_xq] * inv_cof; */
+                    /*inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof;*/
+                    inv_x_quant = fa_iqtable[tmp_xq] * inv_cof;
 
                     tmp = FA_ABS(mdct_line[mdct_line_offset+i]) - inv_x_quant;
                     f->error_energy[gr][sfb][win] += tmp*tmp;  
@@ -378,9 +383,9 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
     for (gr = 0; gr < num_window_groups; gr++) {
         if ((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
             for (sfb = 1; sfb < sfb_num; sfb++) {
-                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 40)
+                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
                     return 1;
-                if (outer_loop_count > 10)
+                if (outer_loop_count > 2)
                     return 1;
             }
             return 0;
@@ -466,9 +471,9 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
     for (gr = 0; gr < num_window_groups; gr++) {
         if ((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
             for (sfb = 1; sfb < sfb_num; sfb++) {
-                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 40)
+                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
                     return 1;
-                if (outer_loop_count > 10)
+                if (outer_loop_count > 2)
                     return 1;
             }
 
@@ -730,16 +735,16 @@ void fa_mdctline_ms_encode(uintptr_t hl, uintptr_t hr, int num_window_groups,
                 diff = 0.5 * (lx - rx);
 
                 enrgs += sum * sum;
-                maxs = FA_MAX(maxs, fabs(sum));
+                maxs = FA_MAX(maxs, FA_ABS(sum));
 
                 enrgd += diff * diff;
-                maxd = FA_MAX(maxd, fabs(diff));
+                maxd = FA_MAX(maxd, FA_ABS(diff));
 
                 enrgl += lx * lx;
                 enrgr += rx * rx;
 
-                maxl = FA_MAX(maxl, fabs(lx));
-                maxr = FA_MAX(maxr, fabs(rx));
+                maxl = FA_MAX(maxl, FA_ABS(lx));
+                maxr = FA_MAX(maxr, FA_ABS(rx));
 
             }
 
