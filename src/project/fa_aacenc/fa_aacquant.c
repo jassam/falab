@@ -480,6 +480,7 @@ void fa_quantize_loop(fa_aacenc_ctx_t *f)
 
     chn_num = f->cfg.chn_num;
 
+    FA_CLOCK_START(6);
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
         if (s->block_type == ONLY_SHORT_BLOCK) {
@@ -492,6 +493,8 @@ void fa_quantize_loop(fa_aacenc_ctx_t *f)
             memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
         }
     }
+    FA_CLOCK_END(6);
+    FA_CLOCK_COST(6);
      
     /*check common_window and start_common_scalefac*/
     calculate_start_common_scalefac(f);

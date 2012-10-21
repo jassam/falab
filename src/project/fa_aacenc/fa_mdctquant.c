@@ -30,7 +30,9 @@
 #include <math.h>
 #include "fa_mdctquant.h"
 #include "fa_iqtab.h"
+#include "fa_fastmath.h"
 #include "fa_timeprofile.h"
+
 
 #ifndef FA_MIN
 #define FA_MIN(a,b)  ( (a) < (b) ? (a) : (b) )
@@ -143,7 +145,11 @@ static void xr_pow34_calculate(float *mdct_line, float mdct_line_num,
 
     for (i = 0; i < mdct_line_num; i++) {
         tmp = FA_ABS(mdct_line[i]); 
+#if 0 
         xr_pow[i] = sqrtf(tmp*sqrtf(tmp));
+#else 
+        xr_pow[i] = FA_SQRTF(tmp*FA_SQRTF(tmp));
+#endif
 
         if (mdct_line[i] < 0)
             xr_pow[i] = -xr_pow[i];
@@ -178,7 +184,11 @@ int fa_get_start_common_scalefac(float max_mdct_line)
     if (max_mdct_line == 0.)
         return 0;
 
+#if 0
     tmp = ceilf(16./3 * (log2f((powf(max_mdct_line, 0.75))/MAX_QUANT)));
+#else 
+    tmp = ceilf(16./3 * (FA_LOG2((FA_SQRTF(max_mdct_line*FA_SQRTF(max_mdct_line)))/MAX_QUANT)));
+#endif
     start_common_scalefac = (int)tmp;
 
     start_common_scalefac = FA_MIN(start_common_scalefac, 255);
@@ -385,7 +395,7 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
             for (sfb = 1; sfb < sfb_num; sfb++) {
                 if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
                     return 1;
-                if (outer_loop_count > 2)
+                if (outer_loop_count > 1)
                     return 1;
             }
             return 0;
@@ -473,7 +483,7 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
             for (sfb = 1; sfb < sfb_num; sfb++) {
                 if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
                     return 1;
-                if (outer_loop_count > 2)
+                if (outer_loop_count > 1)
                     return 1;
             }
 
