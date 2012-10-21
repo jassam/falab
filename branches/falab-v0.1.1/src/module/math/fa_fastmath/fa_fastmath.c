@@ -215,15 +215,19 @@ float fa_fast_invsqrtf(float x)
 }
 
 
-float fa_fast_sqrtf(float x)
+float fa_fast_sqrtf(float number)
 {
-    float xhalf = 0.5f*x;
-    int i = *(int*)&x;
-    i = 0x5f3759df - (i >> 1);       
-    x = *(float*)&i;
-    x = x*(1.5f - xhalf*x*x);       
-
-    return (1./x);
+    long i;   
+    float x, y;   
+    const float f = 1.5F;    
+    x = number * 0.5F;  
+    y  = number;   
+    i  = * ( long * ) &y;    
+    i  = 0x5f3759df - ( i >> 1 );    
+    y  = * ( float * ) &i;    
+    y  = y * ( f - ( x * y * y ) );    
+    y  = y * ( f - ( x * y * y ) );    
+    return number * y;    
 }
 
 
