@@ -270,6 +270,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].bits_res_maxsize = bits_res_maxsize;
         f->ctx[i].res_buf          = (unsigned char *)malloc(sizeof(unsigned char)*(bits_res_maxsize/8 + 1));
         f->ctx[i].bits_res_size    = 0;
+        f->ctx[i].last_common_scalefac = 0;
 
         f->ctx[i].h_aacpsy        = fa_aacpsy_init(sample_rate);
         f->ctx[i].h_aac_analysis  = fa_aacfilterbank_init();
