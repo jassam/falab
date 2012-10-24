@@ -488,7 +488,7 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
                 sr->quant_change >>= 1;
 
                 if (sl->quant_change == 0 && sr->quant_change == 0 &&
-                   counted_bits>available_bits) {
+                    (counted_bits-available_bits)>80) {
                     /*delta_bits > 80) {*/
                    sl->quant_change = 1;
                    sr->quant_change = 1;
@@ -549,7 +549,7 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
 
             inner_loop_cnt++;
         } while (find_globalgain == 0);
-        printf("the %d chn inner loop fast cnt=%d\n", i, inner_loop_cnt);
+        /*printf("the %d chn inner loop fast cnt=%d\n", i, inner_loop_cnt);*/
      
         if (s->chn_info.cpe == 1) {
             sl = s;
