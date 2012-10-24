@@ -75,11 +75,11 @@ static void init_quant_change(int outer_loop_count, aacenc_ctx_t *s)
 static void init_quant_change_fast(int outer_loop_count, aacenc_ctx_t *s)
 {
     if (outer_loop_count == 0) {
-        /*s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);*/
-        s->common_scalefac = s->start_common_scalefac;
+        s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);
+        /*s->common_scalefac = s->start_common_scalefac;*/
         s->quant_change = 64;
     } else {
-        /*s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);*/
+        s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);
         s->quant_change = 2;
     }
 
@@ -294,11 +294,11 @@ static int choose_search_step(int delta_bits)
 	else if (delta_bits < 512)
 		step = 4;
 	else if (delta_bits < 768)
-		step = 8;
-	else if (delta_bits < 1024)
 		step = 16;
-	else 
+	else if (delta_bits < 1024)
 		step = 32;
+	else 
+		step = 64;
 
 	return step;
 
@@ -341,7 +341,8 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
             sr = &(f->ctx[i+1]);
             find_globalgain = 0;
             init_quant_change_fast(outer_loop_count, sl);
-            init_quant_change_fast(outer_loop_count, sr);
+            /*init_quant_change_fast(outer_loop_count, sr);*/
+            sr->common_scalefac = sl->common_scalefac;
         } else {
             chn = 1;
             find_globalgain = 0;
@@ -406,10 +407,12 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
                 available_bits_r = get_avaiable_bits(sr->bits_average, sr->bits_more, sr->bits_res_size, sr->bits_res_maxsize);
                 available_bits = available_bits_l + available_bits_r;
 
-                delta_bits = FA_ABS(counted_bits - available_bits);
-                if (inner_loop_cnt == 0)
-                    sl->quant_change = sr->quant_change = choose_search_step(delta_bits);
+                delta_bits = counted_bits - available_bits;
+                delta_bits = FA_ABS(delta_bits);
 
+                if (inner_loop_cnt == 0) 
+                    sl->quant_change = sr->quant_change = choose_search_step(delta_bits);
+#if 0
                 if (counted_bits > available_bits) { 
                     if (!flag_goneover) {
                         if (direction == STEP_DOWN) {
@@ -453,16 +456,53 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
 
                 if (sl->quant_change == 0 && sr->quant_change == 0 &&
                    /*counted_bits>available_bits) {*/
-                    delta_bits > 60) {
+                    delta_bits > 80) {
                    sl->quant_change = 1;
                    sr->quant_change = 1;
                 }
 
-                if (sl->quant_change == 0 && sr->quant_change == 0)
+                if ((sl->quant_change == 0 && sr->quant_change == 0) 
+                    || (delta_bits < 80)
+                    || (inner_loop_cnt > 5 && delta_bits < 200))
+                    find_globalgain = 1;
+                else 
+                    find_globalgain = 0;
+#else 
+                if (counted_bits > available_bits) { 
+                    sl->common_scalefac += sl->quant_change;
+                    sr->common_scalefac += sr->quant_change;
+                    sl->common_scalefac = FA_MIN(sl->common_scalefac, 255);
+                    sr->common_scalefac = FA_MIN(sr->common_scalefac, 255);
+                } else {
+                    if (sl->quant_change > 1) {
+                        sl->common_scalefac -= sl->quant_change;
+                        sl->common_scalefac = FA_MAX(sl->common_scalefac, 0);
+                    }
+                    if (sr->quant_change > 1) {
+                        sr->common_scalefac -= sr->quant_change;
+                        sr->common_scalefac = FA_MAX(sr->common_scalefac, 0);
+                    }
+                }
+
+                sl->quant_change >>= 1;
+                sr->quant_change >>= 1;
+
+                if (sl->quant_change == 0 && sr->quant_change == 0 &&
+                   counted_bits>available_bits) {
+                    /*delta_bits > 80) {*/
+                   sl->quant_change = 1;
+                   sr->quant_change = 1;
+                }
+
+                if ((sl->quant_change == 0 && sr->quant_change == 0) )
+                    /*|| (delta_bits < 30)*/
+                    /*|| (inner_loop_cnt > 5 && delta_bits < 200))*/
                     find_globalgain = 1;
                 else 
                     find_globalgain = 0;
 
+
+#endif
             } else if (s->chn_info.sce == 1) {
                 chn = 1;
                 if (s->quant_ok)
@@ -509,7 +549,7 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
 
             inner_loop_cnt++;
         } while (find_globalgain == 0);
-        /*printf("the %d chn inner loop fast cnt=%d\n", i, inner_loop_cnt);*/
+        printf("the %d chn inner loop fast cnt=%d\n", i, inner_loop_cnt);
      
         if (s->chn_info.cpe == 1) {
             sl = s;
