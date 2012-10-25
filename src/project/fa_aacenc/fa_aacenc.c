@@ -48,7 +48,7 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
-#define GAIN_ADJUST   4 
+#define GAIN_ADJUST   5 //4 
 
 
 /* Returns the sample rate index */
@@ -107,7 +107,7 @@ static rate_cutoff_t rate_cutoff[] =
     {24000, 5000},
     {32000, 8000},
     {38000, 12000},
-    {48000, 20000},
+    {48000, 16000},
     {64000, 20000},
     {0    , 0},
 };
@@ -468,7 +468,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         /*block switch */
         if (block_switch_en) {
             f->do_blockswitch(s);
-#if 1
+#if 0 
             if (s->block_type != 0)
                 printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
 #endif

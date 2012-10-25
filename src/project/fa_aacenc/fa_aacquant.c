@@ -79,7 +79,7 @@ static void init_quant_change_fast(int outer_loop_count, aacenc_ctx_t *s)
         /*s->common_scalefac = s->start_common_scalefac;*/
         s->quant_change = 64;
     } else {
-        s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);
+        /*s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);*/
         s->quant_change = 2;
     }
 
@@ -304,11 +304,6 @@ static int choose_search_step(int delta_bits)
 
 }
 
-enum {
-    STEP_UP,
-    STEP_DOWN,
-};
-
 static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
 {
     int i, chn;
@@ -322,9 +317,6 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
     int inner_loop_cnt = 0;
 
     int delta_bits;
-    int step;
-    int direction;
-    int flag_goneover;
 
     chn_num = f->cfg.chn_num;
     head_end_sideinfo_avg = fa_bits_sideinfo_est(chn_num);
@@ -349,8 +341,6 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
             init_quant_change_fast(outer_loop_count, s);
         }
 
-        direction = STEP_UP;
-        flag_goneover = 0;
         do {
             if (s->chn_info.cpe == 1) {
                 if (sl->chn_info.common_window == 1) {
@@ -412,97 +402,37 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
 
                 if (inner_loop_cnt == 0) 
                     sl->quant_change = sr->quant_change = choose_search_step(delta_bits);
-#if 0
-                if (counted_bits > available_bits) { 
-                    if (!flag_goneover) {
-                        if (direction == STEP_DOWN) {
-                            flag_goneover = 1;
-                            sl->quant_change >>= 1;
-                            sr->quant_change >>= 1;
-                        }
-                    } 
 
-                    direction = STEP_UP;
-                        
-                    sl->common_scalefac += sl->quant_change;
-                    sr->common_scalefac += sr->quant_change;
-                    sl->common_scalefac = FA_MIN(sl->common_scalefac, 255);
-                    sr->common_scalefac = FA_MIN(sr->common_scalefac, 255);
-                } else {
-                    if (!flag_goneover) {
-                        if (direction == STEP_UP) {
-                            flag_goneover = 1;
-                            sl->quant_change >>= 1;
-                            sr->quant_change >>= 1;
-                        }
-                    }
-
-                    direction = STEP_DOWN;
-
-                    if (sl->quant_change > 1) {
-                        sl->common_scalefac -= sl->quant_change;
-                        sl->common_scalefac = FA_MAX(sl->common_scalefac, 0);
-                    }
-                    if (sr->quant_change > 1) {
-                        sr->common_scalefac -= sr->quant_change;
-                        sr->common_scalefac = FA_MAX(sr->common_scalefac, 0);
-                    }
-                }
-
-                if (flag_goneover) {
-                    sl->quant_change >>= 1;
-                    sr->quant_change >>= 1;
-                }
-
-                if (sl->quant_change == 0 && sr->quant_change == 0 &&
-                   /*counted_bits>available_bits) {*/
-                    delta_bits > 80) {
-                   sl->quant_change = 1;
-                   sr->quant_change = 1;
-                }
-
-                if ((sl->quant_change == 0 && sr->quant_change == 0) 
-                    || (delta_bits < 80)
-                    || (inner_loop_cnt > 5 && delta_bits < 200))
-                    find_globalgain = 1;
-                else 
-                    find_globalgain = 0;
-#else 
                 if (counted_bits > available_bits) { 
                     sl->common_scalefac += sl->quant_change;
                     sr->common_scalefac += sr->quant_change;
                     sl->common_scalefac = FA_MIN(sl->common_scalefac, 255);
                     sr->common_scalefac = FA_MIN(sr->common_scalefac, 255);
                 } else {
-                    if (sl->quant_change > 1) {
-                        sl->common_scalefac -= sl->quant_change;
-                        sl->common_scalefac = FA_MAX(sl->common_scalefac, 0);
-                    }
-                    if (sr->quant_change > 1) {
-                        sr->common_scalefac -= sr->quant_change;
-                        sr->common_scalefac = FA_MAX(sr->common_scalefac, 0);
-                    }
+                    sl->common_scalefac -= sl->quant_change;
+                    sl->common_scalefac = FA_MAX(sl->common_scalefac, sl->start_common_scalefac);
+                    sr->common_scalefac -= sr->quant_change;
+                    sr->common_scalefac = FA_MAX(sr->common_scalefac, sl->start_common_scalefac);
                 }
 
                 sl->quant_change >>= 1;
                 sr->quant_change >>= 1;
 
-                if (sl->quant_change == 0 && sr->quant_change == 0 &&
-                    (counted_bits-available_bits)>80) {
-                    /*delta_bits > 80) {*/
+                if ((sl->quant_change == 0 && sr->quant_change == 0) && 
+                    (counted_bits > available_bits)) {
                    sl->quant_change = 1;
                    sr->quant_change = 1;
                 }
 
-                if ((sl->quant_change == 0 && sr->quant_change == 0) )
-                    /*|| (delta_bits < 30)*/
-                    /*|| (inner_loop_cnt > 5 && delta_bits < 200))*/
+                if ((sl->quant_change == 0 && sr->quant_change == 0) 
+                    /*|| (delta_bits < 20)*/
+                    /*|| (inner_loop_cnt >= 6 && delta_bits < 200)*/
+                    /*|| (inner_loop_cnt >= 7)*/
+                    )
                     find_globalgain = 1;
                 else 
                     find_globalgain = 0;
 
-
-#endif
             } else if (s->chn_info.sce == 1) {
                 chn = 1;
                 if (s->quant_ok)
@@ -521,15 +451,21 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
                 counted_bits  = fa_bits_count(f->h_bitstream, &f->cfg, s, NULL) + head_end_sideinfo_avg;
 
                 available_bits = get_avaiable_bits(s->bits_average, s->bits_more, s->bits_res_size, s->bits_res_maxsize);
+
+                delta_bits = counted_bits - available_bits;
+                delta_bits = FA_ABS(delta_bits);
+
+                if (inner_loop_cnt == 0) 
+                    s->quant_change = choose_search_step(delta_bits);
+
+
                 if (counted_bits > available_bits) {
                     s->common_scalefac += s->quant_change;
                     s->common_scalefac = FA_MIN(s->common_scalefac, 255);
                 }
                 else {
-                    if (s->quant_change > 1) {
-                        s->common_scalefac -= s->quant_change;
-                        s->common_scalefac = FA_MAX(s->common_scalefac, 0);
-                    }
+                    s->common_scalefac -= s->quant_change;
+                    s->common_scalefac = FA_MAX(s->common_scalefac, s->start_common_scalefac);
                 }
 
                 s->quant_change >>= 1;
@@ -574,6 +510,7 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
             s->bits_res_size = available_bits - counted_bits;
             if (s->bits_res_size >= s->bits_res_maxsize)
                 s->bits_res_size = s->bits_res_maxsize;
+            s->last_common_scalefac = s->common_scalefac;
         }
 
         i += chn;
@@ -776,7 +713,7 @@ void fa_quantize_loop(fa_aacenc_ctx_t *f)
 
     chn_num = f->cfg.chn_num;
 
-    FA_CLOCK_START(6);
+    /*FA_CLOCK_START(6);*/
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
         if (s->block_type == ONLY_SHORT_BLOCK) {
@@ -789,8 +726,8 @@ void fa_quantize_loop(fa_aacenc_ctx_t *f)
             memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
         }
     }
-    FA_CLOCK_END(6);
-    FA_CLOCK_COST(6);
+    /*FA_CLOCK_END(6);*/
+    /*FA_CLOCK_COST(6);*/
      
     /*check common_window and start_common_scalefac*/
     calculate_start_common_scalefac(f);
