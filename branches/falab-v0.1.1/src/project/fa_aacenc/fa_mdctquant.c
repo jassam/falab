@@ -245,7 +245,7 @@ void fa_mdctline_quant(uintptr_t handle,
     float *mdct_scaled = f->mdct_scaled;
     float cof_quant;
 
-    FA_CLOCK_START(5);
+    /*FA_CLOCK_START(5);*/
     for (i = 0; i < f->block_type_cof*f->mdct_line_num; i++) {
         /*cof_quant = powf(2, (-3./16)*common_scalefac);*/
         cof_quant = rom_cof_quant[common_scalefac+255];
@@ -261,8 +261,8 @@ void fa_mdctline_quant(uintptr_t handle,
         }
     }
 
-    FA_CLOCK_END(5);
-    FA_CLOCK_COST(5);
+    /*FA_CLOCK_END(5);*/
+    /*FA_CLOCK_COST(5);*/
 }
 
 void fa_calculate_quant_noise(uintptr_t handle,
@@ -450,6 +450,8 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
                    (f2->error_energy[gr][sfb][win] > f2->xmin[gr][sfb][win])) {
                     scalefactor[gr][sfb] += 1;
                     scalefactor1[gr][sfb] += 1;
+                    scalefactor[gr][sfb] = FA_MIN(scalefactor[gr][sfb], 255);
+                    scalefactor1[gr][sfb] = FA_MIN(scalefactor1[gr][sfb], 255);
                     sfb_scale_cnt[gr]++;
                     break;
                 } else {
@@ -688,7 +690,7 @@ int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, i
     gr_max_sfb = 0;
     group_offset = 0;
 
-    FA_CLOCK_START(4);
+    /*FA_CLOCK_START(4);*/
     for (gr = 0; gr < num_window_groups; gr++) {
         x_quant_code_gr     += group_offset;
         x_quant_bits_gr     += group_offset;
@@ -701,8 +703,8 @@ int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, i
         *max_sfb = FA_MAX(*max_sfb, gr_max_sfb);
     }
 
-    FA_CLOCK_END(4);
-    FA_CLOCK_COST(4);
+    /*FA_CLOCK_END(4);*/
+    /*FA_CLOCK_COST(4);*/
     return spectral_count;
 }
 
