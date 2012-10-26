@@ -30,13 +30,10 @@
 #include "fa_aaccfg.h"
 #include "fa_aacpsy.h"
 #include "fa_aacfilterbank.h"
+#include "fa_aacstream.h"
 #include "fa_mdct.h"
 
 typedef struct _fa_aacfilterbank_t {
-
-    int        win_block_switch_en;
-    int        block_type;
-    int        prev_win_shape;
 
     float      x_buf[2*AAC_FRAME_LEN];
 
@@ -57,7 +54,7 @@ typedef struct _fa_aacfilterbank_t {
 
 }fa_aacfilterbank_t;
 
-uintptr_t fa_aacfilterbank_init(int win_block_switch_en)
+uintptr_t fa_aacfilterbank_init()
 {
     int   i;
     float *sin_win_long;
@@ -66,8 +63,6 @@ uintptr_t fa_aacfilterbank_init(int win_block_switch_en)
     float *kbd_win_short;
 
     fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)malloc(sizeof(fa_aacfilterbank_t));
-
-    f->win_block_switch_en = win_block_switch_en;
 
     /*initial the long and short block window*/
     sin_win_long  = (float *)malloc(sizeof(float)*2*AAC_BLOCK_LONG_LEN);
@@ -103,9 +98,6 @@ uintptr_t fa_aacfilterbank_init(int win_block_switch_en)
     free(sin_win_short);
     free(kbd_win_short);
 
-    f->block_type      = ONLY_LONG_BLOCK;
-    f->prev_win_shape  = SINE_WINDOW;
-
     memset(f->x_buf, 0, sizeof(float)*2*AAC_FRAME_LEN);
 
     memset(f->mdct_long_buf , 0, sizeof(float)*2*AAC_BLOCK_LONG_LEN);
@@ -128,92 +120,15 @@ void fa_aacfilterbank_uninit(uintptr_t handle)
         f = NULL;
     }
 }
-
-#define SWITCH_PE 700//1800 //300// 1800
-
-static void aacblocktype_switch(float pe, int prev_block_type, int *cur_block_type)
-{
-    int prev_coding_block_type;
-    int cur_coding_block_type;
-
-    /*get prev coding block type*/
-    if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
-        prev_coding_block_type = LONG_CODING_BLOCK;
-    else 
-        prev_coding_block_type = SHORT_CODING_BLOCK;
-
-    /*use pe to decide current coding block type*/
-    if (pe > SWITCH_PE) 
-        cur_coding_block_type = SHORT_CODING_BLOCK;
-    else 
-        cur_coding_block_type = LONG_CODING_BLOCK;
-    
-    /*use prev coding block type and current coding block type to decide current block type*/
-    if (prev_coding_block_type == LONG_CODING_BLOCK && cur_coding_block_type == LONG_CODING_BLOCK)
-        *cur_block_type = ONLY_LONG_BLOCK;
-    else if (prev_coding_block_type == LONG_CODING_BLOCK && cur_coding_block_type == SHORT_CODING_BLOCK)
-        *cur_block_type = LONG_START_BLOCK;
-    else if (prev_coding_block_type == SHORT_CODING_BLOCK && cur_coding_block_type == SHORT_CODING_BLOCK)
-        *cur_block_type = ONLY_SHORT_BLOCK;
-    else 
-        *cur_block_type = LONG_STOP_BLOCK;
-
-    /**cur_block_type = LONG_STOP_BLOCK;//ONLY_LONG_BLOCK;*/
-}
-
-
-/*this function used in aac encode*/
-int fa_aacblocktype_switch(uintptr_t h_fltbank, uintptr_t h_psy, float pe)
-{
-    fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)h_fltbank;
-    int prev_block_type;
-    int cur_block_type;
-
-    prev_block_type = f->block_type;
-    aacblocktype_switch(pe, prev_block_type, &cur_block_type);
-
-#if 0 
-    if (cur_block_type == LONG_START_BLOCK)
-        update_psy_short_previnfo(h_psy);
-
-    if (cur_block_type == LONG_STOP_BLOCK)
-        update_psy_long_previnfo(h_psy);
-#else
-
-    /*if (cur_block_type == LONG_START_BLOCK || cur_block_type == LONG_STOP_BLOCK)*/
-        /*reset_psy_previnfo(h_psy);*/
-
-#endif
-        
-    f->block_type = cur_block_type;
-
-    return cur_block_type;
-}
-
-int  fa_get_aacblocktype(uintptr_t handle)
-{
-    fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)handle;
-
-    return f->block_type;
-}
-
-/*this function used in aac decode*/
-void fa_set_aacblocktype(uintptr_t handle, int block_type)
-{
-    fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)handle;
-
-    f->block_type = block_type;
-}
-
 /*used in encode, kbd is used for short block, sine is used for long block*/
-void fa_aacfilterbank_analysis(uintptr_t handle, float *x, float *mdct_line)
+void fa_aacfilterbank_analysis(uintptr_t handle, int block_type, int *window_shape, 
+                               float *x, float *mdct_line)
 {
     int i,k;
     int offset;
     fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)handle;
 
     float *win_left, *win_right;
-    int block_type = f->block_type;
 
     /*update x_buf, 50% overlap, copy the remain half data to the beginning position*/
     for (i = 0; i < AAC_FRAME_LEN; i++) 
@@ -222,43 +137,38 @@ void fa_aacfilterbank_analysis(uintptr_t handle, float *x, float *mdct_line)
         f->x_buf[i+AAC_FRAME_LEN] = x[i];
 
     /*window shape the input x*/
-    if (f->win_block_switch_en) {
-        switch (f->prev_win_shape) {
-            case SINE_WINDOW:
-                if (block_type == ONLY_LONG_BLOCK || block_type == LONG_START_BLOCK)
-                    win_left = f->sin_win_long_left;
-                else 
-                    win_left = f->sin_win_short_left;
-                break;
-            case KBD_WINDOW:
-                if (block_type == ONLY_LONG_BLOCK || block_type == LONG_START_BLOCK)
-                    win_left = f->kbd_win_long_left;
-                else 
-                    win_left = f->kbd_win_short_left;
-                break;
-        }
+    switch (*window_shape) {
+        case SINE_WINDOW:
+            if (block_type == ONLY_LONG_BLOCK || block_type == LONG_START_BLOCK)
+                win_left = f->sin_win_long_left;
+            else 
+                win_left = f->sin_win_short_left;
+            break;
+        case KBD_WINDOW:
+            if (block_type == ONLY_LONG_BLOCK || block_type == LONG_START_BLOCK)
+                win_left = f->kbd_win_long_left;
+            else 
+                win_left = f->kbd_win_short_left;
+            break;
+    }
 
-        switch (block_type) {
-            case ONLY_LONG_BLOCK:
-                win_right = f->sin_win_long_right;
-                f->prev_win_shape = SINE_WINDOW;
-                break;
-            case LONG_START_BLOCK:
-                win_right = f->kbd_win_short_right;
-                f->prev_win_shape = KBD_WINDOW;
-                break;
-            case ONLY_SHORT_BLOCK:
-                win_right = f->kbd_win_short_right;
-                f->prev_win_shape = KBD_WINDOW;
-                break;
-            case LONG_STOP_BLOCK:
-                win_right = f->sin_win_long_right;
-                f->prev_win_shape = SINE_WINDOW;
-                break;
-        }
-    } else {
-        win_left  = f->sin_win_long_left;
-        win_right = f->sin_win_long_right;
+    switch (block_type) {
+        case ONLY_LONG_BLOCK:
+            win_right = f->sin_win_long_right;
+            *window_shape = SINE_WINDOW;
+            break;
+        case LONG_START_BLOCK:
+            win_right = f->kbd_win_short_right;
+            *window_shape = KBD_WINDOW;
+            break;
+        case ONLY_SHORT_BLOCK:
+            win_right = f->kbd_win_short_right;
+            *window_shape = KBD_WINDOW;
+            break;
+        case LONG_STOP_BLOCK:
+            win_right = f->sin_win_long_right;
+            *window_shape = SINE_WINDOW;
+            break;
     }
 
     switch (block_type) {
@@ -315,120 +225,182 @@ void fa_aacfilterbank_analysis(uintptr_t handle, float *x, float *mdct_line)
 
 
 /*used in decode*/
-void fa_aacfilterbank_synthesis(uintptr_t handle, float *mdct_line, float *x)
+void fa_aacfilterbank_synthesis(uintptr_t handle, int block_type,
+                                float *mdct_line, float *x)
 {
     int i,k;
     int offset;
     fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)handle;
 
     float *win_left, *win_right;
-    int block_type = f->block_type;
 
-    if (f->win_block_switch_en) {
-        switch (block_type) {
-            case ONLY_LONG_BLOCK:
-                win_left  = f->sin_win_long_left;
-                win_right = f->sin_win_long_right;
-                fa_imdct(f->h_mdct_long, mdct_line, f->mdct_long_buf);
-                offset = AAC_BLOCK_LONG_LEN;
-                for (i = 0; i < AAC_BLOCK_LONG_LEN; i++) {
-                    f->x_buf[i]        += f->mdct_long_buf[i] * win_left[i];
-                    f->x_buf[i+offset] =  f->mdct_long_buf[i+offset] * win_right[i];
+    switch (block_type) {
+        case ONLY_LONG_BLOCK:
+            win_left  = f->sin_win_long_left;
+            win_right = f->sin_win_long_right;
+            fa_imdct(f->h_mdct_long, mdct_line, f->mdct_long_buf);
+            offset = AAC_BLOCK_LONG_LEN;
+            for (i = 0; i < AAC_BLOCK_LONG_LEN; i++) {
+                f->x_buf[i]        += f->mdct_long_buf[i] * win_left[i];
+                f->x_buf[i+offset] =  f->mdct_long_buf[i+offset] * win_right[i];
+            }
+
+            for (i = 0; i < AAC_FRAME_LEN; i++)
+                x[i] = f->x_buf[i];
+            for (i = 0; i < AAC_BLOCK_LONG_LEN; i++) 
+                f->x_buf[i] = f->x_buf[i+AAC_BLOCK_LONG_LEN];
+            for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
+                f->x_buf[i+AAC_BLOCK_LONG_LEN] = 0;
+
+            break;
+        case LONG_START_BLOCK:
+            win_left  = f->sin_win_long_left;
+            win_right = f->kbd_win_short_right;
+            fa_imdct(f->h_mdct_long, mdct_line, f->mdct_long_buf);
+            for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
+                f->x_buf[i] += f->mdct_long_buf[i] * win_left[i];
+            offset = AAC_BLOCK_LONG_LEN;
+            for (i = 0; i < AAC_BLOCK_TRANS_LEN; i++)
+                f->x_buf[i+offset] = f->mdct_long_buf[i+offset];
+            offset += AAC_BLOCK_TRANS_LEN;
+            for (i = 0; i < AAC_BLOCK_SHORT_LEN; i++)
+                f->x_buf[i+offset] = f->mdct_long_buf[i+offset] * win_right[i];
+            offset += AAC_BLOCK_SHORT_LEN;
+            for (i = 0; i < AAC_BLOCK_TRANS_LEN; i++)
+                f->x_buf[i+offset] = 0;
+
+            for (i = 0; i < AAC_FRAME_LEN; i++)
+                x[i] = f->x_buf[i];
+            for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
+                f->x_buf[i] = f->x_buf[i+AAC_BLOCK_LONG_LEN];
+            for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
+                f->x_buf[i+AAC_BLOCK_LONG_LEN] = 0;
+
+            break;
+        case ONLY_SHORT_BLOCK:
+            win_left  = f->kbd_win_short_left;
+            win_right = f->kbd_win_short_right;
+            offset = AAC_BLOCK_TRANS_LEN;
+            for (k = 0; k < 8; k++) {
+                for (i = 0; i < AAC_BLOCK_SHORT_LEN; i++) {
+                    fa_imdct(f->h_mdct_short, mdct_line+k*AAC_BLOCK_SHORT_LEN, f->mdct_short_buf);
+                    f->x_buf[i+offset] += f->mdct_short_buf[i] * win_left[i];
+                    f->x_buf[i+offset+AAC_BLOCK_SHORT_LEN] = f->mdct_short_buf[i+AAC_BLOCK_SHORT_LEN] * win_right[i];
                 }
-
-                for (i = 0; i < AAC_FRAME_LEN; i++)
-                    x[i] = f->x_buf[i];
-                for (i = 0; i < AAC_BLOCK_LONG_LEN; i++) 
-                    f->x_buf[i] = f->x_buf[i+AAC_BLOCK_LONG_LEN];
-                for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
-                    f->x_buf[i+AAC_BLOCK_LONG_LEN] = 0;
-
-                break;
-            case LONG_START_BLOCK:
-                win_left  = f->sin_win_long_left;
-                win_right = f->kbd_win_short_right;
-                fa_imdct(f->h_mdct_long, mdct_line, f->mdct_long_buf);
-                for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
-                    f->x_buf[i] += f->mdct_long_buf[i] * win_left[i];
-                offset = AAC_BLOCK_LONG_LEN;
-                for (i = 0; i < AAC_BLOCK_TRANS_LEN; i++)
-                    f->x_buf[i+offset] = f->mdct_long_buf[i+offset];
-                offset += AAC_BLOCK_TRANS_LEN;
-                for (i = 0; i < AAC_BLOCK_SHORT_LEN; i++)
-                    f->x_buf[i+offset] = f->mdct_long_buf[i+offset] * win_right[i];
                 offset += AAC_BLOCK_SHORT_LEN;
-                for (i = 0; i < AAC_BLOCK_TRANS_LEN; i++)
-                    f->x_buf[i+offset] = 0;
+            }
+            for (i = 0; i < AAC_BLOCK_TRANS_LEN; i++)
+                f->x_buf[i+offset+AAC_BLOCK_SHORT_LEN] = 0;
 
-                for (i = 0; i < AAC_FRAME_LEN; i++)
-                    x[i] = f->x_buf[i];
-                for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
-                    f->x_buf[i] = f->x_buf[i+AAC_BLOCK_LONG_LEN];
-                for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
-                    f->x_buf[i+AAC_BLOCK_LONG_LEN] = 0;
+            for (i = 0; i < AAC_FRAME_LEN; i++)
+                x[i] = f->x_buf[i];
+            for (i = 0; i < AAC_BLOCK_LONG_LEN; i++) 
+                f->x_buf[i] = f->x_buf[i+AAC_BLOCK_LONG_LEN];
+            for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
+                f->x_buf[i+AAC_BLOCK_LONG_LEN] = 0;
+            break;
+        case LONG_STOP_BLOCK:
+            win_left  = f->kbd_win_short_left;
+            win_right = f->sin_win_long_right;
+            offset = AAC_BLOCK_TRANS_LEN;
+            fa_imdct(f->h_mdct_long, mdct_line, f->mdct_long_buf);
+            for (i = 0; i < AAC_BLOCK_SHORT_LEN; i++)
+                f->x_buf[i+offset] += f->mdct_long_buf[i+offset] * win_left[i];
+            offset += AAC_BLOCK_SHORT_LEN;
+            for (i = 0; i < AAC_BLOCK_TRANS_LEN; i++)
+                f->x_buf[i+offset] = f->mdct_long_buf[i+offset];
+            offset += AAC_BLOCK_TRANS_LEN;
+            for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
+                f->x_buf[i+offset] = f->mdct_long_buf[i+offset] * win_right[i];
 
-                break;
-            case ONLY_SHORT_BLOCK:
-                win_left  = f->kbd_win_short_left;
-                win_right = f->kbd_win_short_right;
-                offset = AAC_BLOCK_TRANS_LEN;
-                for (k = 0; k < 8; k++) {
-                    for (i = 0; i < AAC_BLOCK_SHORT_LEN; i++) {
-                        fa_imdct(f->h_mdct_short, mdct_line+k*AAC_BLOCK_SHORT_LEN, f->mdct_short_buf);
-                        f->x_buf[i+offset] += f->mdct_short_buf[i] * win_left[i];
-                        f->x_buf[i+offset+AAC_BLOCK_SHORT_LEN] = f->mdct_short_buf[i+AAC_BLOCK_SHORT_LEN] * win_right[i];
-                    }
-                    offset += AAC_BLOCK_SHORT_LEN;
-                }
-                for (i = 0; i < AAC_BLOCK_TRANS_LEN; i++)
-                    f->x_buf[i+offset+AAC_BLOCK_SHORT_LEN] = 0;
+            for (i = 0; i < AAC_FRAME_LEN; i++)
+                x[i] = f->x_buf[i];
+            for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
+                f->x_buf[i] = f->x_buf[i+AAC_BLOCK_LONG_LEN];
+            for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
+                f->x_buf[i+AAC_BLOCK_LONG_LEN] = 0;
 
-                for (i = 0; i < AAC_FRAME_LEN; i++)
-                    x[i] = f->x_buf[i];
-                for (i = 0; i < AAC_BLOCK_LONG_LEN; i++) 
-                    f->x_buf[i] = f->x_buf[i+AAC_BLOCK_LONG_LEN];
-                for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
-                    f->x_buf[i+AAC_BLOCK_LONG_LEN] = 0;
-                break;
-            case LONG_STOP_BLOCK:
-                win_left  = f->kbd_win_short_left;
-                win_right = f->sin_win_long_right;
-                offset = AAC_BLOCK_TRANS_LEN;
-                fa_imdct(f->h_mdct_long, mdct_line, f->mdct_long_buf);
-                for (i = 0; i < AAC_BLOCK_SHORT_LEN; i++)
-                    f->x_buf[i+offset] += f->mdct_long_buf[i+offset] * win_left[i];
-                offset += AAC_BLOCK_SHORT_LEN;
-                for (i = 0; i < AAC_BLOCK_TRANS_LEN; i++)
-                    f->x_buf[i+offset] = f->mdct_long_buf[i+offset];
-                offset += AAC_BLOCK_TRANS_LEN;
-                for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
-                    f->x_buf[i+offset] = f->mdct_long_buf[i+offset] * win_right[i];
-
-                for (i = 0; i < AAC_FRAME_LEN; i++)
-                    x[i] = f->x_buf[i];
-                for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
-                    f->x_buf[i] = f->x_buf[i+AAC_BLOCK_LONG_LEN];
-                for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
-                    f->x_buf[i+AAC_BLOCK_LONG_LEN] = 0;
-
-                break;
-        }
-
-    } else {
-        win_left  = f->sin_win_long_left;
-        win_right = f->sin_win_long_right;
-        fa_imdct(f->h_mdct_long, mdct_line, f->mdct_long_buf);
-        offset = AAC_BLOCK_LONG_LEN;
-        for (i = 0; i < AAC_BLOCK_LONG_LEN; i++) {
-            f->x_buf[i]        += f->mdct_long_buf[i] * win_left[i];
-            f->x_buf[i+offset] =  f->mdct_long_buf[i+offset] * win_right[i];
-        }
-
-        for (i = 0; i < AAC_FRAME_LEN; i++)
-            x[i] = f->x_buf[i];
-        for (i = 0; i < AAC_BLOCK_LONG_LEN; i++) 
-            f->x_buf[i] = f->x_buf[i+AAC_BLOCK_LONG_LEN];
-        for (i = 0; i < AAC_BLOCK_LONG_LEN; i++)
-            f->x_buf[i+AAC_BLOCK_LONG_LEN] = 0;
+            break;
     }
+
 }
+
+
+/*---------------------------------- psy blockswitch --------------------------------------------------*/
+#define SWITCH_PE  1000 //1800//1800 //300// 1800
+
+static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type)
+{
+    int prev_coding_block_type;
+    int cur_coding_block_type;
+
+    /*get prev coding block type*/
+    if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+        prev_coding_block_type = LONG_CODING_BLOCK;
+    else 
+        prev_coding_block_type = SHORT_CODING_BLOCK;
+
+    /*use pe to decide current coding block type*/
+    if (pe > SWITCH_PE) 
+        cur_coding_block_type = SHORT_CODING_BLOCK;
+    else 
+        cur_coding_block_type = LONG_CODING_BLOCK;
+    
+    /*use prev coding block type and current coding block type to decide current block type*/
+    if (prev_coding_block_type == LONG_CODING_BLOCK && cur_coding_block_type == LONG_CODING_BLOCK)
+        *cur_block_type = ONLY_LONG_BLOCK;
+    else if (prev_coding_block_type == LONG_CODING_BLOCK && cur_coding_block_type == SHORT_CODING_BLOCK)
+        *cur_block_type = LONG_START_BLOCK;
+    else if (prev_coding_block_type == SHORT_CODING_BLOCK && cur_coding_block_type == SHORT_CODING_BLOCK)
+        *cur_block_type = ONLY_SHORT_BLOCK;
+    else 
+        *cur_block_type = LONG_STOP_BLOCK;
+
+    /**cur_block_type = LONG_STOP_BLOCK;//ONLY_LONG_BLOCK;*/
+}
+
+
+/*this function used in aac encode*/
+static int aac_blockswitch_psy(uintptr_t h_fltbank, uintptr_t h_psy, int block_type, float pe)
+{
+    fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)h_fltbank;
+    int prev_block_type;
+    int cur_block_type;
+
+    prev_block_type = block_type;
+    blockswitch_pe(pe, prev_block_type, &cur_block_type);
+
+#if 0 
+    if (cur_block_type == LONG_START_BLOCK)
+        update_psy_short_previnfo(h_psy);
+
+    if (cur_block_type == LONG_STOP_BLOCK)
+        update_psy_long_previnfo(h_psy);
+#else
+
+    /*if (cur_block_type == LONG_START_BLOCK || cur_block_type == LONG_STOP_BLOCK)*/
+        /*reset_psy_previnfo(h_psy);*/
+
+#endif
+        
+
+    return cur_block_type;
+}
+
+int fa_blockswitch_psy(aacenc_ctx_t *s)
+{
+    if (s->psy_enable) {
+        s->block_type = aac_blockswitch_psy(s->h_aac_analysis, s->h_aacpsy, s->block_type, s->pe);
+        s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
+        s->bits_more  = s->bits_alloc - 100;
+    } else {
+        s->block_type = ONLY_LONG_BLOCK;
+        s->bits_alloc = s->bits_average;
+        s->bits_more  = s->bits_alloc - 100;
+    }
+
+    return s->block_type;
+}
+
+
+

@@ -130,6 +130,7 @@ typedef struct _aacenc_ctx_t{
 
     //the coding status variable 
 
+    int psy_enable;
     float pe;
 
     int block_type;
@@ -170,6 +171,7 @@ typedef struct _aacenc_ctx_t{
 
     int scalefactor[8][FA_SWB_NUM_MAX];
     int start_common_scalefac;
+    int last_common_scalefac;
     int common_scalefac;
     int quant_change;
     int x_quant[1024];
@@ -212,12 +214,22 @@ typedef struct _aacenc_ctx_t{
 
 }aacenc_ctx_t;
 
+enum {
+    BLOCKSWITCH_PSY = 0,
+    BLOCKSWITCH_VAR,
+};
+
+enum {
+    QUANTIZE_LOOP = 0,
+    QUANTIZE_FAST,
+};
 
 typedef struct _fa_aacenc_ctx_t{
 
     float *sample;
 
     int block_switch_en;
+    int psy_enable;
     //the configuration of aac encoder
     aaccfg_t cfg;
 
@@ -229,17 +241,23 @@ typedef struct _fa_aacenc_ctx_t{
     uintptr_t h_bitstream;
     int used_bytes;
 
+    int  blockswitch_method;
+    int  quantize_method;
+    void (* do_blockswitch)(aacenc_ctx_t *s);
+    void (* do_quantize)(struct _fa_aacenc_ctx_t * f);
 }fa_aacenc_ctx_t;
 
 
-#define MS_DEFAULT              0
+#define MS_DEFAULT              1 
 #define LFE_DEFAULT             0
 #define TNS_DEFAULT             0
 #define BLOCK_SWITCH_DEFAULT    1
+#define PSY_ENABLE              1 
 
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
                          int mpeg_version, int aac_objtype, 
-                         int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable);
+                         int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable, int psy_enable, 
+                         int blockswitch_method, int quantize_method);
 
 void fa_aacenc_uninit(uintptr_t handle);
 

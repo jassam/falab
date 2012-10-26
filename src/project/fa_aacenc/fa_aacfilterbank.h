@@ -33,21 +33,23 @@ extern "C"
 { 
 #endif  
 
+#include "fa_aacenc.h"
 
 #define SINE_WINDOW         0
 #define KBD_WINDOW          1
 
 typedef unsigned uintptr_t;
 
-uintptr_t fa_aacfilterbank_init(int win_block_switch_en);
+uintptr_t fa_aacfilterbank_init();
 void fa_aacfilterbank_uninit(uintptr_t handle);
 
-int  fa_get_aacblocktype(uintptr_t handle);
-void fa_set_aacblocktype(uintptr_t handle, int block_type);
 
-int  fa_aacblocktype_switch(uintptr_t h_fltbank, uintptr_t h_psy, float pe);
-void fa_aacfilterbank_analysis(uintptr_t handle, float *x, float *mdct_line);
-void fa_aacfilterbank_synthesis(uintptr_t handle, float *mdct_line, float *x);
+void fa_aacfilterbank_analysis(uintptr_t handle, int block_type, int *window_shape, 
+                               float *x, float *mdct_line);
+void fa_aacfilterbank_synthesis(uintptr_t handle, int block_type,  
+                                float *mdct_line, float *x);
+
+int  fa_blockswitch_psy(aacenc_ctx_t *s);
 
 #ifdef __cplusplus 
 }
