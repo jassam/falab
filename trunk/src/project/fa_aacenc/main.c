@@ -29,12 +29,12 @@
 TODO:
    TASK                                STATUS                SUPPORT 
     ------------------------------------------------------------------
-    mono                               complete               yes
-    stereo(common_window=0)            complete               yes
-    stereo(ms)                         doing                  no 
+    mono                               done                   yes
+    stereo(common_window=0)            done                   yes
+    stereo(ms)                         done                   yes 
     lfe                                no schecdule           no(easy, need test)
     high frequency optimize            done                   yes(bandwith limited now)
-    bitrate control fixed              doing 
+    bitrate control fixed              done                   yes(constant bitrate CBR is OK) 
     TNS                                no schecdule           no(I think no useless, waste time, no need support)
     LTP                                no schecdule           no(very slow, no need support)
     add fast xmin/pe caculate method   doing                 
@@ -54,6 +54,7 @@ TODO:
 #include "fa_aacpsy.h"
 #include "fa_swbtab.h"
 #include "fa_aacfilterbank.h"
+#include "fa_timeprofile.h"
 
 #define FRAME_SIZE_MAX  2048 
 
@@ -106,6 +107,9 @@ int main(int argc, char *argv[])
     int lfe_enable = LFE_DEFAULT;
     int tns_enable = TNS_DEFAULT;
     int block_switch_enable = BLOCK_SWITCH_DEFAULT;
+    int blockswitch_method = BLOCKSWITCH_PSY;
+    int quantize_method = QUANTIZE_LOOP;
+    int psy_enable = PSY_ENABLE;
 
     fa_aacenc_ctx_t *f;
 
@@ -141,10 +145,11 @@ int main(int argc, char *argv[])
 
     h_aacenc = fa_aacenc_init(sample_rate, 96000, chn_num,
                               2, LOW, 
-                              ms_enable, lfe_enable, tns_enable, block_switch_enable);
+                              ms_enable, lfe_enable, tns_enable, block_switch_enable, psy_enable, 
+                              blockswitch_method, quantize_method);
 
 #ifdef DEBUG_DECODE
-    h_aac_synthesis = fa_aacfilterbank_init(block_switch_enable);
+    h_aac_synthesis = fa_aacfilterbank_init();
 
     switch(fmt.samplerate) {
         case 48000:
@@ -178,7 +183,11 @@ int main(int argc, char *argv[])
         }
 
         /*analysis and encode*/
+        FA_CLOCK_START(1);
         fa_aacenc_encode(h_aacenc, wavsamples_in, chn_num*2*read_len, aac_buf, &aac_out_len);
+        FA_CLOCK_END(1);
+        FA_CLOCK_COST(1);
+
         fwrite(aac_buf, 1, aac_out_len, aacfile);
 
 #ifdef DEBUG_DECODE
@@ -187,7 +196,7 @@ int main(int argc, char *argv[])
         /*synthesis*/
         memset(mdct_line_inv, 0, FRAME_SIZE_MAX*sizeof(float));
         if(f->ctx[0].block_type == ONLY_SHORT_BLOCK) {
-#if 0 
+#if 1 
             num_window_groups = 1;
             window_group_length[0] = 8;
             window_group_length[1] = 0;
@@ -228,13 +237,12 @@ int main(int argc, char *argv[])
         }
 
         if(f->block_switch_en) {
-            block_type = fa_get_aacblocktype(f->ctx[0].h_aac_analysis);
-            fa_set_aacblocktype(h_aac_synthesis, block_type);
+            block_type = f->ctx[0].block_type;
         }else {
             block_type = ONLY_LONG_BLOCK;
         }
 
-        fa_aacfilterbank_synthesis(h_aac_synthesis, mdct_line_inv, buf_out);
+        fa_aacfilterbank_synthesis(h_aac_synthesis, block_type, mdct_line_inv, buf_out);
 
         for(i = 0 ; i < opt_framelen; i++) {
             float temp;
@@ -254,9 +262,18 @@ int main(int argc, char *argv[])
 #endif
 
         frame_index++;
-        if (frame_index == 30) {
-            i=i+1;
+#if  0 
+        if (frame_index == 500) {
+            break;
         }
+#endif
+#if  1 
+        if (frame_index == 434) {
+            frame_index += 2;
+        }
+#endif
+
+
         fprintf(stderr,"\rthe frame = [%d]", frame_index);
     }
 
@@ -270,7 +287,15 @@ int main(int argc, char *argv[])
     fclose(sourcefile);
     fclose(aacfile);
 
+
     printf("\n");
+
+    FA_GET_TIME_COST(1);
+    FA_GET_TIME_COST(2);
+    FA_GET_TIME_COST(3);
+    FA_GET_TIME_COST(4);
+    FA_GET_TIME_COST(5);
+    FA_GET_TIME_COST(6);
 
     return 0;
 }

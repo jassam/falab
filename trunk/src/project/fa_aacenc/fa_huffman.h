@@ -38,6 +38,7 @@ extern "C"
 #define INTENSITY_HCB 15
 #define INTENSITY_HCB2 14
 
+void fa_huffman_rom_init();
 
 #ifdef __cplusplus 
 }

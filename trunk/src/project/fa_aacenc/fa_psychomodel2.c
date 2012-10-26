@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <math.h>
+#include "fa_fastmath.h"
 #include "fa_psychomodel2.h"
 #include "fa_fft.h"
 
@@ -38,7 +39,14 @@
 
 #ifndef FA_MIN
 #define FA_MIN(a,b)  ( (a) < (b) ? (a) : (b) )
+#endif 
+
+#ifndef FA_MAX
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
+#endif
+
+#ifndef FA_ABS 
+#define FA_ABS(a)    ( (a) > 0 ? (a) : (-a) )
 #endif
 
 #define FA_MAG_MAX     10000000000000000
@@ -437,16 +445,27 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
 
         re[i]  = fft_buf[i+i];
         im[i]  = fft_buf[i+i+1];
+#if 0
         mag[i] = sqrt(re[i]*re[i] + im[i]*im[i]);
         phi[i] = atan2(im[i], re[i]);
+#else 
+        mag[i] = FA_SQRTF(re[i]*re[i] + im[i]*im[i]);
+        phi[i] = FA_ATAN2(im[i], re[i]);
+#endif
 
         mag_pred[i] = 2*mag_prev1[i] - mag_prev2[i];
         phi_pred[i] = 2*phi_prev1[i] - phi_prev2[i];
-
+#if 0
         tmp1   = re[i] - mag_pred[i] * cos(phi_pred[i]);
         tmp2   = im[i] - mag_pred[i] * sin(phi_pred[i]);
         tmp    = sqrt(tmp1*tmp1+tmp2*tmp2);
         c[i]   = tmp/(mag[i] + fabs(mag_pred[i]));
+#else 
+        tmp1   = re[i] - mag_pred[i] * FA_COS(phi_pred[i]);
+        tmp2   = im[i] - mag_pred[i] * FA_SIN(phi_pred[i]);
+        tmp    = FA_SQRTF(tmp1*tmp1+tmp2*tmp2);
+        c[i]   = tmp/(mag[i] + FA_ABS(mag_pred[i]));
+#endif
 
         mag_prev2[i] = mag_prev1[i];
         mag_prev1[i] = mag[i];
@@ -501,7 +520,11 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
     for (i = 0; i < cbands_num; i++) {
         float tb, snr, bc;
 
+#if 0
         tb = -0.299 - 0.43*log(cb[i]);
+#else 
+        tb = -0.299 - 0.43*FA_LOG(cb[i]);
+#endif
         if (tb < 0)
             tb = 0;
 
@@ -522,7 +545,11 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
     for (i = 0; i < cbands_num; i++) {
         float tmp;
 
+#if 0
         tmp = FA_MIN(0, log10(nb[i]/(group_e[i]+1)));
+#else 
+        tmp = FA_MIN(0, FA_LOG10(nb[i]/(group_e[i]+1)));
+#endif
         *pe  = *pe - (w_low[i+1]-1-w_low[i])*tmp;
     }
 
