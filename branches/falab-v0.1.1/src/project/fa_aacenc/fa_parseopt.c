@@ -36,19 +36,14 @@
 #endif
 
 #include "fa_parseopt.h"
-#include "fa_fir.h"
 
 
 /*global option vaule*/
-char  opt_inputfile[256]  = "xs.wav";
+char  opt_inputfile[256]  = "ys.wav";
 /*char  opt_inputfile[256]  = "mfs.wav";*/
-char  opt_outputfile[256] = "xs-out.wav";
-int   opt_framelen  = 1024;
+char  opt_outputfile[256] = "outaac.aac";
+int   opt_bitrate = 96000;
 
-enum{
-    OPT_FFTWINTYPE = 300,
-    OPT_MDCTWINTYPE,
-};
 
 
 const char *usage =
@@ -63,18 +58,16 @@ const char *usage =
 const char *default_set =
 "\n\n"
 "No argument input, run by default settings\n"
-"    --overlap    [high]\n"
-"    --framesize  [1024]\n"
+"    --bitrate    [96000]\n"
 "\n\n";
 
 const char *short_help =
 "\n\n"
-"Usage: faasmodel <-i> <inputfile> <-o> <outputfile> [options] ...\n"
+"Usage: fa_aacenc <-i> <inputfile> <-o> <outputfile> [options] ...\n"
 "Options:\n"
 "    -i <inputfile>       Set input filename\n"
 "    -o <outputfile>      Set output filename\n"
-"    -p <overlap>         Set overlap hint(0 is high, 1 is low)\n"
-"    -l <len>             Set frame length\n"
+"    -b <bitrate>         Set bitrate\n"
 "    --help               Show this abbreviated help.\n"
 "    --long-help          Show complete help.\n"
 "    --license            for the license terms for falab.\n"
@@ -82,21 +75,17 @@ const char *short_help =
 
 const char *long_help =
 "\n\n"
-"Usage: faasmodel <-i> <inputfile> <-o> <outputfile> [options] ...\n"
+"Usage: fa_aacenc <-i> <inputfile> <-o> <outputfile> [options] ...\n"
 "Options:\n"
 "    -i <inputfile>       Set input filename\n"
 "    -o <outputfile>      Set output filename\n"
-"    -l                   Set frame length\n"
+"    -b                   Set bitrate\n"
 "    --help               Show this abbreviated help.\n"
 "    --long-help          Show complete help.\n"
 "    --license            for the license terms for falab.\n"
 "    --input <inputfile>  Set input filename\n"
-"    --output <inputfile> Set input filename\n"
-"    --overlap <overlap>  Set overlap hint(0 is high, 1 is low)\n"
-"    --framelen <len>     Set frame length to process\n"
-"    --winlen <len>       Set window length to process\n"
-"    --fftwintype <type>  Set fft trans window type to process\n"
-"    --mdctwintype <type> Set mdct trans window type to process\n"
+"    --output <outputfile>Set input filename\n"
+"    --bitrate <bitrate>  Set average bitrate\n"
 "\n\n";
 
 const char *license =
@@ -137,7 +126,7 @@ static void fa_printopt()
     FA_PRINT("NOTE: configuration is below\n");
     FA_PRINT("NOTE: inputfile = %s\n", opt_inputfile);
     FA_PRINT("NOTE: outputfile= %s\n", opt_outputfile);
-    FA_PRINT("NOTE: framelen  = %d\n", opt_framelen);
+    FA_PRINT("NOTE: bitrate   = %d\n", opt_bitrate);
 }
 
 /**
@@ -159,8 +148,8 @@ static int fa_checkopt(int argc)
 
     }
 
-    if(opt_framelen > 8192) {
-        FA_PRINT_ERR("FAIL: the frame length is too large, should <= 8192\n");
+    if(opt_bitrate > 138000 || opt_bitrate < 32000)  {
+        FA_PRINT_ERR("FAIL: the bitrate is too large or too short, should be in [32000, 138000]\n");
         return -1;
     }
 
@@ -184,7 +173,7 @@ int fa_parseopt(int argc, char *argv[])
     const char *die_msg = NULL;
 
     while (1) {
-        static char * const     short_options = "hHLi:o:l:";  
+        static char * const     short_options = "hHLi:o:b:";  
         static struct option    long_options[] = 
                                 {
                                     { "help"       , 0, 0, 'h'}, 
@@ -192,7 +181,7 @@ int fa_parseopt(int argc, char *argv[])
                                     { "license"    , 0, 0, 'L'},
                                     { "input"      , 1, 0, 'i'},                 
                                     { "output"     , 1, 0, 'o'},                 
-                                    { "framelen"   , 1, 0, 'l'},        
+                                    { "bitrate"    , 1, 0, 'b'},        
                                     {0             , 0, 0,  0},
                                 };
         int c = -1;
@@ -244,11 +233,11 @@ int fa_parseopt(int argc, char *argv[])
                           break;
                       }
 
-            case 'l': {
+            case 'b': {
                           unsigned int i;
                           if (sscanf(optarg, "%u", &i) > 0) {
-                              opt_framelen = i;
-                              FA_PRINT("SUCC: set frame length = %u\n", opt_framelen);
+                              opt_bitrate = i;
+                              FA_PRINT("SUCC: set bitrate = %u\n", opt_bitrate);
                           }
                           break;
                       }

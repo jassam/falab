@@ -43,7 +43,6 @@ void fa_aacmsenc(fa_aacenc_ctx_t *f)
     int i, chn;
     int chn_num;
     aacenc_ctx_t *s, *sl, *sr;
-    ms_info_t *msl, *msr;
 
     chn_num = f->cfg.chn_num;
  

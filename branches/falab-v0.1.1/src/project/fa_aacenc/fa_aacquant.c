@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <memory.h>
 #include "fa_aaccfg.h"
 #include "fa_aacquant.h"
 #include "fa_aacpsy.h"
 #include "fa_swbtab.h"
 #include "fa_mdctquant.h"
+#include "fa_aacstream.h"
 #include "fa_timeprofile.h"
 
 

@@ -71,12 +71,6 @@ void fa_mdctline_quant(uintptr_t handle,
                        int common_scalefac, int *x_quant);
 int fa_mdctline_get_sfbnum(uintptr_t handle);
 
-int fa_mdctline_quantize(uintptr_t handle, 
-                         int num_window_groups, int *window_group_length,
-                         int average_bits, int more_bits, int bitres_bits, int maximum_bitreservoir_size, 
-                         int *common_scalefac, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
-                         int *x_quant, int *unused_bits);
-
 int fa_mdctline_iquantize(uintptr_t handle, 
                           int num_window_groups, int *window_group_length,
                           int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
@@ -90,6 +84,21 @@ void fa_mdctline_sfb_arrange(uintptr_t handle, float *mdct_line_swb,
 void fa_mdctline_sfb_iarrange(uintptr_t handle, float *mdct_line_swb, int *mdct_line_sig,
                               int num_window_groups, int *window_group_length);
 
+void fa_calculate_quant_noise(uintptr_t handle,
+                             int num_window_groups, int *window_group_length,
+                             int common_scalefac, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
+                             int *x_quant);
+
+int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count, 
+                               int num_window_groups, int *window_group_length,
+                               int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
+                               int *x_quant);
+
+int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_loop_count,
+                               int num_window_groups, int *window_group_length,
+                               int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
+                               int scalefactor1[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
+                               int *x_quant);
 
 int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, int *window_group_length, 
                         int quant_hufftab_no[8][FA_SWB_NUM_MAX], 

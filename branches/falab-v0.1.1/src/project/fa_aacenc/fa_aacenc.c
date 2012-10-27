@@ -35,6 +35,7 @@
 #include "fa_swbtab.h"
 #include "fa_mdctquant.h"
 #include "fa_aacfilterbank.h"
+#include "fa_bitstream.h"
 #include "fa_aacstream.h"
 #include "fa_aacms.h"
 #include "fa_aacquant.h"
@@ -76,23 +77,6 @@ const int _max_pred_sfb[] = { 33, 33, 38, 40, 40, 40, 41, 41, 37, 37, 37, 34, 0 
 int get_max_pred_sfb(int sample_rate_index)
 {
     return _max_pred_sfb[sample_rate_index];
-}
-
-int get_avaiable_bits(int average_bits, int more_bits, int bitres_bits, int bitres_max_size)
-{
-    int available_bits;
-
-    if (more_bits >= 0) {
-        available_bits = average_bits + FA_MIN(more_bits, bitres_bits);
-    } else if (more_bits < 0) {
-        available_bits = average_bits + FA_MAX(more_bits, bitres_bits-bitres_max_size);
-    }
-
-    if (available_bits == 1) {
-        available_bits += 1;
-    }
-
-    return available_bits;
 }
 
 typedef struct _rate_cutoff {
@@ -175,6 +159,7 @@ static void fa_aacenc_rom_init()
     fa_huffman_rom_init();
 }
 
+
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
                          int mpeg_version, int aac_objtype, 
                          int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable, int psy_enable,
@@ -185,6 +170,9 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     int bits_res_maxsize;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)malloc(sizeof(fa_aacenc_ctx_t));
     chn_info_t chn_info_tmp[MAX_CHANNELS];
+
+    if (bit_rate > 138000 || bit_rate < 32000)
+        return (uintptr_t)NULL;
 
     /*init rom*/
     fa_aacenc_rom_init();
@@ -404,11 +392,10 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
 static void scalefactor_recalculate(fa_aacenc_ctx_t *f, int chn_num)
 {
     int i;
-    int gr, sfb;
+    int gr, sfb, sfb_num;
     aacenc_ctx_t *s;
 
     for (i = 0; i < chn_num ; i++) {
-        int gr, sfb, sfb_num;
         s = &(f->ctx[i]);
         if (s->block_type == ONLY_SHORT_BLOCK) 
             sfb_num = fa_mdctline_get_sfbnum(s->h_mdctq_short);
@@ -429,9 +416,6 @@ static void scalefactor_recalculate(fa_aacenc_ctx_t *f, int chn_num)
 void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int *outlen)
 {
     int i,j;
-    int sample_rate;
-    int bit_rate;
-    int chn;
     int chn_num;
     short *sample_in;
     float *sample_buf;
@@ -440,12 +424,10 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     int block_switch_en;
     int psy_enable;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)handle;
-    aacenc_ctx_t *s, *sl, *sr;
+    aacenc_ctx_t *s;
 
     ms_enable   = f->cfg.ms_enable;
     chn_num     = f->cfg.chn_num;
-    sample_rate = f->cfg.sample_rate;
-    bit_rate    = f->cfg.bit_rate;
     /*assert(inlen == chn_num*AAC_FRAME_LEN*2);*/
 
     memset(xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);

@@ -122,7 +122,6 @@ int  fa_bitstream_putbits(uintptr_t handle, unsigned int value, int nbits)
 /*get bits, return the value*/
 int  fa_bitstream_getbits(uintptr_t handle, unsigned int *value, int nbits)
 {
-    int ret;
 
     fa_bitstream_t *f = (fa_bitstream_t *)handle;
 

@@ -421,15 +421,12 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
     float *nb_prev   = f->nb_prev;
     float *qsthr     = f->qsthr;
 
-    int   bit_alloc;
-
     int   swb_num    = f->swb_num;
     int   *swb_offset= f->swb_offset;
     float *epart     = f->epart;
     float *npart     = f->npart;
     float *thrbin    = f->thrbin;
     float *smr       = f->smr;
-    float thrbin_max;
 
     /*calculate fft frequence line*/
     for (i = 0; i < fft_len; i++) {
@@ -553,16 +550,6 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
         *pe  = *pe - (w_low[i+1]-1-w_low[i])*tmp;
     }
 
-    /*calculate bits allocation*/
-/*
-    if (block_type == LONG_BLOCK)
-        bit_alloc = (int)(0.3*pe + 6*sqrt(pe));
-    else 
-        bit_alloc = (int)(0.6*pe + 24*sqrt(pe)); 
-
-    if (bit_alloc < 0)       bit_alloc = 0;
-    if (bit_alloc > 3000)    bit_alloc = 3000;
-*/
     /*calculate epart*/
     for (i = 0; i < swb_num; i++) {
         epart[i] = 0;
