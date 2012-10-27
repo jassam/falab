@@ -34,6 +34,7 @@
 #include "fa_aacpsy.h"
 #include "fa_swbtab.h"
 #include "fa_mdctquant.h"
+#include "fa_aacblockswitch.h"
 #include "fa_aacfilterbank.h"
 #include "fa_bitstream.h"
 #include "fa_aacstream.h"
@@ -210,10 +211,12 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
             f->do_blockswitch  = fa_blockswitch_psy;
             break;
         case BLOCKSWITCH_VAR:
+            f->blockswitch_method = BLOCKSWITCH_VAR;
+            f->do_blockswitch  = fa_blockswitch_var;
             break;
         default:
-            f->blockswitch_method = BLOCKSWITCH_PSY;
-            f->do_blockswitch  = fa_blockswitch_psy;
+            f->blockswitch_method = BLOCKSWITCH_VAR;
+            f->do_blockswitch  = fa_blockswitch_var;
             break;
 
     }
@@ -236,6 +239,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     /*init psy and mdct quant */
     for (i = 0; i < chn_num; i++) {
         f->ctx[i].pe                = 0.0;
+        f->ctx[i].var_max_prev      = 0.0;
         f->ctx[i].block_type        = ONLY_LONG_BLOCK;
         f->ctx[i].psy_enable        = psy_enable;
         f->ctx[i].window_shape      = SINE_WINDOW;
@@ -450,7 +454,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         /*block switch */
         if (block_switch_en) {
             f->do_blockswitch(s);
-#if 0 
+#if 1 
             if (s->block_type != 0)
                 printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
 #endif
