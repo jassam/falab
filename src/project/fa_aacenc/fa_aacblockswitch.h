@@ -16,44 +16,31 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-  filename: fa_aacfilterbank.h
+  filename: fa_aacblockswitch.h 
   version : v1.0.0
-  time    : 2012/08/22 - 2012/10/05 
+  time    : 2012/10/27 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
   code URL: http://code.google.com/p/falab/
 
 */
 
 
-#ifndef _FA_AACFILTERBANK_H
-#define _FA_AACFILTERBANK_H
+#ifndef _FA_AACBLOCKSWITCH_H
+#define _FA_AACBLOCKSWITCH_H
+
+#include "fa_aacenc.h"
 
 #ifdef __cplusplus 
 extern "C"
 { 
 #endif  
 
-#include "fa_aacenc.h"
+int fa_blockswitch_psy(aacenc_ctx_t *s);
+int fa_blockswitch_var(aacenc_ctx_t *s);
 
-#define SINE_WINDOW         0
-#define KBD_WINDOW          1
-
-typedef unsigned uintptr_t;
-
-uintptr_t fa_aacfilterbank_init();
-void fa_aacfilterbank_uninit(uintptr_t handle);
-
-
-void fa_aacfilterbank_analysis(uintptr_t handle, int block_type, int *window_shape, 
-                               float *x, float *mdct_line);
-void fa_aacfilterbank_synthesis(uintptr_t handle, int block_type,  
-                                float *mdct_line, float *x);
-
-void fa_aacfilterbank_get_xbuf(uintptr_t handle, float *x);
 
 #ifdef __cplusplus 
 }
 #endif  
-
 
 #endif

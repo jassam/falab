@@ -33,7 +33,7 @@
 #include "fa_bitstream.h"
 
 #ifndef FA_ABS
-#define FA_ABS(A)    ((A) < 0 ? (-A) : (A))
+#define FA_ABS(A)    ((A) < 0 ? (-(A)) : (A))
 #endif
 
 #ifndef FA_MIN

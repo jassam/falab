@@ -128,6 +128,7 @@ typedef struct _aacenc_ctx_t{
     chn_info_t  chn_info;
 
     float pe;
+    float var_max_prev;
     int psy_enable;
     int block_type;
     int window_shape;

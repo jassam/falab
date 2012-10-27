@@ -46,7 +46,7 @@
 #endif
 
 #ifndef FA_ABS 
-#define FA_ABS(a)    ( (a) > 0 ? (a) : (-a) )
+#define FA_ABS(a)    ( (a) > 0 ? (a) : (-(a)) )
 #endif
 
 #define FA_MAG_MAX     10000000000000000

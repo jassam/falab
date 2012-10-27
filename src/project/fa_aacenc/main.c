@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     int lfe_enable = LFE_DEFAULT;
     int tns_enable = TNS_DEFAULT;
     int block_switch_enable = BLOCK_SWITCH_DEFAULT;
-    int blockswitch_method = BLOCKSWITCH_PSY;
+    int blockswitch_method = BLOCKSWITCH_VAR;
     int quantize_method = QUANTIZE_LOOP;
     int psy_enable = PSY_ENABLE;
 
