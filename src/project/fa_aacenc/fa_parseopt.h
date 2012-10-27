@@ -53,12 +53,7 @@ extern "C"
 
 extern char  opt_inputfile[] ;
 extern char  opt_outputfile[];
-
-extern int   opt_overlap;
-extern int   opt_framelen;
-extern int   opt_fftwintype ;
-extern int   opt_mdctwintype ;
-
+extern int   opt_bitrate;
 
 int fa_parseopt(int argc, char *argv[]);
 

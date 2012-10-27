@@ -40,6 +40,12 @@ extern "C"
 
 void fa_huffman_rom_init();
 
+int fa_noiseless_huffman_bitcount(int *x_quant, int sfb_num,  int *sfb_offset,
+                                  int *quant_hufftab_no, int *quant_bits);
+
+int fa_huffman_encode_mdctline(int *x_quant, int sfb_num, int *sfb_offset, int *quant_hufftab_no,
+                               int *max_sfb, int *x_quant_code, int *x_quant_bits);
+
 #ifdef __cplusplus 
 }
 #endif  

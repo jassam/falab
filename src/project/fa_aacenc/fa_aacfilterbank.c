@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <memory.h>
 #include "fa_aaccfg.h"
 #include "fa_aacpsy.h"
 #include "fa_aacfilterbank.h"
@@ -363,7 +364,7 @@ static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type)
 /*this function used in aac encode*/
 static int aac_blockswitch_psy(uintptr_t h_fltbank, uintptr_t h_psy, int block_type, float pe)
 {
-    fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)h_fltbank;
+    /*fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)h_fltbank;*/
     int prev_block_type;
     int cur_block_type;
 

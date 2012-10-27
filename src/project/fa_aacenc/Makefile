@@ -36,7 +36,7 @@ else
 LDFLAGS += -lm -lpthread -lrt 
 endif
 
-TARGET    =  faaacenc
+TARGET    =  fa_aacenc
 CSRCFILES =  $(shell ls *.c)
 COBJFILES =  $(patsubst %.c,%.o,$(CSRCFILES))
 
