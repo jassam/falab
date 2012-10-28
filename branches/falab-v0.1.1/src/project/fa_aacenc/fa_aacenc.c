@@ -50,7 +50,7 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
-#define GAIN_ADJUST   5 //4 
+#define GAIN_ADJUST   4 
 
 
 /* Returns the sample rate index */
@@ -92,7 +92,7 @@ static rate_cutoff_t rate_cutoff[] =
     {24000, 5000},
     {32000, 8000},
     {38000, 12000},
-    {48000, 16000},
+    {48000, 20000},
     {64000, 20000},
     {0    , 0},
 };
