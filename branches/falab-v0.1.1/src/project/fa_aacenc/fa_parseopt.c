@@ -148,8 +148,8 @@ static int fa_checkopt(int argc)
 
     }
 
-    if(opt_bitrate > 138000 || opt_bitrate < 32000)  {
-        FA_PRINT_ERR("FAIL: the bitrate is too large or too short, should be in [32000, 138000]\n");
+    if(opt_bitrate > 256000 || opt_bitrate < 32000)  {
+        FA_PRINT_ERR("FAIL: the bitrate is too large or too short, should be in [32000, 256000]\n");
         return -1;
     }
 

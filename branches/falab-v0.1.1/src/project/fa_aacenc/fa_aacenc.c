@@ -172,7 +172,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)malloc(sizeof(fa_aacenc_ctx_t));
     chn_info_t chn_info_tmp[MAX_CHANNELS];
 
-    if (bit_rate > 138000 || bit_rate < 32000)
+    if (bit_rate > 256000 || bit_rate < 32000)
         return (uintptr_t)NULL;
 
     /*init rom*/
