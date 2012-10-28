@@ -245,6 +245,7 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 
     if (s->psy_enable) {
         s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
+        /*s->bits_alloc = s->bits_average;*/
         s->bits_more  = s->bits_alloc - 100;
     } else {
         s->bits_alloc = s->bits_average;
