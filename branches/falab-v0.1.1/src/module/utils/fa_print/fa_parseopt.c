@@ -33,7 +33,6 @@
 #include <getopt.h>
 #else
 #include "getopt.h"
-#include "getopt.c"
 #endif
 
 #include "fa_parseopt.h"
