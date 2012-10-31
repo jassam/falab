@@ -741,8 +741,251 @@ void fa_quantize_loop(fa_aacenc_ctx_t *f)
     FA_CLOCK_END(2);
     FA_CLOCK_COST(2);
 
+}
+
+
+/*this is the fast quantize, maybe is not very right, just for your test */
+
+void  fa_calculate_sfb_avgenergy(aacenc_ctx_t *s)
+{
+    int   k;
+    int   i;
+    int   last = 0;
+    float energy_sum = 0.0;
+    float tmp;
+
+    if (s->block_type == ONLY_SHORT_BLOCK) {
+        for (k = 0; k < 8; k++) {
+            last = 0;
+            energy_sum = 0.0;
+            for (i = 0; i < 128; i++) {
+                tmp = s->mdct_line[k*128+i]; 
+                if (tmp) {
+                    last = i;
+                    energy_sum += tmp * tmp;
+                }
+            }
+            last++;
+            s->lastx[k]     = last;
+            f->avgenergy[k] = energy_sum / last;
+        }
+    } else {
+        last = 0;
+        energy_sum = 0.0;
+        for (i = 0; i < 1024; i++) {
+            tmp = mdct_line[i]; 
+            if (tmp) {
+                last = i;
+                energy_sum += tmp * tmp;
+            }
+        }
+        last++;
+        s->lastx[0]     = last;
+        s->avgenergy[0] = energy_sum / last;
+
+    }
+
+}
+
+
+void fa_mdctline_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
+{
+    float globalthr = 132./s->quality;
+
+    fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
+    fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
+
+    int swb_num;
+    int *swb_low;
+    int *swb_high;
+
+    int lastsb;
+    float tmp;
+    float energy;
+
+    memset(xmin, 0, sizeof(float)*8*NUM_SFB_MAX);
+
+    if (s->block_type == ONLY_SHORT_BLOCK) {
+        swb_num  = fs->sfb_num;
+        swb_low  = fs->swb_low;
+        swb_high = fs->swb_high;
+
+        for (k = 0; k < 8; k++) {
+            lastsb = 0;
+            for (i = 0; i < swb_num; i++) {
+                if (s->lastx[k] > swb_low[i])
+                    lastsb = i;
+            }
+
+            for (i = 0; i < swb_num; i++) {
+                for (j = swb_low[i]; j <= swb_high[i]; j++) {
+                }
+            }
+        }
+    } else {
+        sfb_num  = fl->sfb_num;
+        swb_low  = fl->swb_low;
+        swb_high = fl->swb_high;
+         
+        lastsb = 0;
+        for (i = 0; i < swb_num; i++) {
+            if (s->lastx[k] > swb_low[i])
+                lastsb = i;
+        }
+
+        for (i = 0; i < swb_num; i++) {
+            if (i > lastsb) {
+                xmin[0][i] = 0;
+                continue;
+            }
+
+            double enmax = -1.0;
+            double lmax;
+
+            lmax = start;
+            for (l = start; l < end; l++)
+            {
+                if (enmax < (xr[l] * xr[l]))
+                {
+                    enmax = xr[l] * xr[l];
+                    lmax = l;
+                }
+            }
+
+            start = lmax - 2;
+            end = lmax + 3;
+            if (start < 0)
+                start = 0;
+            if (end > last)
+                end = last;
+
+            energy = 0.0;
+            for (j = swb_low[i]; j <= swb_high[i]; j++) {
+                tmp = s->mdct_line[j];
+                energy += tmp * tmp;
+            }
+
+            thr = energy/(s->avgenergy[0] * (swb_high[i] - swb_low[i] + 1));
+            thr = pow(thr, 0.1*(lastsb-i)/lastsb + 0.3);
+            tmp = 1.0 - ((float)swb_low[i]/(float)swb_high[i]);
+            tmp = tmp * tmp * tmp + 0.075;
+            thr = 1.0 / (1.4*thr + tmp);
+
+            xmin[i] = 1.12 * thr * globalthr;
+
+        }
+    }
+
+}
+
+
+
+
+static void CalcAllowedDist(CoderInfo *coderInfo, PsyInfo *psyInfo,
+        double *xr, double *xmin, int quality)
+{
+    int sfb, start, end, l;
+    const double globalthr = 132.0 / (double)quality;
+    int last = coderInfo->lastx;
+    int lastsb = 0;
+    int *cb_offset = coderInfo->sfb_offset;
+    int num_cb = coderInfo->nr_of_sfb;
+    double avgenrg = coderInfo->avgenrg;
+
+    for (sfb = 0; sfb < num_cb; sfb++)
+    {
+        if (last > cb_offset[sfb])
+            lastsb = sfb;
+    }
+
+    for (sfb = 0; sfb < num_cb; sfb++)
+    {
+        double thr, tmp;
+        double enrg = 0.0;
+
+        start = cb_offset[sfb];
+        end = cb_offset[sfb + 1];
+
+        if (sfb > lastsb)
+        {
+            xmin[sfb] = 0;
+            continue;
+        }
+
+        if (coderInfo->block_type != ONLY_SHORT_WINDOW)
+        {
+            double enmax = -1.0;
+            double lmax;
+
+            lmax = start;
+            for (l = start; l < end; l++)
+            {
+                if (enmax < (xr[l] * xr[l]))
+                {
+                    enmax = xr[l] * xr[l];
+                    lmax = l;
+                }
+            }
+
+            start = lmax - 2;
+            end = lmax + 3;
+            if (start < 0)
+                start = 0;
+            if (end > last)
+                end = last;
+        }
+
+        for (l = start; l < end; l++)
+        {
+            enrg += xr[l]*xr[l];
+        }
+
+        thr = enrg/((double)(end-start)*avgenrg);
+        thr = pow(thr, 0.1*(lastsb-sfb)/lastsb + 0.3);
+
+        tmp = 1.0 - ((double)start / (double)last);
+        tmp = tmp * tmp * tmp + 0.075;
+
+        thr = 1.0 / (1.4*thr + tmp);
+
+        xmin[sfb] = ((coderInfo->block_type == ONLY_SHORT_WINDOW) ? 0.65 : 1.12)
+            * globalthr * thr;
+    }
+}
+
+void fa_psychomodel2_calculate_xmin(uintptr_t handle, float *mdct_line, float *xmin)
+{
+    int i,j;
+    fa_psychomodel2_t *f = (fa_psychomodel2_t *)handle;
+
+    float codec_e;
+    int   swb_num    = f->swb_num;
+    int   *swb_offset= f->swb_offset;
+    float *smr       = f->smr;
+
+    for (i = 0; i < swb_num; i++) {
+        if (smr[i] > 0) {
+            codec_e = 0;
+            for (j = swb_offset[i]; j < swb_offset[i+1]; j++)
+                codec_e = codec_e + mdct_line[j]*mdct_line[j];
+
+            xmin[i] = codec_e/smr[i];
+        } else {
+            xmin[i] = 0;
+        }
+    }
+}
+
+
+static int calculate_xmin()
+{
 
 
 }
 
 
+void fa_quantize_fast(fa_aacenc_ctx_t *f)
+{
+
+
+}
