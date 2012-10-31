@@ -772,5 +772,3 @@ void fa_mdctline_ms_encode(uintptr_t hl, uintptr_t hr, int num_window_groups,
 }
 
 
-
-

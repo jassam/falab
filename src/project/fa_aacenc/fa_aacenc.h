@@ -141,6 +141,10 @@ typedef struct _aacenc_ctx_t{
     int nr_of_sfb;
     int sfb_offset[250];
 
+    int    quality;
+    int    lastx[8];
+    float  avgenergy[8];
+
     int used_bits;
 
     uintptr_t h_aacpsy;

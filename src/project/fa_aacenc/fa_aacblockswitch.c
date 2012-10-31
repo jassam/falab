@@ -189,8 +189,8 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 
     fa_aacfilterbank_get_xbuf(s->h_aac_analysis, x);
     cur_var_max = frame_var_max(x, 2*AAC_FRAME_LEN);
-    /*var_diff    = FA_ABS(cur_var_max - s->var_max_prev);*/
-    var_diff    = fabsf(cur_var_max - s->var_max_prev);
+    var_diff    = FA_ABS(cur_var_max - s->var_max_prev);
+    /*var_diff    = fabsf(cur_var_max - s->var_max_prev);*/
     s->var_max_prev = cur_var_max;
 
     prev_block_type = s->block_type;

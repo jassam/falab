@@ -256,6 +256,10 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].window_group_length[6] = 0;
         f->ctx[i].window_group_length[7] = 0;
 
+        memset(f->ctx[i].lastx, 0, sizeof(int)*8);
+        memset(f->ctx[i].avgenerg, 0, sizeof(float)*8);
+        f->ctx[i].quality = 100;
+
         f->ctx[i].used_bits= 0;
 
         f->ctx[i].bits_average     = bits_average;
@@ -467,9 +471,11 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
                                   sample_buf, s->mdct_line);
 
         /*cutoff the frequence according to the bitrate*/
-        if (s->block_type == ONLY_SHORT_BLOCK) 
-            zero_cutoff(s->mdct_line, 128, s->cutoff_line_short);
-        else
+        if (s->block_type == ONLY_SHORT_BLOCK) {
+            int k;
+            for (k = 0; k < 8; k++)
+                zero_cutoff(s->mdct_line+k*128, 128, s->cutoff_line_short);
+        } else
             zero_cutoff(s->mdct_line, 1024, s->cutoff_line_long);
 
         /* 
