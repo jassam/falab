@@ -257,7 +257,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].window_group_length[7] = 0;
 
         memset(f->ctx[i].lastx, 0, sizeof(int)*8);
-        memset(f->ctx[i].avgenerg, 0, sizeof(float)*8);
+        memset(f->ctx[i].avgenergy, 0, sizeof(float)*8);
         f->ctx[i].quality = 100;
 
         f->ctx[i].used_bits= 0;
@@ -485,6 +485,9 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         if (psy_enable) {
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_buf, s->block_type, &s->pe);
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
+        } else {
+            fa_fastquant_calculate_sfb_avgenergy(s);
+            fa_fastquant_calculate_xmin(s, xmin);
         }
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/

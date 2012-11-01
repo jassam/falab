@@ -56,6 +56,27 @@ typedef struct _ms_info_t{
 
 }ms_info_t;
 
+typedef struct _fa_mdctquant_t {
+
+    int   block_type_cof;
+    int   mdct_line_num;
+
+    float mdct_line[NUM_MDCT_LINE_MAX];
+    float xr_pow[NUM_MDCT_LINE_MAX];
+    float mdct_scaled[NUM_MDCT_LINE_MAX];
+
+    float xmin[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX][NUM_WINDOWS_MAX];
+    float error_energy[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX][NUM_WINDOWS_MAX];
+
+    int   sfb_num;
+    int   swb_low[FA_SWB_NUM_MAX+1];
+    int   swb_high[FA_SWB_NUM_MAX];
+    int   sfb_low[NUM_WINDOW_GROUPS_MAX][FA_SWB_NUM_MAX+1];
+    int   sfb_high[NUM_WINDOW_GROUPS_MAX][FA_SWB_NUM_MAX];
+
+}fa_mdctquant_t;
+
+
 void fa_mdctquant_rom_init();
 
 uintptr_t fa_mdctquant_init(int mdct_line_num, int sfb_num, int *swb_low, int block_type_cof);

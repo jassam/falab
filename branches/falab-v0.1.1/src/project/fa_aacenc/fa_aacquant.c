@@ -746,7 +746,7 @@ void fa_quantize_loop(fa_aacenc_ctx_t *f)
 
 /*this is the fast quantize, maybe is not very right, just for your test */
 
-void  fa_calculate_sfb_avgenergy(aacenc_ctx_t *s)
+void  fa_fastquant_calculate_sfb_avgenergy(aacenc_ctx_t *s)
 {
     int   k;
     int   i;
@@ -767,13 +767,13 @@ void  fa_calculate_sfb_avgenergy(aacenc_ctx_t *s)
             }
             last++;
             s->lastx[k]     = last;
-            f->avgenergy[k] = energy_sum / last;
+            s->avgenergy[k] = energy_sum / last;
         }
     } else {
         last = 0;
         energy_sum = 0.0;
         for (i = 0; i < 1024; i++) {
-            tmp = mdct_line[i]; 
+            tmp = s->mdct_line[i]; 
             if (tmp) {
                 last = i;
                 energy_sum += tmp * tmp;
@@ -788,8 +788,9 @@ void  fa_calculate_sfb_avgenergy(aacenc_ctx_t *s)
 }
 
 
-void fa_mdctline_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
+void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
 {
+    int k,i,j;
     float globalthr = 132./s->quality;
 
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
@@ -799,9 +800,15 @@ void fa_mdctline_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
     int *swb_low;
     int *swb_high;
 
+    int start;
+    int end;
     int lastsb;
+
+    float enmax = -1.0;
+    float lmax;
     float tmp;
     float energy;
+    float thr;
 
     memset(xmin, 0, sizeof(float)*8*NUM_SFB_MAX);
 
@@ -818,18 +825,37 @@ void fa_mdctline_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
             }
 
             for (i = 0; i < swb_num; i++) {
-                for (j = swb_low[i]; j <= swb_high[i]; j++) {
+                if (i > lastsb) {
+                    xmin[k][i] = 0;
+                    continue;
                 }
+
+                start = swb_low[i];
+                end   = swb_high[i] + 1;
+
+                energy = 0.0;
+                for (j = start; j < end; j++) {
+                    tmp = s->mdct_line[k*128+j];
+                    energy += tmp * tmp;
+                }
+
+                thr = energy/(s->avgenergy[k] * (end-start));
+                thr = pow(thr, 0.1*(lastsb-i)/lastsb + 0.3);
+                tmp = 1.0 - ((float)start/(float)s->lastx[k]);
+                tmp = tmp * tmp * tmp + 0.075;
+                thr = 1.0 / (1.4*thr + tmp);
+
+                xmin[k][i] = 1.12 * thr * globalthr;
             }
         }
     } else {
-        sfb_num  = fl->sfb_num;
+        swb_num  = fl->sfb_num;
         swb_low  = fl->swb_low;
         swb_high = fl->swb_high;
          
         lastsb = 0;
         for (i = 0; i < swb_num; i++) {
-            if (s->lastx[k] > swb_low[i])
+            if (s->lastx[0] > swb_low[i])
                 lastsb = i;
         }
 
@@ -839,149 +865,48 @@ void fa_mdctline_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
                 continue;
             }
 
-            double enmax = -1.0;
-            double lmax;
+            start = swb_low[i];
+            end   = swb_high[i]+1;
 
-            lmax = start;
-            for (l = start; l < end; l++)
-            {
-                if (enmax < (xr[l] * xr[l]))
-                {
-                    enmax = xr[l] * xr[l];
-                    lmax = l;
+            enmax = -1.0;
+            lmax  = start;
+            for (j = start; j < end; j++) {
+                tmp = s->mdct_line[j];
+                tmp = tmp * tmp;
+                if (enmax < tmp) {
+                    enmax = tmp;
+                    lmax  = j;
                 }
             }
 
             start = lmax - 2;
-            end = lmax + 3;
+            end   = lmax + 3;
             if (start < 0)
                 start = 0;
-            if (end > last)
-                end = last;
+            if (end > s->lastx[0])
+                end = s->lastx[0];
+            if (end > swb_high[i] + 1)
+                end = swb_high[i] + 1;
 
             energy = 0.0;
-            for (j = swb_low[i]; j <= swb_high[i]; j++) {
+            for (j = start; j < end; j++) {
                 tmp = s->mdct_line[j];
                 energy += tmp * tmp;
             }
 
-            thr = energy/(s->avgenergy[0] * (swb_high[i] - swb_low[i] + 1));
+            thr = energy/(s->avgenergy[0] * (end-start));
             thr = pow(thr, 0.1*(lastsb-i)/lastsb + 0.3);
-            tmp = 1.0 - ((float)swb_low[i]/(float)swb_high[i]);
+            tmp = 1.0 - ((float)start/(float)s->lastx[0]);
             tmp = tmp * tmp * tmp + 0.075;
             thr = 1.0 / (1.4*thr + tmp);
 
-            xmin[i] = 1.12 * thr * globalthr;
+            xmin[0][i] = 1.12 * thr * globalthr;
 
         }
     }
 
 }
 
-
-
-
-static void CalcAllowedDist(CoderInfo *coderInfo, PsyInfo *psyInfo,
-        double *xr, double *xmin, int quality)
-{
-    int sfb, start, end, l;
-    const double globalthr = 132.0 / (double)quality;
-    int last = coderInfo->lastx;
-    int lastsb = 0;
-    int *cb_offset = coderInfo->sfb_offset;
-    int num_cb = coderInfo->nr_of_sfb;
-    double avgenrg = coderInfo->avgenrg;
-
-    for (sfb = 0; sfb < num_cb; sfb++)
-    {
-        if (last > cb_offset[sfb])
-            lastsb = sfb;
-    }
-
-    for (sfb = 0; sfb < num_cb; sfb++)
-    {
-        double thr, tmp;
-        double enrg = 0.0;
-
-        start = cb_offset[sfb];
-        end = cb_offset[sfb + 1];
-
-        if (sfb > lastsb)
-        {
-            xmin[sfb] = 0;
-            continue;
-        }
-
-        if (coderInfo->block_type != ONLY_SHORT_WINDOW)
-        {
-            double enmax = -1.0;
-            double lmax;
-
-            lmax = start;
-            for (l = start; l < end; l++)
-            {
-                if (enmax < (xr[l] * xr[l]))
-                {
-                    enmax = xr[l] * xr[l];
-                    lmax = l;
-                }
-            }
-
-            start = lmax - 2;
-            end = lmax + 3;
-            if (start < 0)
-                start = 0;
-            if (end > last)
-                end = last;
-        }
-
-        for (l = start; l < end; l++)
-        {
-            enrg += xr[l]*xr[l];
-        }
-
-        thr = enrg/((double)(end-start)*avgenrg);
-        thr = pow(thr, 0.1*(lastsb-sfb)/lastsb + 0.3);
-
-        tmp = 1.0 - ((double)start / (double)last);
-        tmp = tmp * tmp * tmp + 0.075;
-
-        thr = 1.0 / (1.4*thr + tmp);
-
-        xmin[sfb] = ((coderInfo->block_type == ONLY_SHORT_WINDOW) ? 0.65 : 1.12)
-            * globalthr * thr;
-    }
-}
-
-void fa_psychomodel2_calculate_xmin(uintptr_t handle, float *mdct_line, float *xmin)
-{
-    int i,j;
-    fa_psychomodel2_t *f = (fa_psychomodel2_t *)handle;
-
-    float codec_e;
-    int   swb_num    = f->swb_num;
-    int   *swb_offset= f->swb_offset;
-    float *smr       = f->smr;
-
-    for (i = 0; i < swb_num; i++) {
-        if (smr[i] > 0) {
-            codec_e = 0;
-            for (j = swb_offset[i]; j < swb_offset[i+1]; j++)
-                codec_e = codec_e + mdct_line[j]*mdct_line[j];
-
-            xmin[i] = codec_e/smr[i];
-        } else {
-            xmin[i] = 0;
-        }
-    }
-}
-
-
-static int calculate_xmin()
-{
-
-
-}
 
 
 void fa_quantize_fast(fa_aacenc_ctx_t *f)
