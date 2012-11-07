@@ -145,6 +145,8 @@ typedef struct _aacenc_ctx_t{
     int    lastx[8];
     float  avgenergy[8];
 
+    float  sqr_root_exp_xmin[8][FA_SWB_NUM_MAX];
+    float  sqr_root_exp_xmin_max[8];
     int used_bits;
 
     uintptr_t h_aacpsy;

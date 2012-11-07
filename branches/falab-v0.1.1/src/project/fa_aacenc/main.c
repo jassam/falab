@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
     int block_switch_enable = BLOCK_SWITCH_DEFAULT;
     int blockswitch_method = BLOCKSWITCH_VAR;
     int quantize_method = QUANTIZE_LOOP;
+    /*int quantize_method = QUANTIZE_FAST;*/
     int psy_enable = PSY_ENABLE;
 
     ret = fa_parseopt(argc, argv);
