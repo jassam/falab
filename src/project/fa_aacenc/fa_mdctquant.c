@@ -419,8 +419,10 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
     for (gr = 0; gr < num_window_groups; gr++) {
         for (sfb = 0; sfb < sfb_num; sfb++) {
             for (win = 0; win < window_group_length[gr]; win++) {
-                if ((f1->error_energy[gr][sfb][win] > f1->xmin[gr][sfb][win]) ||
-                   (f2->error_energy[gr][sfb][win] > f2->xmin[gr][sfb][win])) {
+                /*if ((f1->error_energy[gr][sfb][win] > f1->xmin[gr][sfb][win]) ||*/
+                   /*(f2->error_energy[gr][sfb][win] > f2->xmin[gr][sfb][win])) {*/
+                /*because is common_window, just judge the ms sum channel*/
+                if (f1->error_energy[gr][sfb][win] > f1->xmin[gr][sfb][win]) {
                     scalefactor[gr][sfb] += 1;
                     scalefactor1[gr][sfb] += 1;
                     scalefactor[gr][sfb] = FA_MIN(scalefactor[gr][sfb], 255);
@@ -455,12 +457,14 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
 
     for (gr = 0; gr < num_window_groups; gr++) {
         if ((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
+#if 1 
             for (sfb = 1; sfb < sfb_num; sfb++) {
-                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
+                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 40)
                     return 1;
-                /*if (outer_loop_count > 1)*/
-                    /*return 1;*/
+                if (outer_loop_count > 40)
+                    return 1;
             }
+#endif
 
             return 0;
         }
