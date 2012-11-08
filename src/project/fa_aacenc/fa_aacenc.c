@@ -246,6 +246,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].window_shape      = SINE_WINDOW;
         f->ctx[i].common_scalefac   = 0;
         memset(f->ctx[i].scalefactor, 0, sizeof(int)*8*FA_SWB_NUM_MAX);
+        memset(f->ctx[i].scalefactor_win, 0, sizeof(int)*8*FA_SWB_NUM_MAX);
 
         f->ctx[i].num_window_groups = 1;
         f->ctx[i].window_group_length[0] = 1;
@@ -261,8 +262,6 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
         memset(f->ctx[i].avgenergy, 0, sizeof(float)*8);
         f->ctx[i].quality = 100;
 
-        memset(f->ctx[i].sqr_root_exp_xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
-        memset(f->ctx[i].sqr_root_exp_xmin_max, 0, sizeof(float)*8);
         f->ctx[i].used_bits= 0;
 
         f->ctx[i].bits_average     = bits_average;
@@ -488,7 +487,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         if (psy_enable) {
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_buf, s->block_type, &s->pe);
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
-            fa_rd_calculate_sfb_dval(s, xmin);
+            /*fa_rd_calculate_sfb_dval(s, xmin);*/
+            /*fa_calculate_scalefactor_win(s, xmin);*/
         } else {
             fa_fastquant_calculate_sfb_avgenergy(s);
             fa_fastquant_calculate_xmin(s, xmin);
