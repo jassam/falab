@@ -459,9 +459,9 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
         if ((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
 #if 1 
             for (sfb = 1; sfb < sfb_num; sfb++) {
-                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 40)
+                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
                     return 1;
-                if (outer_loop_count > 40)
+                if (outer_loop_count > 15)
                     return 1;
             }
 #endif
