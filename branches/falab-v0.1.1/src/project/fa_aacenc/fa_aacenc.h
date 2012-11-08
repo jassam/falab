@@ -145,8 +145,6 @@ typedef struct _aacenc_ctx_t{
     int    lastx[8];
     float  avgenergy[8];
 
-    float  sqr_root_exp_xmin[8][FA_SWB_NUM_MAX];
-    float  sqr_root_exp_xmin_max[8];
     int used_bits;
 
     uintptr_t h_aacpsy;
@@ -163,6 +161,7 @@ typedef struct _aacenc_ctx_t{
 
     int spectral_count;
 
+    int scalefactor_win[8][FA_SWB_NUM_MAX];
     int scalefactor[8][FA_SWB_NUM_MAX];
     int start_common_scalefac;
     int last_common_scalefac;
