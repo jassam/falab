@@ -488,7 +488,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_buf, s->block_type, &s->pe);
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
             /*fa_rd_calculate_sfb_dval(s, xmin);*/
-            /*fa_calculate_scalefactor_win(s, xmin);*/
+            fa_calculate_scalefactor_win(s, xmin);
         } else {
             fa_fastquant_calculate_sfb_avgenergy(s);
             fa_fastquant_calculate_xmin(s, xmin);
