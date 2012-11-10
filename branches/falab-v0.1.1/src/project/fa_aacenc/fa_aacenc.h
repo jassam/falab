@@ -161,8 +161,8 @@ typedef struct _aacenc_ctx_t{
 
     int spectral_count;
 
-    int scalefactor_win[8][FA_SWB_NUM_MAX];
-    int scalefactor[8][FA_SWB_NUM_MAX];
+    int scalefactor_win[8][FA_SWB_NUM_MAX];  // 8 is the max number of window
+    int scalefactor[8][FA_SWB_NUM_MAX];      // 8 is the max number of group
     int start_common_scalefac;
     int last_common_scalefac;
     int common_scalefac;

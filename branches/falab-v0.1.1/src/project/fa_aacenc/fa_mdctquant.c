@@ -51,7 +51,7 @@
 #define MAX_QUANT             8191
 #define MAGIC_NUMBER          0.4054
 
-#define COF_SCALE_NUM         1024//256
+#define COF_SCALE_NUM         256
 
 /*ROM: table will be used*/
 static float rom_cof_scale[2*COF_SCALE_NUM];
@@ -372,7 +372,7 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
             for (sfb = 1; sfb < sfb_num; sfb++) {
                 if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
                     return 1;
-                if (outer_loop_count > 20)
+                if (outer_loop_count > 15)
                     return 1;
             }
             return 0;
