@@ -92,7 +92,7 @@ static rate_cutoff_t rate_cutoff[] =
     {24000, 5000},
     {32000, 8000},
     {38000, 12000},
-    {48000, 16000},
+    {48000, 20000},
     {64000, 20000},
     {0    , 0},
 };
@@ -487,11 +487,11 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         if (psy_enable) {
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_buf, s->block_type, &s->pe);
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
-            /*fa_rd_calculate_sfb_dval(s, xmin);*/
             fa_calculate_scalefactor_win(s, xmin);
         } else {
             fa_fastquant_calculate_sfb_avgenergy(s);
             fa_fastquant_calculate_xmin(s, xmin);
+            fa_calculate_scalefactor_win(s, xmin);
         }
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/
