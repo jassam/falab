@@ -33,7 +33,7 @@
 #include "fa_bitbuffer.h"
 
 #ifndef FA_ABS
-#define FA_ABS(A)    ((A) < 0 ? (-A) : (A))
+#define FA_ABS(A)    ((A) < 0 ? (-(A)) : (A))
 #endif
 
 #ifndef FA_MIN
@@ -332,11 +332,11 @@ int fa_huffman_encode_mdctline(int *x_quant, int sfb_num, int *sfb_offset, int *
     int bits;
 
     int hufftab_no;
-    int hufftab_no_zero_cnt;
+    /*int hufftab_no_zero_cnt;*/
 
     counter = 0;
     bits    = 0;
-    hufftab_no_zero_cnt = 0;
+    /*hufftab_no_zero_cnt = 0;*/
 
     for (sfb = 0; sfb < sfb_num; sfb++) {
         offset     = sfb_offset[sfb];
@@ -578,6 +578,14 @@ int fa_huffman_encode_mdctline(int *x_quant, int sfb_num, int *sfb_offset, int *
     if (hufftab_no_zero_cnt)
         counter = counter - hufftab_no_zero_cnt + 1 ;
 #endif
+
+/*
+    I found that the faad can not support max_sfb=0, if max_sfb==0, the decoder will inform you some wrong thing happen,
+    but it can also decode the remain ok frame,
+    so if max_sfb=0, I increase it to 1
+*/
+    if (0 == *max_sfb)
+        *max_sfb = 1;
 
     /*return bits;*/
     return counter;

@@ -16,52 +16,10 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-  filename: fa_wavfmt.h 
+  filename: 
   version : v1.0.0
-  time    : 2012/07/08 18:33 
+  time    : 2012/10/27 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
   code URL: http://code.google.com/p/falab/
 
-  comment : only support pcm data now
-
 */
-
-
-#ifndef	_FA_WAVFMT_H
-#define	_FA_WAVFMT_H
-
-#include <stdio.h>
-
-#ifdef __cplusplus 
-extern "C"
-{ 
-#endif  
-
-
-typedef struct _fa_wavfmt_t
-{
-	unsigned short  format;
-
-	unsigned short  channels;
-
-	unsigned long   samplerate;
-
-	unsigned short  bytes_per_sample;
-
-	unsigned short  block_align;
-
-	unsigned long   data_size;
-
-}fa_wavfmt_t;
-
-
-fa_wavfmt_t  fa_wavfmt_readheader (FILE *fp);
-void         fa_wavfmt_writeheader(fa_wavfmt_t fmt, FILE *fp);
-
-#ifdef __cplusplus 
-}
-#endif  
-
-
-
-#endif

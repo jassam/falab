@@ -89,7 +89,7 @@ uintptr_t fa_aacpsy_init(int sample_rate)
                                                    AAC_BLOCK_SHORT_LEN); 
             break;
         default:
-            return NULL;
+            return (uintptr_t)NULL;
     }
 
     return (uintptr_t)f;

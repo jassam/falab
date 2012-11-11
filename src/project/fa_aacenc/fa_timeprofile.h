@@ -35,6 +35,11 @@
 
 #ifdef USE_TIME
 
+void fa_clock_start(int index);
+void fa_clock_end(int index);
+void fa_clock_cost(int index);
+void fa_prt_time_cost(int index);
+
 #define FA_CLOCK_START(index)      fa_clock_start(index)
 #define FA_CLOCK_END(index)        fa_clock_end(index)
 #define FA_CLOCK_COST(index)       fa_clock_cost(index)

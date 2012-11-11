@@ -74,7 +74,7 @@ float fa_fast_atan2(float y, float x);
 #else 
 #define        FA_SIN(x)         (sinf(x))
 #define        FA_COS(x)         (cosf(x))
-#define        FA_ATAN2(y,x)     (atan2f(x))
+#define        FA_ATAN2(y,x)     (atan2f(y,x))
 #endif
 
 float fa_fast_invsqrtf(float x);

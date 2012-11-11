@@ -50,16 +50,9 @@ TODO:
 #include "fa_aacenc.h"
 #include "fa_wavfmt.h"
 #include "fa_parseopt.h"
-#include "fa_aaccfg.h"
-#include "fa_aacpsy.h"
-#include "fa_swbtab.h"
-#include "fa_aacfilterbank.h"
 #include "fa_timeprofile.h"
 
 #define FRAME_SIZE_MAX  2048 
-
-/*note: debug decode can only work in mono, just test inverse quantize and synthesis*/
-/*#define DEBUG_DECODE*/
 
 int main(int argc, char *argv[])
 {
@@ -68,62 +61,32 @@ int main(int argc, char *argv[])
 
 	FILE  * destfile;
 	FILE  * sourcefile;
-    FILE  * aacfile;
 	fa_wavfmt_t fmt;
     int sample_rate;
     int chn_num;
 
-	int i;
-    int k;
     int is_last = 0;
     int read_len = 0;
-    int write_total_size= 0;
 
     uintptr_t h_aacenc;
 
-#ifdef DEBUG_DECODE
-    uintptr_t  h_aac_synthesis;
-    uintptr_t h_mdctiq_long, h_mdctiq_short;
-#endif
-
-    int block_type;
-
-    int average_bits, more_bits, bitres_bits, maximum_bitreservoir_size; 
-    int unused_bits;
-
-    int num_window_groups;
-    int window_group_length[8];
-
 	short wavsamples_in[FRAME_SIZE_MAX];
-	short wavsamples_out[FRAME_SIZE_MAX];
-	float buf_in[FRAME_SIZE_MAX];
-    float buf_out[FRAME_SIZE_MAX];
-    float mdct_line_inv[FRAME_SIZE_MAX];
-
     unsigned char aac_buf[FRAME_SIZE_MAX];
     int aac_out_len;
 
-    int ms_enable = MS_DEFAULT;
+    int ms_enable = 0;//MS_DEFAULT;
     int lfe_enable = LFE_DEFAULT;
     int tns_enable = TNS_DEFAULT;
     int block_switch_enable = BLOCK_SWITCH_DEFAULT;
-    int blockswitch_method = BLOCKSWITCH_PSY;
-    int quantize_method = QUANTIZE_LOOP;
+    int blockswitch_method = BLOCKSWITCH_VAR;
+    /*int quantize_method = QUANTIZE_LOOP;*/
+    int quantize_method = QUANTIZE_FAST;
     int psy_enable = PSY_ENABLE;
-
-    fa_aacenc_ctx_t *f;
 
     ret = fa_parseopt(argc, argv);
     if(ret) return -1;
 
-#ifdef DEBUG_DECODE
     if ((destfile = fopen(opt_outputfile, "w+b")) == NULL) {
-		printf("output file can not be opened\n");
-		return 0; 
-	}                         
-#endif
-
-    if ((aacfile = fopen("outaac.aac", "w+b")) == NULL) {
 		printf("output file can not be opened\n");
 		return 0; 
 	}                         
@@ -134,158 +97,45 @@ int main(int argc, char *argv[])
     }
 
     fmt = fa_wavfmt_readheader(sourcefile);
-#ifdef DEBUG_DECODE
-    fseek(destfile, 0, SEEK_SET);
-    fa_wavfmt_writeheader(fmt, destfile);
-#endif
-    printf("\n\nsamplerate=%d\n", fmt.samplerate);
+    printf("\n\nsamplerate=%lu\n", fmt.samplerate);
 
     sample_rate = fmt.samplerate;
     chn_num     = fmt.channels;
 
-    h_aacenc = fa_aacenc_init(sample_rate, 96000, chn_num,
+    h_aacenc = fa_aacenc_init(sample_rate, opt_bitrate, chn_num,
                               2, LOW, 
                               ms_enable, lfe_enable, tns_enable, block_switch_enable, psy_enable, 
                               blockswitch_method, quantize_method);
 
-#ifdef DEBUG_DECODE
-    h_aac_synthesis = fa_aacfilterbank_init();
-
-    switch(fmt.samplerate) {
-        case 48000:
-            h_mdctiq_long = fa_mdctquant_init(1024, FA_SWB_48k_LONG_NUM ,fa_swb_48k_long_offset, 1);
-            h_mdctiq_short= fa_mdctquant_init(128 , FA_SWB_48k_SHORT_NUM,fa_swb_48k_short_offset, 8);
-            break;
-        case 44100:
-            h_mdctiq_long = fa_mdctquant_init(1024, FA_SWB_44k_LONG_NUM ,fa_swb_44k_long_offset, 1);
-            h_mdctiq_short= fa_mdctquant_init(128 , FA_SWB_44k_SHORT_NUM,fa_swb_44k_short_offset, 8);
-            break;
-        case 32000:
-            h_mdctiq_long = fa_mdctquant_init(1024, FA_SWB_32k_LONG_NUM ,fa_swb_32k_long_offset, 1);
-            h_mdctiq_short= fa_mdctquant_init(128 , FA_SWB_32k_SHORT_NUM,fa_swb_32k_short_offset, 8);
-            break;
+    if (!h_aacenc) {
+        printf("initial failed, maybe configuration is not proper!\n");
+        return -1;
     }
-#endif
 
     while(1)
     {
         if(is_last)
             break;
 
-        memset(wavsamples_in, 0, 2*opt_framelen*chn_num);
-        read_len = fread(wavsamples_in, 2, opt_framelen*chn_num, sourcefile);
-        if(read_len < (opt_framelen*chn_num))
+        memset(wavsamples_in, 0, 2*1024*chn_num);
+        read_len = fread(wavsamples_in, 2, 1024*chn_num, sourcefile);
+        if(read_len < (1024*chn_num))
             is_last = 1;
        
-        for(i = 0 ; i < read_len; i++) {
-            buf_in[i] = (float)wavsamples_in[i];
-            buf_out[i] = 0;
-        }
-
         /*analysis and encode*/
         FA_CLOCK_START(1);
-        fa_aacenc_encode(h_aacenc, wavsamples_in, chn_num*2*read_len, aac_buf, &aac_out_len);
+        fa_aacenc_encode(h_aacenc, (unsigned char *)wavsamples_in, chn_num*2*read_len, aac_buf, &aac_out_len);
         FA_CLOCK_END(1);
         FA_CLOCK_COST(1);
 
-        fwrite(aac_buf, 1, aac_out_len, aacfile);
-
-#ifdef DEBUG_DECODE
-        f = (fa_aacenc_ctx_t *)h_aacenc;
-
-        /*synthesis*/
-        memset(mdct_line_inv, 0, FRAME_SIZE_MAX*sizeof(float));
-        if(f->ctx[0].block_type == ONLY_SHORT_BLOCK) {
-#if 1 
-            num_window_groups = 1;
-            window_group_length[0] = 8;
-            window_group_length[1] = 0;
-            window_group_length[2] = 0;
-            window_group_length[3] = 0;
-            window_group_length[4] = 0;
-            window_group_length[5] = 0;
-            window_group_length[6] = 0;
-            window_group_length[7] = 0;
-#else 
-            num_window_groups = 2;
-            window_group_length[0] = 4;
-            window_group_length[1] = 4;
-            window_group_length[2] = 0;
-            window_group_length[3] = 0;
-            window_group_length[4] = 0;
-            window_group_length[5] = 0;
-            window_group_length[6] = 0;
-            window_group_length[7] = 0;
-
-#endif
- 
-            fa_mdctline_iquantize(h_mdctiq_short, 
-                                  num_window_groups, window_group_length, 
-                                  f->ctx[0].scalefactor,
-                                  f->ctx[0].x_quant);
-            fa_mdctline_sfb_iarrange(h_mdctiq_short, mdct_line_inv, f->ctx[0].mdct_line_sign,
-                                     num_window_groups, window_group_length);
-        }else {
-            num_window_groups = 1;
-            window_group_length[0] = 1;
-            fa_mdctline_iquantize(h_mdctiq_long, 
-                                  num_window_groups, window_group_length, 
-                                  f->ctx[0].scalefactor,
-                                  f->ctx[0].x_quant);
-            fa_mdctline_sfb_iarrange(h_mdctiq_long, mdct_line_inv,f->ctx[0].mdct_line_sign,
-                                     num_window_groups, window_group_length);
-        }
-
-        if(f->block_switch_en) {
-            block_type = f->ctx[0].block_type;
-        }else {
-            block_type = ONLY_LONG_BLOCK;
-        }
-
-        fa_aacfilterbank_synthesis(h_aac_synthesis, block_type, mdct_line_inv, buf_out);
-
-        for(i = 0 ; i < opt_framelen; i++) {
-            float temp;
-            temp = buf_out[i];
-
-            if (temp >= 32767)
-                temp = 32767;
-            if (temp < -32768)
-                temp = -32768;
-
-            wavsamples_out[i] = temp;
-        }
-
-        fwrite(wavsamples_out, 2, opt_framelen, destfile);
-
-        write_total_size += 2 * opt_framelen;
-#endif
+        fwrite(aac_buf, 1, aac_out_len, destfile);
 
         frame_index++;
-#if  0 
-        if (frame_index == 500) {
-            break;
-        }
-#endif
-#if  1 
-        if (frame_index == 434) {
-            frame_index += 2;
-        }
-#endif
-
-
         fprintf(stderr,"\rthe frame = [%d]", frame_index);
     }
 
-#ifdef DEBUG_DECODE
-    fmt.data_size=write_total_size/fmt.block_align;
-    fseek(destfile, 0, SEEK_SET);
-    fa_wavfmt_writeheader(fmt,destfile);
-    fclose(destfile);
-#endif
-
     fclose(sourcefile);
-    fclose(aacfile);
+    fclose(destfile);
 
 
     printf("\n");
