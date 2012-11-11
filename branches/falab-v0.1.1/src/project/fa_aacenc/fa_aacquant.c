@@ -704,7 +704,7 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
 
     } while (quant_ok_cnt < chn_num);
 
-    printf("outer loop cnt= %d\n", outer_loop_count);
+    /*printf("outer loop cnt= %d\n", outer_loop_count);*/
 }
 
 
