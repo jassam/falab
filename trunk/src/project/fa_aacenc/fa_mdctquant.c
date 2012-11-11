@@ -27,10 +27,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <memory.h>
 #include <math.h>
 #include "fa_mdctquant.h"
 #include "fa_iqtab.h"
 #include "fa_fastmath.h"
+#include "fa_huffman.h"
 #include "fa_timeprofile.h"
 
 
@@ -43,7 +45,7 @@
 #endif
 
 #ifndef FA_ABS
-#define FA_ABS(a) ( (a) > 0 ? (a) : (-a))
+#define FA_ABS(a) ( (a) > 0 ? (a) : (-(a)))
 #endif
 
 #define MAX_QUANT             8191
@@ -55,27 +57,6 @@
 static float rom_cof_scale[2*COF_SCALE_NUM];
 static float rom_cof_quant[2*COF_SCALE_NUM];
 static float rom_inv_cof[2*COF_SCALE_NUM];
-
-typedef struct _fa_mdctquant_t {
-
-    int   block_type_cof;
-    int   mdct_line_num;
-
-    float mdct_line[NUM_MDCT_LINE_MAX];
-    float xr_pow[NUM_MDCT_LINE_MAX];
-    float mdct_scaled[NUM_MDCT_LINE_MAX];
-
-    float xmin[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX][NUM_WINDOWS_MAX];
-    float error_energy[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX][NUM_WINDOWS_MAX];
-
-    int   sfb_num;
-    int   swb_low[FA_SWB_NUM_MAX+1];
-    int   swb_high[FA_SWB_NUM_MAX];
-    int   sfb_low[NUM_WINDOW_GROUPS_MAX][FA_SWB_NUM_MAX+1];
-    int   sfb_high[NUM_WINDOW_GROUPS_MAX][FA_SWB_NUM_MAX];
-
-}fa_mdctquant_t;
-
 void fa_mdctquant_rom_init()
 {
     int i;
@@ -329,7 +310,6 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
                                int *x_quant)
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
-    int i;
 
     int gr, win;
     int sfb;
@@ -343,13 +323,10 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
     int sfb_scale_cnt[NUM_WINDOW_GROUPS_MAX];
     int sfb_allscale[NUM_WINDOW_GROUPS_MAX];
     /*no3*/
-    int sfb_nb_diff60;
 
 
     sfb_num  = f->sfb_num;
 
-
-    sfb_nb_diff60     = 0;
 
     memset(energy_err_ok_cnt, 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
     memset(energy_err_ok    , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
@@ -395,7 +372,7 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
             for (sfb = 1; sfb < sfb_num; sfb++) {
                 if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
                     return 1;
-                if (outer_loop_count > 1)
+                if (outer_loop_count > 15)
                     return 1;
             }
             return 0;
@@ -415,7 +392,6 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
 {
     fa_mdctquant_t *f1 = (fa_mdctquant_t *)handle1;
     fa_mdctquant_t *f2 = (fa_mdctquant_t *)handle2;
-    int i;
 
     int gr, win;
     int sfb;
@@ -429,13 +405,10 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
     int sfb_scale_cnt[NUM_WINDOW_GROUPS_MAX];
     int sfb_allscale[NUM_WINDOW_GROUPS_MAX];
     /*no3*/
-    int sfb_nb_diff60;
 
 
     sfb_num  = f1->sfb_num;
 
-
-    sfb_nb_diff60     = 0;
 
     memset(energy_err_ok_cnt, 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
     memset(energy_err_ok    , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
@@ -446,8 +419,10 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
     for (gr = 0; gr < num_window_groups; gr++) {
         for (sfb = 0; sfb < sfb_num; sfb++) {
             for (win = 0; win < window_group_length[gr]; win++) {
-                if ((f1->error_energy[gr][sfb][win] > f1->xmin[gr][sfb][win]) ||
-                   (f2->error_energy[gr][sfb][win] > f2->xmin[gr][sfb][win])) {
+                /*if ((f1->error_energy[gr][sfb][win] > f1->xmin[gr][sfb][win]) ||*/
+                   /*(f2->error_energy[gr][sfb][win] > f2->xmin[gr][sfb][win])) {*/
+                /*because is common_window, just judge the ms sum channel*/
+                if (f1->error_energy[gr][sfb][win] > f1->xmin[gr][sfb][win]) {
                     scalefactor[gr][sfb] += 1;
                     scalefactor1[gr][sfb] += 1;
                     scalefactor[gr][sfb] = FA_MIN(scalefactor[gr][sfb], 255);
@@ -482,12 +457,14 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
 
     for (gr = 0; gr < num_window_groups; gr++) {
         if ((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
+#if 1 
             for (sfb = 1; sfb < sfb_num; sfb++) {
-                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
-                    return 1;
-                if (outer_loop_count > 1)
+                /*if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 60)*/
+                    /*return 1;*/
+                if (outer_loop_count > 15)
                     return 1;
             }
+#endif
 
             return 0;
         }
@@ -522,7 +499,6 @@ int fa_mdctline_iquantize(uintptr_t handle,
     float *mdct_line = f->mdct_line;
     int mdct_line_offset;
     float inv_x_quant;
-    float tmp;
 
     sfb_num = f->sfb_num;
     swb_low = f->swb_low;
@@ -636,7 +612,6 @@ void fa_mdctline_sfb_iarrange(uintptr_t handle, float *mdct_line_swb, int *mdct_
     int swb_width;
     int group_offset;
     int gr, swb, win, i, k;
-    int sfb;
     int index;
 
 
@@ -668,9 +643,7 @@ int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, i
                         int *max_sfb, int *x_quant_code, int *x_quant_bits)
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
-    int quant_bits;
 
-    int mdct_line_num = f->mdct_line_num;
     int sfb_num       = f->sfb_num;
     int *x_quant_gr;
     int *x_quant_code_gr;
@@ -715,8 +688,6 @@ void fa_mdctline_ms_encode(uintptr_t hl, uintptr_t hr, int num_window_groups,
     fa_mdctquant_t *fl = (fa_mdctquant_t *)hl;
     fa_mdctquant_t *fr = (fa_mdctquant_t *)hr;
 
-    /*the mdct_line_num and sfb_num now is same*/
-    int mdct_line_num = fl->mdct_line_num;
     int sfb_num       = fl->sfb_num;
     float *mdctline_l = fl->mdct_line;
     float *mdctline_r = fr->mdct_line;
@@ -782,7 +753,5 @@ void fa_mdctline_ms_encode(uintptr_t hl, uintptr_t hr, int num_window_groups,
     }
 
 }
-
-
 
 

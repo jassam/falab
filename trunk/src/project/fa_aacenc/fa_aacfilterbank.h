@@ -49,7 +49,7 @@ void fa_aacfilterbank_analysis(uintptr_t handle, int block_type, int *window_sha
 void fa_aacfilterbank_synthesis(uintptr_t handle, int block_type,  
                                 float *mdct_line, float *x);
 
-int  fa_blockswitch_psy(aacenc_ctx_t *s);
+void fa_aacfilterbank_get_xbuf(uintptr_t handle, float *x);
 
 #ifdef __cplusplus 
 }

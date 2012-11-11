@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <memory.h>
 #include "fa_aaccfg.h"
 #include "fa_aacquant.h"
 #include "fa_aacpsy.h"
 #include "fa_swbtab.h"
 #include "fa_mdctquant.h"
+#include "fa_aacstream.h"
 #include "fa_timeprofile.h"
+#include "fa_fastmath.h"
 
 
 #ifndef FA_MIN
@@ -17,7 +20,7 @@
 #endif
 
 #ifndef FA_ABS 
-#define FA_ABS(a)    ( (a) > 0 ? (a) : (-a) )
+#define FA_ABS(a)    ( (a) > 0 ? (a) : (-(a)) )
 #endif
 
 
@@ -61,6 +64,7 @@ static void calculate_start_common_scalefac(fa_aacenc_ctx_t *f)
 
 }
 
+
 static void init_quant_change(int outer_loop_count, aacenc_ctx_t *s)
 {
     if (outer_loop_count == 0) {
@@ -75,8 +79,8 @@ static void init_quant_change(int outer_loop_count, aacenc_ctx_t *s)
 static void init_quant_change_fast(int outer_loop_count, aacenc_ctx_t *s)
 {
     if (outer_loop_count == 0) {
-        s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);
-        /*s->common_scalefac = s->start_common_scalefac;*/
+        /*s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);*/
+        s->common_scalefac = s->start_common_scalefac;
         s->quant_change = 64;
     } else {
         /*s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);*/
@@ -333,7 +337,6 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
             sr = &(f->ctx[i+1]);
             find_globalgain = 0;
             init_quant_change_fast(outer_loop_count, sl);
-            /*init_quant_change_fast(outer_loop_count, sr);*/
             sr->common_scalefac = sl->common_scalefac;
         } else {
             chn = 1;
@@ -427,7 +430,7 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
                 if ((sl->quant_change == 0 && sr->quant_change == 0) 
                     /*|| (delta_bits < 20)*/
                     /*|| (inner_loop_cnt >= 6 && delta_bits < 200)*/
-                    /*|| (inner_loop_cnt >= 7)*/
+                    || (inner_loop_cnt >= 20)
                     )
                     find_globalgain = 1;
                 else 
@@ -739,8 +742,396 @@ void fa_quantize_loop(fa_aacenc_ctx_t *f)
     FA_CLOCK_END(2);
     FA_CLOCK_COST(2);
 
+#if  0 
+    {
+        int i,j;
 
+        for (i = 0; i < chn_num; i++) {
+            s = &(f->ctx[i]);
+            printf("chn=i, common_scalefac=%d\n", s->common_scalefac);
+            for (j = 0; j < 40; j++) {
+                printf("sf%d=%d, ", j, s->scalefactor[0][j]);
+            }
+
+        }
+    
+    }
+
+#endif
+}
+
+
+/*this is the fast quantize, maybe is not very right, just for your test */
+
+void  fa_fastquant_calculate_sfb_avgenergy(aacenc_ctx_t *s)
+{
+    int   k;
+    int   i;
+    int   last = 0;
+    float energy_sum = 0.0;
+    float tmp;
+
+    if (s->block_type == ONLY_SHORT_BLOCK) {
+        for (k = 0; k < 8; k++) {
+            last = 0;
+            energy_sum = 0.0;
+            for (i = 0; i < 128; i++) {
+                tmp = s->mdct_line[k*128+i]; 
+                if (tmp) {
+                    last = i;
+                    energy_sum += tmp * tmp;
+                }
+            }
+            last++;
+            s->lastx[k]     = last;
+            s->avgenergy[k] = energy_sum / last;
+        }
+    } else {
+        last = 0;
+        energy_sum = 0.0;
+        for (i = 0; i < 1024; i++) {
+            tmp = s->mdct_line[i]; 
+            if (tmp) {
+                last = i;
+                energy_sum += tmp * tmp;
+            }
+        }
+        last++;
+        s->lastx[0]     = last;
+        s->avgenergy[0] = energy_sum / last;
+
+    }
 
 }
 
 
+void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
+{
+    int k,i,j;
+    float globalthr = 132./10;//s->quality;
+
+    fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
+    fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
+
+    int swb_num;
+    int *swb_low;
+    int *swb_high;
+
+    int start;
+    int end;
+    int lastsb;
+
+    float enmax = -1.0;
+    float lmax;
+    float tmp;
+    float energy;
+    float thr;
+
+    memset(xmin, 0, sizeof(float)*8*NUM_SFB_MAX);
+
+    if (s->block_type == ONLY_SHORT_BLOCK) {
+        swb_num  = fs->sfb_num;
+        swb_low  = fs->swb_low;
+        swb_high = fs->swb_high;
+
+        for (k = 0; k < 8; k++) {
+            lastsb = 0;
+            for (i = 0; i < swb_num; i++) {
+                if (s->lastx[k] > swb_low[i])
+                    lastsb = i;
+            }
+
+            for (i = 0; i < swb_num; i++) {
+                if (i > lastsb) {
+                    xmin[k][i] = 0;
+                    continue;
+                }
+
+                start = swb_low[i];
+                end   = swb_high[i] + 1;
+
+                energy = 0.0;
+                for (j = start; j < end; j++) {
+                    tmp = s->mdct_line[k*128+j];
+                    energy += tmp * tmp;
+                }
+
+#if 0
+                thr = energy/(s->avgenergy[k] * (end-start));
+                thr = pow(thr, 0.1*(lastsb-i)/lastsb + 0.3);
+                tmp = 1.0 - ((float)start/(float)s->lastx[k]);
+                tmp = tmp * tmp * tmp + 0.075;
+                thr = 1.0 / (1.4*thr + tmp);
+
+                xmin[k][i] = 1.12 * thr * globalthr;
+#else 
+                xmin[k][i] = energy/20;
+
+#endif
+            }
+        }
+    } else {
+        swb_num  = fl->sfb_num;
+        swb_low  = fl->swb_low;
+        swb_high = fl->swb_high;
+         
+        lastsb = 0;
+        for (i = 0; i < swb_num; i++) {
+            if (s->lastx[0] > swb_low[i])
+                lastsb = i;
+        }
+
+        for (i = 0; i < swb_num; i++) {
+            if (i > lastsb) {
+                xmin[0][i] = 0;
+                continue;
+            }
+
+            start = swb_low[i];
+            end   = swb_high[i]+1;
+
+            enmax = -1.0;
+            lmax  = start;
+            for (j = start; j < end; j++) {
+                tmp = s->mdct_line[j];
+                tmp = tmp * tmp;
+                if (enmax < tmp) {
+                    enmax = tmp;
+                    lmax  = j;
+                }
+            }
+
+            start = lmax - 2;
+            end   = lmax + 3;
+            if (start < 0)
+                start = 0;
+            if (end > s->lastx[0])
+                end = s->lastx[0];
+            if (end > swb_high[i] + 1)
+                end = swb_high[i] + 1;
+
+            energy = 0.0;
+            for (j = start; j < end; j++) {
+                tmp = s->mdct_line[j];
+                energy += tmp * tmp;
+            }
+
+#if 0
+            thr = energy/(s->avgenergy[0] * (end-start));
+            thr = pow(thr, 0.1*(lastsb-i)/lastsb + 0.3);
+            tmp = 1.0 - ((float)start/(float)s->lastx[0]);
+            tmp = tmp * tmp * tmp + 0.075;
+            thr = 1.0 / (1.4*thr + tmp);
+
+            xmin[0][i] = 1.12 * thr * globalthr;
+#else 
+            xmin[k][i] = energy/20;
+#endif
+
+        }
+    }
+
+}
+
+
+void fa_calculate_scalefactor_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
+{
+    int   k;
+    int   i, j;
+    float tmp;
+
+    fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
+    fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
+
+    int swb_num;
+    int *swb_low;
+    int *swb_high;
+
+    int start;
+    int end;
+
+    float sfb_sqrenergy = 0.0;
+    float max_ratio = 0.0;
+    float gl = 0.0;
+    float xmin_sqrenergy_ratio[FA_SWB_NUM_MAX];
+
+    memset(s->scalefactor_win, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
+
+    if (s->block_type == ONLY_SHORT_BLOCK) {
+        swb_num  = fs->sfb_num;
+        swb_low  = fs->swb_low;
+        swb_high = fs->swb_high;
+
+        for (k = 0; k < 8; k++) {
+            max_ratio = 0.;
+            gl = 0.;
+            memset(xmin_sqrenergy_ratio, 0, sizeof(float)*FA_SWB_NUM_MAX);
+            for (i = 0; i < swb_num; i++) {
+                start = swb_low[i];
+                end   = swb_high[i] + 1;
+
+                sfb_sqrenergy = 0.0;
+                for (j = start; j < end; j++) {
+                    tmp = FA_ABS(s->mdct_line[128*k+j]);
+                    sfb_sqrenergy += FA_SQRTF(tmp);
+                }
+                if (sfb_sqrenergy == 0.)
+                    xmin_sqrenergy_ratio[i] = 0.;
+                else 
+                    xmin_sqrenergy_ratio[i] = xmin[k][i]/(0.4493*sfb_sqrenergy);
+
+                if (xmin_sqrenergy_ratio[i] > max_ratio) {
+                    max_ratio = xmin_sqrenergy_ratio[i];
+                    gl = 8./3. * FA_LOG2(max_ratio);
+                }
+            }
+
+            for (i = 0; i < swb_num; i++) {
+                if (xmin_sqrenergy_ratio[i] == 0)
+                    s->scalefactor_win[k][i] = 0;
+                else {
+                    tmp = gl + 8./3 * FA_LOG2(1./xmin_sqrenergy_ratio[i]);
+                    if (2*tmp < 15)
+                        tmp = 2*tmp;
+                    s->scalefactor_win[k][i] = FA_MAX(0, (int)tmp);
+                }
+            }
+        }
+    } else {
+        swb_num  = fl->sfb_num;
+        swb_low  = fl->swb_low;
+        swb_high = fl->swb_high;
+
+        max_ratio = 0.;
+        gl = 0.;
+        memset(xmin_sqrenergy_ratio, 0, sizeof(float)*FA_SWB_NUM_MAX);
+        for (i = 0; i < swb_num; i++) {
+            start = swb_low[i];
+            end   = swb_high[i] + 1;
+
+            sfb_sqrenergy = 0.0;
+            for (j = start; j < end; j++) {
+                tmp = FA_ABS(s->mdct_line[j]);
+                sfb_sqrenergy += FA_SQRTF(tmp);
+            }
+            if (sfb_sqrenergy == 0)
+                xmin_sqrenergy_ratio[i] = 0;
+            else 
+                xmin_sqrenergy_ratio[i] = xmin[0][i]/(0.4493*sfb_sqrenergy);
+
+            if (xmin_sqrenergy_ratio[i] > max_ratio) {
+                max_ratio = xmin_sqrenergy_ratio[i];
+                gl = 8./3. * FA_LOG2(max_ratio);
+            }
+        }
+
+        for (i = 0; i < swb_num; i++) {
+            if (xmin_sqrenergy_ratio[i] == 0)
+                s->scalefactor_win[0][i] = 0;
+            else {
+                tmp = gl + 8./3 * FA_LOG2(1./xmin_sqrenergy_ratio[i]);
+                if (2*tmp < 15)
+                    tmp = 2*tmp;
+                s->scalefactor_win[0][i] = FA_MAX(0, (int)tmp);
+            }
+        }
+    }
+
+}
+
+
+static void calculate_scalefactor(aacenc_ctx_t *s)
+{
+    int i;
+    int gr;
+    int win;
+    float gain;
+    int scalefactor;
+ 
+    fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
+    fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
+
+
+    if (s->block_type == ONLY_SHORT_BLOCK) {
+        for (gr = 0; gr < s->num_window_groups; gr++) {
+            for (i = 0; i < fs->sfb_num; i++) {
+                for (win = 0; win < s->window_group_length[gr]; win++) {
+                    scalefactor = s->scalefactor_win[win][i];
+                    s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);
+                    s->scalefactor[gr][i] = FA_MIN(20, s->scalefactor[gr][i]);
+                }
+            }
+        }
+    } else {
+        for (i = 0; i < fl->sfb_num; i++) {
+#if 0 
+            if (s->scalefactor_win[0][i] > 70)
+                printf("s->scalefactor_win[0][i]=%d\n", s->scalefactor_win[0][i]);
+#endif
+            s->scalefactor[0][i] = FA_MIN(20, s->scalefactor_win[0][i]);
+        }
+    }
+
+}
+
+void fa_quantize_fast(fa_aacenc_ctx_t *f)
+{
+    int i;
+    int chn_num;
+    aacenc_ctx_t *s;
+
+    chn_num = f->cfg.chn_num;
+
+    /*FA_CLOCK_START(6);*/
+    for (i = 0; i < chn_num; i++) {
+        s = &(f->ctx[i]);
+        if (s->block_type == ONLY_SHORT_BLOCK) {
+            s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_short);
+            fa_mdctline_pow34(s->h_mdctq_short);
+            memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
+            calculate_scalefactor(s);
+        } else {
+            s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_long);
+            fa_mdctline_pow34(s->h_mdctq_long);
+            memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
+            calculate_scalefactor(s);
+        }
+    }
+    /*FA_CLOCK_END(6);*/
+    /*FA_CLOCK_COST(6);*/
+
+    calculate_start_common_scalefac(f);
+
+    FA_CLOCK_START(2);
+    quant_outerloop(f);
+    FA_CLOCK_END(2);
+    FA_CLOCK_COST(2);
+
+#if  0 
+    {
+        int i,j;
+
+        for (i = 0; i < chn_num; i++) {
+            s = &(f->ctx[i]);
+#if 1 
+            printf("chn=i, common_scalefac=%d\n", s->common_scalefac);
+            for (j = 0; j < 40; j++) {
+                printf("sf%d=%d, ", j, s->scalefactor[0][j]);
+            }
+#else 
+                for (j = 0; j < 40; j++) {
+                    if (s->scalefactor[0][j] > 255) {
+                        printf("chn=i, common_scalefac=%d\n", s->common_scalefac);
+                        printf("sf%d=%d, ", j, s->scalefactor[0][j]);
+                    }
+                }
+
+#endif
+
+        }
+    
+    }
+
+#endif
+
+}

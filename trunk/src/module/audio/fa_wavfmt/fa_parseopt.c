@@ -1,6 +1,6 @@
 /*
   falab - free algorithm lab 
-  Copyright (C) 2012 luolongzhi (Chengdu, China)
+  Copyright (C) 2012 luolongzhi ÂÞÁúÖÇ(Chengdu, China)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -31,7 +31,6 @@
 #include <getopt.h>
 #else
 #include "getopt.h"
-#include "getopt.c"
 #endif
 
 #include "fa_parseopt.h"

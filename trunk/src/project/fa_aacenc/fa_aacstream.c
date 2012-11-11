@@ -31,6 +31,7 @@
 #include "fa_bitstream.h"
 #include "fa_huffman.h"
 #include "fa_huffmantab.h"
+#include "fa_fastmath.h"
 
 #ifndef FA_MIN
 #define FA_MIN(a,b)  ( (a) < (b) ? (a) : (b) )
@@ -79,6 +80,24 @@ int get_aac_min_bitrate()
     return 8000;
 }
 
+int get_avaiable_bits(int average_bits, int more_bits, int bitres_bits, int bitres_max_size)
+{
+    int available_bits;
+
+    if (more_bits >= 0) {
+        available_bits = average_bits + FA_MIN(more_bits, bitres_bits);
+    } else if (more_bits < 0) {
+        available_bits = average_bits + FA_MAX(more_bits, bitres_bits-bitres_max_size);
+    }
+
+    if (available_bits == 1) {
+        available_bits += 1;
+    }
+
+    return available_bits;
+}
+
+
 
 /* calculate bit_allocation based on PE */
 int calculate_bit_allocation(float pe, int block_type)
@@ -95,7 +114,7 @@ int calculate_bit_allocation(float pe, int block_type)
         pe1 = 0.3;
         pe2 = 6.0;
     }
-    bit_allocation = pe1 * pe + pe2 * sqrt(pe);
+    bit_allocation = pe1 * pe + pe2 * fa_fast_sqrtf(pe);
     bit_allocation = FA_MIN(FA_MAX(0.0, bit_allocation), 6144.0);
 
     bits_alloc = (int)(bit_allocation + 0.5);
@@ -116,9 +135,9 @@ int fa_write_bitstream_onechn(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aace
 {
 
     chn_info_t *p_chn_info = &(s->chn_info);
-    int channel;
+    /*int channel;*/
     int bits = 0;
-    int bits_left_afterfill, num_fill_bits;
+    /*int bits_left_afterfill, num_fill_bits;*/
 
     /*printf("------shape=%d\n", s->window_shape);*/
 
@@ -266,9 +285,9 @@ int fa_bits_sideinfo_est(int chn_num)
 int fa_bits_count(uintptr_t h_bs, aaccfg_t *c, aacenc_ctx_t *s, aacenc_ctx_t *sr)
 {
     chn_info_t *p_chn_info = &(s->chn_info);
-    int channel;
+    /*int channel;*/
     int bits = 0;
-    int bits_left_afterfill, num_fill_bits;
+    /*int bits_left_afterfill, num_fill_bits;*/
 
 
     /*bits += write_adtsheader(c, s, 0);*/

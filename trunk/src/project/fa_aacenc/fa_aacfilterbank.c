@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <memory.h>
 #include "fa_aaccfg.h"
 #include "fa_aacpsy.h"
 #include "fa_aacfilterbank.h"
@@ -326,81 +327,12 @@ void fa_aacfilterbank_synthesis(uintptr_t handle, int block_type,
 }
 
 
-/*---------------------------------- psy blockswitch --------------------------------------------------*/
-#define SWITCH_PE  1000 //1800//1800 //300// 1800
-
-static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type)
+void fa_aacfilterbank_get_xbuf(uintptr_t handle, float *x)
 {
-    int prev_coding_block_type;
-    int cur_coding_block_type;
+    int i;
+    fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)handle;
 
-    /*get prev coding block type*/
-    if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
-        prev_coding_block_type = LONG_CODING_BLOCK;
-    else 
-        prev_coding_block_type = SHORT_CODING_BLOCK;
+    for (i = 0; i < 2*AAC_FRAME_LEN; i++)
+        x[i] = f->x_buf[i];
 
-    /*use pe to decide current coding block type*/
-    if (pe > SWITCH_PE) 
-        cur_coding_block_type = SHORT_CODING_BLOCK;
-    else 
-        cur_coding_block_type = LONG_CODING_BLOCK;
-    
-    /*use prev coding block type and current coding block type to decide current block type*/
-    if (prev_coding_block_type == LONG_CODING_BLOCK && cur_coding_block_type == LONG_CODING_BLOCK)
-        *cur_block_type = ONLY_LONG_BLOCK;
-    else if (prev_coding_block_type == LONG_CODING_BLOCK && cur_coding_block_type == SHORT_CODING_BLOCK)
-        *cur_block_type = LONG_START_BLOCK;
-    else if (prev_coding_block_type == SHORT_CODING_BLOCK && cur_coding_block_type == SHORT_CODING_BLOCK)
-        *cur_block_type = ONLY_SHORT_BLOCK;
-    else 
-        *cur_block_type = LONG_STOP_BLOCK;
-
-    /**cur_block_type = LONG_STOP_BLOCK;//ONLY_LONG_BLOCK;*/
 }
-
-
-/*this function used in aac encode*/
-static int aac_blockswitch_psy(uintptr_t h_fltbank, uintptr_t h_psy, int block_type, float pe)
-{
-    fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)h_fltbank;
-    int prev_block_type;
-    int cur_block_type;
-
-    prev_block_type = block_type;
-    blockswitch_pe(pe, prev_block_type, &cur_block_type);
-
-#if 0 
-    if (cur_block_type == LONG_START_BLOCK)
-        update_psy_short_previnfo(h_psy);
-
-    if (cur_block_type == LONG_STOP_BLOCK)
-        update_psy_long_previnfo(h_psy);
-#else
-
-    /*if (cur_block_type == LONG_START_BLOCK || cur_block_type == LONG_STOP_BLOCK)*/
-        /*reset_psy_previnfo(h_psy);*/
-
-#endif
-        
-
-    return cur_block_type;
-}
-
-int fa_blockswitch_psy(aacenc_ctx_t *s)
-{
-    if (s->psy_enable) {
-        s->block_type = aac_blockswitch_psy(s->h_aac_analysis, s->h_aacpsy, s->block_type, s->pe);
-        s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
-        s->bits_more  = s->bits_alloc - 100;
-    } else {
-        s->block_type = ONLY_LONG_BLOCK;
-        s->bits_alloc = s->bits_average;
-        s->bits_more  = s->bits_alloc - 100;
-    }
-
-    return s->block_type;
-}
-
-
-

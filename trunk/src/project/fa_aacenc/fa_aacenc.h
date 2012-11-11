@@ -125,31 +125,25 @@ typedef struct
 
 typedef struct _aacenc_ctx_t{
 
-    //chn info
     chn_info_t  chn_info;
 
-    //the coding status variable 
-
-    int psy_enable;
     float pe;
-
+    float var_max_prev;
+    int psy_enable;
     int block_type;
-
     int window_shape;
-
     int num_window_groups;
-
     int window_group_length[8];
 
     int sfb_num_long;
-
     int sfb_num_short;
-
     int max_sfb;
-
     int nr_of_sfb;
-
     int sfb_offset[250];
+
+    int    quality;
+    int    lastx[8];
+    float  avgenergy[8];
 
     int used_bits;
 
@@ -157,8 +151,6 @@ typedef struct _aacenc_ctx_t{
     uintptr_t h_aac_analysis;
     uintptr_t h_mdctq_long, h_mdctq_short;
  
-    ///////////////////////
-
     float max_mdct_line;
     float mdct_line[2*AAC_FRAME_LEN];
 
@@ -169,7 +161,8 @@ typedef struct _aacenc_ctx_t{
 
     int spectral_count;
 
-    int scalefactor[8][FA_SWB_NUM_MAX];
+    int scalefactor_win[8][FA_SWB_NUM_MAX];  // 8 is the max number of window
+    int scalefactor[8][FA_SWB_NUM_MAX];      // 8 is the max number of group
     int start_common_scalefac;
     int last_common_scalefac;
     int common_scalefac;
@@ -184,24 +177,11 @@ typedef struct _aacenc_ctx_t{
     int bits_res_size;
     unsigned char *res_buf;
 
-    int unused_bits;
-     
     int quant_ok;
 
     int hufftab_no[8][FA_SWB_NUM_MAX];
     int x_quant_code[5*1024];
     int x_quant_bits[5*1024];
-
-    /* Huffman codebook selected for each sf band */
-    int book_vector[MAX_SCFAC_BANDS];
-
-    /* Data of spectral bitstream elements, for each spectral pair,
-       5 elements are required: 1*(esc)+2*(sign)+2*(esc value)=5 */
-    int *data;
-
-    /* Lengths of spectral bitstream elements */
-    int *len;
-
 
     TnsInfo tnsInfo;
     LtpInfo ltpInfo;
@@ -230,10 +210,9 @@ typedef struct _fa_aacenc_ctx_t{
 
     int block_switch_en;
     int psy_enable;
-    //the configuration of aac encoder
+
     aaccfg_t cfg;
 
-    //encode ctx for each channel
     aacenc_ctx_t ctx[MAX_CHANNELS];
 
     int band_width;
@@ -243,7 +222,7 @@ typedef struct _fa_aacenc_ctx_t{
 
     int  blockswitch_method;
     int  quantize_method;
-    void (* do_blockswitch)(aacenc_ctx_t *s);
+    int  (* do_blockswitch)(aacenc_ctx_t *s);
     void (* do_quantize)(struct _fa_aacenc_ctx_t * f);
 }fa_aacenc_ctx_t;
 
