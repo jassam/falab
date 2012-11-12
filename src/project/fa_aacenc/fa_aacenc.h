@@ -206,6 +206,8 @@ enum {
 
 typedef struct _fa_aacenc_ctx_t{
 
+    int speed_level;
+
     float *sample;
 
     int block_switch_en;
@@ -227,16 +229,10 @@ typedef struct _fa_aacenc_ctx_t{
 }fa_aacenc_ctx_t;
 
 
-#define MS_DEFAULT              1 
-#define LFE_DEFAULT             0
-#define TNS_DEFAULT             0
-#define BLOCK_SWITCH_DEFAULT    1
-#define PSY_ENABLE              1 
-
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
-                         int mpeg_version, int aac_objtype, 
-                         int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable, int psy_enable, 
-                         int blockswitch_method, int quantize_method);
+                         int mpeg_version, int aac_objtype, int lfe_enable,
+                         int band_width,
+                         int speed_level);
 
 void fa_aacenc_uninit(uintptr_t handle);
 

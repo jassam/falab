@@ -531,11 +531,29 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
     aacenc_ctx_t *s, *sl, *sr;
     int quant_ok_cnt;
     int outer_loop_count;
+    int outer_loop_count_max;
 
     chn_num = f->cfg.chn_num;
+    switch(f->speed_level) {
+        case 1:
+            break;
+            outer_loop_count_max = 15;
+        case 2:
+            outer_loop_count_max = 15;
+            break;
+        case 3:
+            outer_loop_count_max = 1;
+            break;
+        case 4:
+            outer_loop_count_max = 1;
+            break;
+        default:
+            outer_loop_count_max = 15;
+    }
 
     quant_ok_cnt = 0;
     outer_loop_count = 0;
+
     do {
         /*scale the mdctline firstly using scalefactor*/
         i = 0;
@@ -625,14 +643,16 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                 if (s->chn_info.common_window == 1) {
                     if (!sl->quant_ok || !sr->quant_ok) {
                         if (s->block_type == ONLY_SHORT_BLOCK) {
-                            sl->quant_ok = fa_fix_quant_noise_couple(sl->h_mdctq_short, sr->h_mdctq_short, outer_loop_count,
+                            sl->quant_ok = fa_fix_quant_noise_couple(sl->h_mdctq_short, sr->h_mdctq_short, 
+                                                                     outer_loop_count, outer_loop_count_max,
                                                                      s->num_window_groups, s->window_group_length,
                                                                      sl->scalefactor, sr->scalefactor, 
                                                                      s->x_quant);
                             sr->quant_ok = sl->quant_ok;
                             quant_ok_cnt += sl->quant_ok * 2;
                         } else {
-                            sl->quant_ok = fa_fix_quant_noise_couple(sl->h_mdctq_long, sr->h_mdctq_long, outer_loop_count,
+                            sl->quant_ok = fa_fix_quant_noise_couple(sl->h_mdctq_long, sr->h_mdctq_long, 
+                                                                     outer_loop_count, outer_loop_count_max,
                                                                      s->num_window_groups, s->window_group_length,
                                                                      sl->scalefactor, sr->scalefactor,
                                                                      s->x_quant);
@@ -645,26 +665,30 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                 } else {
                     if (!sl->quant_ok || !sr->quant_ok) {
                         if (sl->block_type == ONLY_SHORT_BLOCK) {
-                            sl->quant_ok = fa_fix_quant_noise_single(sl->h_mdctq_short, outer_loop_count,
+                            sl->quant_ok = fa_fix_quant_noise_single(sl->h_mdctq_short, 
+                                                                     outer_loop_count, outer_loop_count_max,
                                                                      sl->num_window_groups, sl->window_group_length,
                                                                      sl->scalefactor, 
                                                                      sl->x_quant);
                             quant_ok_cnt += sl->quant_ok;
                         } else {
-                            sl->quant_ok = fa_fix_quant_noise_single(sl->h_mdctq_long, outer_loop_count,
+                            sl->quant_ok = fa_fix_quant_noise_single(sl->h_mdctq_long, 
+                                                                     outer_loop_count, outer_loop_count_max,
                                                                      sl->num_window_groups, sl->window_group_length,
                                                                      sl->scalefactor, 
                                                                      sl->x_quant);
                             quant_ok_cnt += sl->quant_ok;
                         }
                         if (sr->block_type == ONLY_SHORT_BLOCK) {
-                            sr->quant_ok = fa_fix_quant_noise_single(sr->h_mdctq_short, outer_loop_count,
+                            sr->quant_ok = fa_fix_quant_noise_single(sr->h_mdctq_short, 
+                                                                     outer_loop_count, outer_loop_count_max,
                                                                      sr->num_window_groups, sr->window_group_length,
                                                                      sr->scalefactor, 
                                                                      sr->x_quant);
                             quant_ok_cnt += sr->quant_ok;
                         } else {
-                            sr->quant_ok = fa_fix_quant_noise_single(sr->h_mdctq_long, outer_loop_count,
+                            sr->quant_ok = fa_fix_quant_noise_single(sr->h_mdctq_long, 
+                                                                     outer_loop_count, outer_loop_count_max,
                                                                      sr->num_window_groups, sr->window_group_length,
                                                                      sr->scalefactor, 
                                                                      sr->x_quant);
@@ -678,13 +702,15 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                 chn = 1;
                 if (!s->quant_ok) {
                     if (s->block_type == ONLY_SHORT_BLOCK) {
-                        s->quant_ok = fa_fix_quant_noise_single(s->h_mdctq_short, outer_loop_count,
+                        s->quant_ok = fa_fix_quant_noise_single(s->h_mdctq_short, 
+                                                                outer_loop_count, outer_loop_count_max,
                                                                 s->num_window_groups, s->window_group_length,
                                                                 s->scalefactor, 
                                                                 s->x_quant);
                         quant_ok_cnt += sr->quant_ok;
                     } else {
-                        s->quant_ok = fa_fix_quant_noise_single(s->h_mdctq_long, outer_loop_count,
+                        s->quant_ok = fa_fix_quant_noise_single(s->h_mdctq_long, 
+                                                                outer_loop_count, outer_loop_count_max,
                                                                 s->num_window_groups, s->window_group_length,
                                                                 s->scalefactor, 
                                                                 s->x_quant);

@@ -110,12 +110,14 @@ void fa_calculate_quant_noise(uintptr_t handle,
                              int common_scalefac, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
                              int *x_quant);
 
-int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count, 
+int  fa_fix_quant_noise_single(uintptr_t handle, 
+                               int outer_loop_count, int outer_loop_count_max,
                                int num_window_groups, int *window_group_length,
                                int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
                                int *x_quant);
 
-int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_loop_count,
+int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, 
+                               int outer_loop_count, int outer_loop_count_max,
                                int num_window_groups, int *window_group_length,
                                int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
                                int scalefactor1[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
