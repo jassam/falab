@@ -160,11 +160,10 @@ static void fa_aacenc_rom_init()
     fa_huffman_rom_init();
 }
 
-
-uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
-                         int mpeg_version, int aac_objtype, 
-                         int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable, int psy_enable,
-                         int blockswitch_method, int quantize_method)
+uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
+                      int mpeg_version, int aac_objtype, int band_width, int speed_level,
+                      int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable, int psy_enable,
+                      int blockswitch_method, int quantize_method)
 {
     int i;
     int bits_average;
@@ -174,6 +173,8 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
     if (bit_rate > 256000 || bit_rate < 32000)
         return (uintptr_t)NULL;
+
+    f->speed_level = speed_level;
 
     /*init rom*/
     fa_aacenc_rom_init();
@@ -196,6 +197,10 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     f->psy_enable      = psy_enable;
 
     f->band_width = get_bandwidth(chn_num, sample_rate, bit_rate);
+    if (band_width >= 5000 && band_width <= 20000) {
+        if (band_width < f->band_width)
+            f->band_width = band_width;
+    }
 
     memset(chn_info_tmp, 0, sizeof(chn_info_t)*MAX_CHANNELS);
     get_aac_chn_info(chn_info_tmp, chn_num, lfe_enable);
@@ -346,6 +351,56 @@ void fa_aacenc_uninit(uintptr_t handle)
     }
 
 }
+
+#define SPEED_LEVEL_MAX 4 
+static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
+                            { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
+                                {0,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},
+                                {0,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},
+                                {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},
+                                {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},
+                            };
+
+uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
+                         int mpeg_version, int aac_objtype, int lfe_enable,
+                         int band_width,
+                         int speed_level)
+{
+
+    int ms_enable;;
+    int tns_enable;
+    int block_switch_enable;
+    int blockswitch_method;
+    int quantize_method;
+    int psy_enable;
+
+    uintptr_t handle;
+
+
+    int speed_index;
+
+    if (speed_level > SPEED_LEVEL_MAX || speed_level < 1)
+        return NULL;
+
+    speed_index = speed_level - 1;
+
+    ms_enable            = speed_level_tab[speed_index][0];
+    tns_enable           = speed_level_tab[speed_index][1];
+    block_switch_enable  = speed_level_tab[speed_index][2];
+    psy_enable           = speed_level_tab[speed_index][3];
+    blockswitch_method   = speed_level_tab[speed_index][4];
+    quantize_method      = speed_level_tab[speed_index][5];
+
+
+    handle = aacenc_init(sample_rate, bit_rate*1000, chn_num,
+                         mpeg_version, aac_objtype, band_width*1000, speed_level,
+                         ms_enable, lfe_enable, tns_enable, block_switch_enable, psy_enable,
+                         blockswitch_method, quantize_method);
+
+    return handle;
+
+}
+
 
 static void zero_cutoff(float *mdct_line, int mdct_line_num, int cutoff_line)
 {

@@ -304,7 +304,8 @@ void fa_calculate_quant_noise(uintptr_t handle,
 
 }
 
-int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count, 
+int  fa_fix_quant_noise_single(uintptr_t handle, 
+                               int outer_loop_count, int outer_loop_count_max,
                                int num_window_groups, int *window_group_length,
                                int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
                                int *x_quant)
@@ -372,7 +373,7 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
             for (sfb = 1; sfb < sfb_num; sfb++) {
                 if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
                     return 1;
-                if (outer_loop_count > 15)
+                if (outer_loop_count > outer_loop_count_max)
                     return 1;
             }
             return 0;
@@ -384,7 +385,8 @@ int  fa_fix_quant_noise_single(uintptr_t handle, int outer_loop_count,
 }
 
 
-int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_loop_count,
+int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, 
+                               int outer_loop_count, int outer_loop_count_max,
                                int num_window_groups, int *window_group_length,
                                int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
                                int scalefactor1[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
@@ -457,14 +459,12 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2, int outer_l
 
     for (gr = 0; gr < num_window_groups; gr++) {
         if ((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
-#if 1 
             for (sfb = 1; sfb < sfb_num; sfb++) {
-                /*if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 60)*/
-                    /*return 1;*/
-                if (outer_loop_count > 15)
+                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
+                    return 1;
+                if (outer_loop_count > outer_loop_count_max)
                     return 1;
             }
-#endif
 
             return 0;
         }

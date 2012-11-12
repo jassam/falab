@@ -74,14 +74,7 @@ int main(int argc, char *argv[])
     unsigned char aac_buf[FRAME_SIZE_MAX];
     int aac_out_len;
 
-    int ms_enable = 0;//MS_DEFAULT;
-    int lfe_enable = LFE_DEFAULT;
-    int tns_enable = TNS_DEFAULT;
-    int block_switch_enable = BLOCK_SWITCH_DEFAULT;
-    int blockswitch_method = BLOCKSWITCH_VAR;
-    /*int quantize_method = QUANTIZE_LOOP;*/
-    int quantize_method = QUANTIZE_FAST;
-    int psy_enable = PSY_ENABLE;
+    int lfe_enable = 0;
 
     ret = fa_parseopt(argc, argv);
     if(ret) return -1;
@@ -103,10 +96,9 @@ int main(int argc, char *argv[])
     chn_num     = fmt.channels;
 
     h_aacenc = fa_aacenc_init(sample_rate, opt_bitrate, chn_num,
-                              2, LOW, 
-                              ms_enable, lfe_enable, tns_enable, block_switch_enable, psy_enable, 
-                              blockswitch_method, quantize_method);
-
+                              2, LOW, lfe_enable,
+                              opt_bandwidth,
+                              opt_speedlevel);
     if (!h_aacenc) {
         printf("initial failed, maybe configuration is not proper!\n");
         return -1;

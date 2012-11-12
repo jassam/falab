@@ -39,9 +39,10 @@
 
 /*global option vaule*/
 char  opt_inputfile[256]  = "ys.wav";
-/*char  opt_inputfile[256]  = "mfs.wav";*/
 char  opt_outputfile[256] = "outaac.aac";
-int   opt_bitrate = 96000;
+int   opt_bitrate = 96;
+int   opt_speedlevel = 1;
+int   opt_bandwidth = 20;
 
 
 
@@ -57,7 +58,9 @@ const char *usage =
 const char *default_set =
 "\n\n"
 "No argument input, run by default settings\n"
-"    --bitrate    [96000]\n"
+"    --bitrate    [96 kbps]\n"
+"    --speedlevel [1]\n"
+"    --bandwidth  [auto]\n"
 "\n\n";
 
 const char *short_help =
@@ -67,6 +70,8 @@ const char *short_help =
 "    -i <inputfile>       Set input filename\n"
 "    -o <outputfile>      Set output filename\n"
 "    -b <bitrate>         Set bitrate\n"
+"    -l <speedlevel>      Set speed level\n"
+"    -w <bandwidth>       Set band width, valid when settings permit\n"
 "    --help               Show this abbreviated help.\n"
 "    --long-help          Show complete help.\n"
 "    --license            for the license terms for falab.\n"
@@ -79,12 +84,16 @@ const char *long_help =
 "    -i <inputfile>       Set input filename\n"
 "    -o <outputfile>      Set output filename\n"
 "    -b                   Set bitrate\n"
+"    -l <speedlevel>      Set speed level\n"
+"    -w <bandwidth>       Set band width, valid when settings permit\n"
 "    --help               Show this abbreviated help.\n"
 "    --long-help          Show complete help.\n"
 "    --license            for the license terms for falab.\n"
 "    --input <inputfile>  Set input filename\n"
 "    --output <outputfile>Set input filename\n"
 "    --bitrate <bitrate>  Set average bitrate\n"
+"    --speedlevel         Set the speed level(1 is slow but good quality, 4 is fastest but less quality)"
+"    --band_width         Set band width, only 5-20 (kHz) valid"
 "\n\n";
 
 const char *license =
@@ -125,7 +134,9 @@ static void fa_printopt()
     FA_PRINT("NOTE: configuration is below\n");
     FA_PRINT("NOTE: inputfile = %s\n", opt_inputfile);
     FA_PRINT("NOTE: outputfile= %s\n", opt_outputfile);
-    FA_PRINT("NOTE: bitrate   = %d\n", opt_bitrate);
+    FA_PRINT("NOTE: bitrate   = %d kbps\n", opt_bitrate);
+    FA_PRINT("NOTE: speed lev = %d\n", opt_speedlevel);
+    FA_PRINT("NOTE: band width= %d kHz\n", opt_bandwidth);
 }
 
 /**
@@ -147,10 +158,21 @@ static int fa_checkopt(int argc)
 
     }
 
-    if(opt_bitrate > 256000 || opt_bitrate < 32000)  {
+    if(opt_bitrate > 256 || opt_bitrate < 32)  {
         FA_PRINT_ERR("FAIL: the bitrate is too large or too short, should be in [32000, 256000]\n");
         return -1;
     }
+
+    if(opt_speedlevel > 4 || opt_speedlevel < 1)  {
+        FA_PRINT_ERR("FAIL: out of range, should be in [1,4]\n");
+        return -1;
+    }
+ 
+    if(opt_bandwidth > 20 || opt_bandwidth < 5)  {
+        FA_PRINT_ERR("FAIL: out of range, should be in [5,20] kHz\n");
+        return -1;
+    }
+         
 
     FA_PRINT("SUCC: check option ok\n");
     return 0;
@@ -172,7 +194,7 @@ int fa_parseopt(int argc, char *argv[])
     const char *die_msg = NULL;
 
     while (1) {
-        static char * const     short_options = "hHLi:o:b:";  
+        static char * const     short_options = "hHLi:o:b:l:w:";  
         static struct option    long_options[] = 
                                 {
                                     { "help"       , 0, 0, 'h'}, 
@@ -181,6 +203,8 @@ int fa_parseopt(int argc, char *argv[])
                                     { "input"      , 1, 0, 'i'},                 
                                     { "output"     , 1, 0, 'o'},                 
                                     { "bitrate"    , 1, 0, 'b'},        
+                                    { "speedlevel" , 1, 0, 'l'},        
+                                    { "bandwidth"  , 1, 0, 'w'},        
                                     {0             , 0, 0,  0},
                                 };
         int c = -1;
@@ -237,6 +261,24 @@ int fa_parseopt(int argc, char *argv[])
                           if (sscanf(optarg, "%u", &i) > 0) {
                               opt_bitrate = i;
                               FA_PRINT("SUCC: set bitrate = %u\n", opt_bitrate);
+                          }
+                          break;
+                      }
+
+            case 'l': {
+                          unsigned int i;
+                          if (sscanf(optarg, "%u", &i) > 0) {
+                              opt_speedlevel = i;
+                              FA_PRINT("SUCC: set speedlevel = %u\n", opt_speedlevel);
+                          }
+                          break;
+                      }
+
+            case 'w': {
+                          unsigned int i;
+                          if (sscanf(optarg, "%u", &i) > 0) {
+                              opt_bandwidth = i;
+                              FA_PRINT("SUCC: set band_width = %u\n", opt_bandwidth);
                           }
                           break;
                       }
