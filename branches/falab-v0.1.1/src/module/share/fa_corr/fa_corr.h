@@ -41,6 +41,14 @@ void  fa_crosscorr_hp(double *x, double *y, int n, int p, double *r);
 
 float fa_corr_cof(float *a, float *b, int len);
 
+
+//fast mode can not support hp(double type)
+typedef unsigned uintptr_t;
+uintptr_t fa_autocorr_fast_init(int n);
+void  fa_autocorr_fast_uninit(uintptr_t handle);
+void  fa_autocorr_fast(uintptr_t handle, float *x, int n, int p, float *r);
+
+
 #ifdef __cplusplus 
 }
 #endif  

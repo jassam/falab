@@ -26,9 +26,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <memory.h>
 #include <math.h>
 #include "fa_corr.h"
-
 /*
  *   p is the order
  *   WARN: p order , the r is the (p+1) demension
@@ -111,7 +111,8 @@ float fa_corr_cof(float *a, float *b, int len)
 	return rab;
 }
 
-int nextpow2(int n)
+
+static int nextpow2(int n)
 {
     int level;
     int n1;
@@ -125,4 +126,80 @@ int nextpow2(int n)
     return level;
 }
 
+
+typedef struct _fa_autocorr_fast_t {
+    uintptr_t h_fft;
+
+    int   fft_len;
+	float *fft_buf1;
+    float *fft_buf2;
+} fa_autocorr_fast_t;
+
+uintptr_t fa_autocorr_fast_init(int n)
+{
+    int level;
+
+    fa_autocorr_fast_t *f = (fa_autocorr_fast_t *)malloc(sizeof(fa_autocorr_fast_t));
+
+    level = nextpow2(2*n-1);
+    /*printf("level = %d\n", level);*/
+
+    f->fft_len  = (1<<level);
+	f->h_fft    = fa_fft_init(f->fft_len);
+    f->fft_buf1 = (float *)malloc(sizeof(float)*f->fft_len*2);
+    f->fft_buf2 = (float *)malloc(sizeof(float)*f->fft_len*2);
+    memset(f->fft_buf1, 0, sizeof(float)*f->fft_len*2);
+    memset(f->fft_buf2, 0, sizeof(float)*f->fft_len*2);
+ 
+    return (uintptr_t)f;
+}
+
+void      fa_autocorr_fast_uninit(uintptr_t handle)
+{
+    fa_autocorr_fast_t *f = (fa_autocorr_fast_t *)handle;
+
+    if (f) {
+        if (f->h_fft) 
+            fa_fft_uninit(f->h_fft);
+
+        if (f->fft_buf1) {
+            free(f->fft_buf1);
+            f->fft_buf1 = NULL;
+        }
+
+        if (f->fft_buf2) {
+            free(f->fft_buf2);
+            f->fft_buf2 = NULL;
+        }
+
+        free(f);
+        f = NULL;
+    }
+}
+
+void  fa_autocorr_fast(uintptr_t handle, float *x, int n, int p, float *r)
+{
+    fa_autocorr_fast_t *f = (fa_autocorr_fast_t *)handle;
+    int fft_len = f->fft_len;
+    int i;
+
+    memset(f->fft_buf1, 0, sizeof(float)*f->fft_len*2);
+    for (i = 0; i < n; i++) {
+        f->fft_buf1[2*i]   = x[i];
+        f->fft_buf1[2*i+1] = 0.0;
+    }
+    fa_fft(f->h_fft, f->fft_buf1);
+
+    memset(f->fft_buf2, 0, sizeof(float)*f->fft_len*2);
+    for (i = 0; i < n; i++) {
+        f->fft_buf2[2*i]   = f->fft_buf1[2*i]   * f->fft_buf1[2*i]  + 
+                             f->fft_buf1[2*i+1] * f->fft_buf1[2*i+1];
+        f->fft_buf2[2*i+1] = 0.0;
+    }
+    fa_ifft(f->h_fft, f->fft_buf2);
+    for (i = 0; i <= p; i++) {
+        r[i] = f->fft_buf2[2*i] * 2;
+        /*printf("r_fast[%d]=%f\n", i, r[i]);*/
+    }
+}
 
