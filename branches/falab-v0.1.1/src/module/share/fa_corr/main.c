@@ -31,10 +31,13 @@
 #include <memory.h>
 #include "fa_corr.h"
 #include "fa_fft.h"
+#include "fa_timeprofile.h"
 
 
-#define P      14
-#define LENGTH 200
+#define P      14   //256 //14
+#define LENGTH 256  //256 //1024 
+
+#define TEST_TIME_CNT 50000
 
 int main(int argc, char *argv[])
 {
@@ -61,16 +64,32 @@ int main(int argc, char *argv[])
 
 
     fa_autocorr_hp(x1, LENGTH, p, r1);
-    fa_autocorr(x, LENGTH, p, r);
+
+
+    FA_CLOCK_START(1);
+    for (i = 0; i < TEST_TIME_CNT; i++)
+        fa_autocorr(x, LENGTH, p, r);
+    FA_CLOCK_END(1);
+    FA_CLOCK_COST(1);
 
     for(i = 0; i <= p; i++) 
         printf("r[%d]=%f, r1[%d]=%f\n", i, r[i], i, r1[i]);
     printf("\n");
 
     h_acfast = fa_autocorr_fast_init(LENGTH);
-    fa_autocorr_fast(h_acfast, x, LENGTH, p, r2);
+
+
+    FA_CLOCK_START(2);
+    for (i = 0; i < TEST_TIME_CNT; i++)
+        fa_autocorr_fast(h_acfast, x, LENGTH, p, r2);
+    FA_CLOCK_END(2);
+    FA_CLOCK_COST(2);
+
     for (i = 0; i <= p; i++) 
         printf("r_fast[%d]=%f, r1[%d]=%f\n", i, r2[i], i, r1[i]);
+
+    FA_GET_TIME_COST(1);
+    FA_GET_TIME_COST(2);
 
     return 0;
 }
