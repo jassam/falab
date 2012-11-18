@@ -33,7 +33,6 @@
 #include "fa_fft.h"
 
 
-/*#define USE_CORR_HP*/
 #define P      14
 #define LENGTH 200
 
@@ -48,12 +47,8 @@ int main(int argc, char *argv[])
     double x1[LENGTH];         
     double r1[P+1];
 
-    int fft_len;
-    int level;
-	float fft_inbuf[2*512];
-    float fft_inbuf1[2*512];
-	uintptr_t handle;
-	uintptr_t handle1;
+    float r2[P+1];
+    uintptr_t h_acfast;
 
 
     p = P;
@@ -72,31 +67,10 @@ int main(int argc, char *argv[])
         printf("r[%d]=%f, r1[%d]=%f\n", i, r[i], i, r1[i]);
     printf("\n");
 
-
-    level = nextpow2(2*LENGTH-1);
-    printf("level = %d\n", level);
-
-    fft_len = (1<<level);
-
-	handle = fa_fft_init(fft_len);
-	handle1 = fa_fft_init(fft_len);
-    memset(fft_inbuf, 0, sizeof(fft_inbuf));
-    for (i = 0; i < LENGTH; i++) {
-        fft_inbuf[2*i]   = x[i];
-        fft_inbuf[2*i+1] = 0;
-    }
-
-	fa_fft(handle, fft_inbuf);
-
-    memset(fft_inbuf1, 0, sizeof(fft_inbuf1));
-    for (i = 0; i < LENGTH; i++) {
-        fft_inbuf1[2*i] = fft_inbuf[2*i]*fft_inbuf[2*i] + fft_inbuf[2*i+1]*fft_inbuf[2*i+1];
-        fft_inbuf1[2*i+1] = 0;
-    }
-    fa_ifft(handle1, fft_inbuf1);
-
-    for (i = 0; i < p; i++) 
-        printf("r_fast[%d]=%f, r1[%d]=%f\n", i, fft_inbuf1[2*i]*2, i, r1[i]);
+    h_acfast = fa_autocorr_fast_init(LENGTH);
+    fa_autocorr_fast(h_acfast, x, LENGTH, p, r2);
+    for (i = 0; i <= p; i++) 
+        printf("r_fast[%d]=%f, r1[%d]=%f\n", i, r2[i], i, r1[i]);
 
     return 0;
 }
