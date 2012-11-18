@@ -29,6 +29,8 @@
 #include <memory.h>
 #include <math.h>
 #include "fa_corr.h"
+#include "fa_fft.h" 
+
 /*
  *   p is the order
  *   WARN: p order , the r is the (p+1) demension
@@ -141,7 +143,8 @@ uintptr_t fa_autocorr_fast_init(int n)
 
     fa_autocorr_fast_t *f = (fa_autocorr_fast_t *)malloc(sizeof(fa_autocorr_fast_t));
 
-    level = nextpow2(2*n-1);
+    /*level = nextpow2(2*n-1);*/
+    level = nextpow2(2*n);
     /*printf("level = %d\n", level);*/
 
     f->fft_len  = (1<<level);
@@ -177,10 +180,20 @@ void      fa_autocorr_fast_uninit(uintptr_t handle)
     }
 }
 
+
+
+/*
+ *   ---------------------WARN!! VERY IMPORTANT-----------------------------------------
+    this fast autocorr algorithm is faster than the ordinary correlation function 
+    WHEN the n is large(maybe > 128) and the order p is close to the length n!! 
+    the speed is obviously raise up when this conditions is satisfied.
+    THUS, when you use small length correlation and low order p , I strongly suggested
+    that you use the ordinary method fa_autocorr function to calculate the relation 
+    matrix R
+*/
 void  fa_autocorr_fast(uintptr_t handle, float *x, int n, int p, float *r)
 {
     fa_autocorr_fast_t *f = (fa_autocorr_fast_t *)handle;
-    int fft_len = f->fft_len;
     int i;
 
     memset(f->fft_buf1, 0, sizeof(float)*f->fft_len*2);

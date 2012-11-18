@@ -92,6 +92,9 @@ void      fa_lpc_uninit(uintptr_t handle)
         f->acof = NULL;
         free(f->kcof);
         f->kcof = NULL;
+
+        free(f);
+        f = NULL;
     }
 }
 
