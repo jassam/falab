@@ -43,7 +43,9 @@ int main(int argc, char *argv[])
 #ifdef USE_LPC_HP
     double x[LENGTH];         
     double lpc_cof[P+1];
+    double kcof[P+1];
     double err;
+    double gain;
 
     double xp[LENGTH];
     double err_real;
@@ -58,7 +60,9 @@ int main(int argc, char *argv[])
 #else
     float x[LENGTH];         
     float lpc_cof[P+1];
+    float kcof[P+1];
     float err;
+    float gain;
 
     float xp[LENGTH];
     float err_real;
@@ -75,13 +79,13 @@ int main(int argc, char *argv[])
 
     h_lpc = fa_lpc_init(P);
 
-    fa_lpc(h_lpc, x, LENGTH, lpc_cof, &err);
+    gain = fa_lpc(h_lpc, x, LENGTH, lpc_cof, kcof, &err);
 
     for (i = 0; i <= P; i++) {
-        printf("lpc_cof[%d] = %f\n", i, lpc_cof[i]);
+        printf("lpc_cof[%d] = %f, kcof[%d] = %f\n", i, lpc_cof[i], i, kcof[i]);
     }
     printf("\n");
-    printf("err=%f\n", err);
+    printf("err=%f, gain=%f\n", err, gain);
 
 
 #ifdef USE_LPC_HP

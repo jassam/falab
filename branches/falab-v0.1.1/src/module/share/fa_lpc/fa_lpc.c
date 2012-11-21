@@ -100,10 +100,11 @@ void      fa_lpc_uninit(uintptr_t handle)
 
 #ifdef USE_LPC_HP 
 
-int fa_lpc(uintptr_t handle, double *x, int x_len, double *lpc_cof, double *err)
+double fa_lpc(uintptr_t handle, double *x, int x_len, double *lpc_cof, double *kcof, double *err)
 {
     fa_lpc_t *f = (fa_lpc_t *)handle;
     int k;
+    double gain;
 
     /*caculate autorelation matrix*/
     fa_autocorr_hp(x, x_len, f->p, f->r);
@@ -112,19 +113,24 @@ int fa_lpc(uintptr_t handle, double *x, int x_len, double *lpc_cof, double *err)
     fa_levinson_hp(f->r, f->p, f->acof, f->kcof, &(f->err));
 
     *err = f->err / x_len;
-    for (k = 0; k <= f->p; k++)
+    for (k = 0; k <= f->p; k++) {
         lpc_cof[k] = f->acof[k];
+        kcof[k]    = f->kcof[k];
+    }
 
-    return 0;
+    gain = f->err / f->r[0];
+
+    return gain;
 }
 
 
 #else 
 
-int fa_lpc(uintptr_t handle, float *x, int x_len, float *lpc_cof, float *err)
+float fa_lpc(uintptr_t handle, float *x, int x_len, float *lpc_cof, float *kcof, float *err)
 {
     fa_lpc_t *f = (fa_lpc_t *)handle;
     int k;
+    float gain;
 
     /*caculate autorelation matrix*/
     fa_autocorr(x, x_len, f->p, f->r);
@@ -133,10 +139,15 @@ int fa_lpc(uintptr_t handle, float *x, int x_len, float *lpc_cof, float *err)
     fa_levinson(f->r, f->p, f->acof, f->kcof, &(f->err));
 
     *err = f->err / x_len;
-    for (k = 0; k <= f->p; k++)
+    for (k = 0; k <= f->p; k++) {
         lpc_cof[k] = f->acof[k];
+        kcof[k]    = f->kcof[k];
+    }
 
-    return 0;
+    gain = f->err / f->r[0];
+    /*printf("\nerr=%f, r[0]=%f, gain=%f\n", f->err, f->r[0], gain);*/
+
+    return gain;
 }
 
 #endif
