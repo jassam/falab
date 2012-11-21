@@ -186,6 +186,7 @@ typedef struct _aacenc_ctx_t{
     TnsInfo tnsInfo;
     LtpInfo ltpInfo;
     BwpInfo bwpInfo;
+    uintptr_t h_tns;
 
     int max_pred_sfb;
     int pred_global_flag;

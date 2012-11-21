@@ -41,6 +41,7 @@
 #include "fa_aacms.h"
 #include "fa_aacquant.h"
 #include "fa_huffman.h"
+#include "fa_tns.h"
 
 #ifndef FA_MIN
 #define FA_MIN(a,b)  ( (a) < (b) ? (a) : (b) )
@@ -277,6 +278,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         f->ctx[i].h_aacpsy        = fa_aacpsy_init(sample_rate);
         f->ctx[i].h_aac_analysis  = fa_aacfilterbank_init();
+
+        f->ctx[i].h_tns           = fa_tns_init(f->cfg.mpeg_version, f->cfg.aac_objtype, f->cfg.sample_rate_index);
 
         memcpy(&(f->ctx[i].chn_info), &(chn_info_tmp[i]), sizeof(chn_info_t));
         f->ctx[i].chn_info.common_window = 0;
