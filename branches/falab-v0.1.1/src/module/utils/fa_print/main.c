@@ -36,11 +36,21 @@ int main(int argc, char *argv[])
 {  
     int ret;
 
+#ifdef __GNUC__
     FA_PRINT_INIT(FA_PRINT_ENABLE,
                   FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,
                   /*FA_PRINT_FILE_DISABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,*/
                   FA_PRINT_PID_ENABLE,
-                  "/tmp", "testlog", "TS");
+                  /*"/tmp", "testlog", "TS", 1);*/
+                  "./log/", "testlog", "TS", 3);
+#else 
+    FA_PRINT_INIT(FA_PRINT_ENABLE,
+                  FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,
+                  /*FA_PRINT_FILE_DISABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,*/
+                  FA_PRINT_PID_ENABLE,
+                 ".\\log\\", "testlog", "TS", 1);
+                  /*"G:\\Project\\rsmidware\\fa_print\\log", "testlog", "TS", 1);*/
+#endif
 
     ret = fa_parseopt(argc, argv);
     if(ret)
