@@ -40,9 +40,9 @@ uintptr_t fa_lpc_init(int p);
 void      fa_lpc_uninit(uintptr_t handle);
 
 #ifdef USE_LPC_HP 
-int fa_lpc(uintptr_t handle, double *x, int x_len, double *lpc_cof, double *err);
+double fa_lpc(uintptr_t handle, double *x, int x_len, double *lpc_cof, double *kcof, double *err);
 #else 
-int fa_lpc(uintptr_t handle, float *x, int x_len, float *lpc_cof, float *err);
+float fa_lpc(uintptr_t handle, float *x, int x_len, float *lpc_cof, float *kcof, float *err);
 #endif
  
 
