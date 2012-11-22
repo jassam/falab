@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "fa_tns.h"
-#include "fa_aacenc.h"
 #include "fa_aaccfg.h"
 #include "fa_mdctquant.h"
 #include "fa_lpc.h"
@@ -40,49 +40,7 @@ static int tns_maxband_short[12] =
 #define TNS_MAX_ORDER_LONG_LC     12
 #define TNS_MAX_ORDER_SHORT       7
 
-
-#define TNS_MAX_ORDER 20
-#define DEF_TNS_GAIN_THRESH 1.4
-#define DEF_TNS_COEFF_THRESH 0.1
-#define DEF_TNS_COEFF_RES 4
-#define DEF_TNS_RES_OFFSET 3
-#define LEN_TNS_NFILTL 2
-#define LEN_TNS_NFILTS 1
-
-
-typedef struct _tns_flt_t{
-    int order;                           /* Filter order */
-    int direction;                       /* Filtering direction */
-    int coef_compress;                    /* Are coeffs compressed? */
-    int length;                          /* Length, in bands */
-    float acof[TNS_MAX_ORDER+1];     /* AR Coefficients */
-    float kcof[TNS_MAX_ORDER+1];     /* Reflection Coefficients */
-    int   index[TNS_MAX_ORDER+1];          /* Coefficient indices */
-} tns_flt_t;
-
-typedef struct _tns_win_t{
-    int num_flt;                             /* Number of filters */
-    int coef_resolution;                         /* Coefficient resolution */
-    tns_flt_t tns_flt[1<<LEN_TNS_NFILTL]; /* TNS filters */
-} tns_win_t;
-
-typedef struct _tns_info_t{
-
-    int tns_data_present;
-    int tns_minband_long;
-    int tns_minband_short;
-    int tns_maxband_long;
-    int tns_maxband_short;
-    int tns_maxorder_long;
-    int tns_maxorder_short;
-    tns_win_t tns_win[8];
-
-    uintptr_t h_lpc_short;
-    uintptr_t h_lpc_long;
-
-} tns_info_t;
-
-    
+   
 uintptr_t fa_tns_init(int mpeg_version, int objtype, int sr_index)
 {
     unsigned int channel;
@@ -162,7 +120,18 @@ static void quant_reflection_cof(int order, int cof_res, float *kcof, int *index
 
     /* Quantize and inverse quantize */
     for (i = 1;i <= order; i++) {
+#if 0
         index[i] = (int)(0.5+(asin(kcof[i])*((kcof[i]>=0)?iqfac:iqfac_m)));
+#else 
+        float tmp;
+        int   tmp_int;
+        tmp = ((asin(kcof[i])*((kcof[i]>=0)?iqfac:iqfac_m)));
+        tmp_int = (int)(floor(tmp));
+        if ((tmp-tmp_int) > 0.5) 
+            index[i] = tmp_int + 1;
+        else 
+            index[i] = tmp_int;
+#endif
         kcof[i]  = sin((float)index[i]/((index[i]>=0)?iqfac:iqfac_m));
     }
 }
@@ -172,7 +141,7 @@ static void kcof2acof(int order, float * kcof, float * acof)
 {
     float atmp[TNS_MAX_ORDER+2];
     int   i,p;
-
+#if 0
     acof[0] = 1.0;
     atmp[0] = 1.0;
     for (p = 1; p <= order; p++) {
@@ -184,7 +153,66 @@ static void kcof2acof(int order, float * kcof, float * acof)
             acof[i]=atmp[i];
         }
     }
+#else 
+    acof[0] = 1.0;
+    atmp[0] = 1.0;
+    for (p = 1; p <= order; p++) {
+        acof[p] = 0.0;
+        for (i = 1; i < p; i++) {
+            atmp[i] = acof[i] + kcof[p-1]*acof[p-i];
+        }
+        for (i = 1; i < p; i++) {
+            acof[i]=atmp[i];
+        }
+        acof[p] = kcof[p-1];
+    }
+
+#endif
 }
+
+
+static void tns_ma_filter(float *spec, int length, tns_flt_t *flt)
+{
+    int i, j, k;
+    int order = flt->order;
+    float *acof = flt->acof;
+    float tmp[1024];
+
+    memset(tmp, 0, 1024*sizeof(float));
+
+    if (flt->direction) {
+        tmp[length-1] = spec[length-1];
+        for (i = length - 2; i > (length-1-order); i--) {
+            tmp[i] = spec[i];
+            k++;
+            for (j = 1; j <= k; j++)
+                spec[i] += tmp[i+j] * acof[j];
+        }
+
+        for (i = length-1-order; i >= 0; i--) {
+            tmp[i] = spec[i];
+            for (j = 1; j <= order; j++) 
+                spec[i] += tmp[i+j] * acof[j];
+        }
+    } else {
+        tmp[0] = spec[0];
+        for (i = 1; i < order; i++) {
+            tmp[i] = spec[i];
+            for (j = 1; j <= i; j++)
+                spec[i] += tmp[i-j] * acof[j];
+        }
+
+        for (i = order; i < length; i++) {
+            tmp[i] = spec[i];
+            for (j = 1; j < order; j++)
+                spec[i] += tmp[i-j] * acof[j];
+        }
+    }
+
+}
+
+
+
 
 void fa_tns_encode_frame(aacenc_ctx_t *f)
 {
@@ -210,6 +238,11 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
 
     /*initial the band parameters*/
     if (f->block_type == ONLY_SHORT_BLOCK) {
+
+        s->tns_data_present = 0;
+
+        return ;
+
         num_windows = 8;
         window_len  = 128;
 
@@ -235,6 +268,7 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
 
         start = s->tns_minband_long;
         end   = max_sfb;
+        band_len = end -start;
         order = s->tns_maxorder_long;
         start = FA_MIN(start, s->tns_maxband_long);
         end   = FA_MAX(end  , s->tns_maxband_long);
@@ -245,7 +279,7 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
     end   = FA_MIN(end  , max_sfb);
     start = FA_MAX(start, 0);
     end   = FA_MAX(end  , 0);
-    band_len = end -start;
+    /*band_len = end -start;*/
 
     s->tns_data_present = 0;
 
@@ -281,38 +315,12 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
             real_order = truncate_cof(order, DEF_TNS_COEFF_THRESH, kcof);
             tns_flt->order = real_order;
             kcof2acof(real_order, kcof, acof);
+            tns_ma_filter(&(mdct_line[mdct_line_index]), mdct_line_len, tns_flt);
         }
 
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

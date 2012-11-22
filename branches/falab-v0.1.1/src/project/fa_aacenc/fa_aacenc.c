@@ -552,6 +552,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_calculate_scalefactor_win(s, xmin);
         }
 
+        fa_tns_encode_frame(s);
+
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/
         mdctline_reorder(s, xmin);
 
