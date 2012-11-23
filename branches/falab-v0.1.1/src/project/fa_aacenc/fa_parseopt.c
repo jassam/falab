@@ -41,7 +41,7 @@
 char  opt_inputfile[256]  = "ys.wav";
 char  opt_outputfile[256] = "outaac.aac";
 int   opt_bitrate = 96;
-int   opt_speedlevel = 1;
+int   opt_speedlevel = 2;
 int   opt_bandwidth = 20;
 
 
@@ -59,7 +59,7 @@ const char *default_set =
 "\n\n"
 "No argument input, run by default settings\n"
 "    --bitrate    [96 kbps]\n"
-"    --speedlevel [1]\n"
+"    --speedlevel [2]\n"
 "    --bandwidth  [auto]\n"
 "\n\n";
 
@@ -70,7 +70,7 @@ const char *short_help =
 "    -i <inputfile>       Set input filename\n"
 "    -o <outputfile>      Set output filename\n"
 "    -b <bitrate>         Set bitrate\n"
-"    -l <speedlevel>      Set speed level\n"
+"    -l <speedlevel>      Set speed level(1~6)\n"
 "    -w <bandwidth>       Set band width, valid when settings permit\n"
 "    --help               Show this abbreviated help.\n"
 "    --long-help          Show complete help.\n"
@@ -84,7 +84,7 @@ const char *long_help =
 "    -i <inputfile>       Set input filename\n"
 "    -o <outputfile>      Set output filename\n"
 "    -b                   Set bitrate\n"
-"    -l <speedlevel>      Set speed level\n"
+"    -l <speedlevel>      Set speed level(1~6)\n"
 "    -w <bandwidth>       Set band width, valid when settings permit\n"
 "    --help               Show this abbreviated help.\n"
 "    --long-help          Show complete help.\n"
@@ -136,7 +136,6 @@ static void fa_printopt()
     FA_PRINT("NOTE: outputfile= %s\n", opt_outputfile);
     FA_PRINT("NOTE: bitrate   = %d kbps\n", opt_bitrate);
     FA_PRINT("NOTE: speed lev = %d\n", opt_speedlevel);
-    FA_PRINT("NOTE: band width= %d kHz\n", opt_bandwidth);
 }
 
 /**
@@ -163,8 +162,8 @@ static int fa_checkopt(int argc)
         return -1;
     }
 
-    if(opt_speedlevel > 4 || opt_speedlevel < 1)  {
-        FA_PRINT_ERR("FAIL: out of range, should be in [1,4]\n");
+    if(opt_speedlevel > 6 || opt_speedlevel < 1)  {
+        FA_PRINT_ERR("FAIL: out of range, should be in [1,6]\n");
         return -1;
     }
  
