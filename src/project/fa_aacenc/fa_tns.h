@@ -11,7 +11,7 @@ extern "C"
 typedef unsigned uintptr_t;
 
 #define TNS_MAX_ORDER 20
-#define DEF_TNS_GAIN_THRESH 1.4
+#define DEF_TNS_GAIN_THRESH  15 //1.4
 #define DEF_TNS_COEFF_THRESH 0.1
 #define DEF_TNS_COEFF_RES 4
 #define DEF_TNS_RES_OFFSET 3

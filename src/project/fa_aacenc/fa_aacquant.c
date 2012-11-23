@@ -547,6 +547,12 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
         case 4:
             outer_loop_count_max = 1;
             break;
+        case 5:
+            outer_loop_count_max = 1;
+            break;
+        case 6:
+            outer_loop_count_max = 1;
+            break;
         default:
             outer_loop_count_max = 15;
     }
@@ -604,11 +610,11 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
 
         /*inner loop, search common_scalefac to fit the available_bits*/
 
-        FA_CLOCK_START(3);
+        /*FA_CLOCK_START(3);*/
         /*quant_innerloop(f, outer_loop_count);*/
         quant_innerloop_fast(f, outer_loop_count);
-        FA_CLOCK_END(3);
-        FA_CLOCK_COST(3);
+        /*FA_CLOCK_END(3);*/
+        /*FA_CLOCK_COST(3);*/
 
 
         /*calculate quant noise */
@@ -763,10 +769,10 @@ void fa_quantize_loop(fa_aacenc_ctx_t *f)
 
     /*outer loop*/
 
-    FA_CLOCK_START(2);
+    /*FA_CLOCK_START(2);*/
     quant_outerloop(f);
-    FA_CLOCK_END(2);
-    FA_CLOCK_COST(2);
+    /*FA_CLOCK_END(2);*/
+    /*FA_CLOCK_COST(2);*/
 
 #if  0 
     {
@@ -834,7 +840,7 @@ void  fa_fastquant_calculate_sfb_avgenergy(aacenc_ctx_t *s)
 void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
 {
     int k,i,j;
-    float globalthr = 132./10;//s->quality;
+ //   float globalthr = 132./10;//s->quality;
 
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
     fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
@@ -951,7 +957,7 @@ void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
 
             xmin[0][i] = 1.12 * thr * globalthr;
 #else 
-            xmin[k][i] = energy/20;
+            xmin[0][i] = energy/20;
 #endif
 
         }
@@ -1128,10 +1134,10 @@ void fa_quantize_fast(fa_aacenc_ctx_t *f)
 
     calculate_start_common_scalefac(f);
 
-    FA_CLOCK_START(2);
+    /*FA_CLOCK_START(2);*/
     quant_outerloop(f);
-    FA_CLOCK_END(2);
-    FA_CLOCK_COST(2);
+    /*FA_CLOCK_END(2);*/
+    /*FA_CLOCK_COST(2);*/
 
 #if  0 
     {

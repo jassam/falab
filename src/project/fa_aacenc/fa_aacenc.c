@@ -121,7 +121,7 @@ static int get_bandwidth(int chn, int sample_rate, int bit_rate)
 
     if (bandwidth == 0)
         bandwidth = 20000;
-    printf("bandwidth = %d\n", bandwidth);
+    /*printf("bandwidth = %d\n", bandwidth);*/
     assert(bandwidth > 0 && bandwidth <= 20000);
 
     return bandwidth;
@@ -198,10 +198,15 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
     f->psy_enable      = psy_enable;
 
     f->band_width = get_bandwidth(chn_num, sample_rate, bit_rate);
+    if (speed_level > 5) {
+        if (f->band_width > 10000)
+            f->band_width = 10000;
+    }
     if (band_width >= 5000 && band_width <= 20000) {
         if (band_width < f->band_width)
             f->band_width = band_width;
     }
+    printf("band width= %d kHz\n", f->band_width);
 
     memset(chn_info_tmp, 0, sizeof(chn_info_t)*MAX_CHANNELS);
     get_aac_chn_info(chn_info_tmp, chn_num, lfe_enable);
@@ -355,13 +360,15 @@ void fa_aacenc_uninit(uintptr_t handle)
 
 }
 
-#define SPEED_LEVEL_MAX 4 
+#define SPEED_LEVEL_MAX  6 
 static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
+                                {0,       1,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},
                                 {0,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},
                                 {0,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},
                                 {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},
                                 {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},
+                                {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //same, but bw=10k
                             };
 
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
@@ -489,11 +496,16 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     float *sample_buf;
     float xmin[8][FA_SWB_NUM_MAX];
     int ms_enable;
+    int tns_enable;
     int block_switch_en;
     int psy_enable;
+    int speed_level;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)handle;
     aacenc_ctx_t *s;
 
+    speed_level = f->speed_level;
+
+    tns_enable  = f->cfg.tns_enable;
     ms_enable   = f->cfg.ms_enable;
     chn_num     = f->cfg.chn_num;
     /*assert(inlen == chn_num*AAC_FRAME_LEN*2);*/
@@ -518,7 +530,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         /*block switch */
         if (block_switch_en) {
             f->do_blockswitch(s);
-#if 1 
+#if 0 
             if (s->block_type != 0)
                 printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
 #endif
@@ -547,12 +559,15 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
             fa_calculate_scalefactor_win(s, xmin);
         } else {
-            fa_fastquant_calculate_sfb_avgenergy(s);
-            fa_fastquant_calculate_xmin(s, xmin);
-            fa_calculate_scalefactor_win(s, xmin);
+            if (speed_level < 4) {
+                fa_fastquant_calculate_sfb_avgenergy(s);
+                fa_fastquant_calculate_xmin(s, xmin);
+                fa_calculate_scalefactor_win(s, xmin);
+            }
         }
 
-        fa_tns_encode_frame(s);
+        if (tns_enable)
+            fa_tns_encode_frame(s);
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/
         mdctline_reorder(s, xmin);

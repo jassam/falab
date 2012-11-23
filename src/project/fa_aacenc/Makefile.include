@@ -53,7 +53,7 @@ ifeq ($(DEBUG), Y)
 else
 	CFLAGS += -O3	
 #	CFLAGS += -O2	
-	CFLAGS += -Wall
+	#CFLAGS += -Wall
 	STRIP = strip
 endif
 

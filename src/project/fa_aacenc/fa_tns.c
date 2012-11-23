@@ -283,6 +283,7 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
 
     s->tns_data_present = 0;
 
+
     for (w = 0; w < num_windows; w++) {
         tns_win_t * tns_win = &(s->tns_win[w]);
         tns_flt_t * tns_flt = tns_win->tns_flt;
@@ -295,6 +296,12 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
         int   mdct_line_index;
         int   mdct_line_len;
 
+/*#define DEBUG_ACOF*/
+#ifdef DEBUG_ACOF
+        float atmp[15];
+        int   ordertmp;
+#endif
+
         tns_win->num_flt = 0;
         tns_win->coef_resolution = DEF_TNS_COEFF_RES;
         mdct_line_index = w*window_len + swb_low[start];
@@ -304,6 +311,8 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
 
         if (gain > DEF_TNS_GAIN_THRESH) {
             int real_order;
+            
+            printf("\ngain=%f\n", gain);
 
             tns_win->num_flt++;
             s->tns_data_present = 1;
@@ -311,6 +320,11 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
             tns_flt->coef_compress = 0;
             tns_flt->length = band_len;
 
+#ifdef DEBUG_ACOF
+            ordertmp = order;
+            memset(atmp, 0, sizeof(float)*15);
+            kcof2acof(ordertmp, kcof, atmp);
+#endif
             quant_reflection_cof(order, DEF_TNS_COEFF_RES, kcof, tns_flt->index);
             real_order = truncate_cof(order, DEF_TNS_COEFF_THRESH, kcof);
             tns_flt->order = real_order;

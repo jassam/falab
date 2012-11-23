@@ -149,10 +149,7 @@ float fa_lpc(uintptr_t handle, float *x, int x_len, float *lpc_cof, float *kcof,
         gain = f->r[0] / f->err;
     else 
         gain = 0.0;
-/*
-    if (gain > 1.4)
-        printf("\nerr=%f, r[0]=%f, gain=%f\n", f->err, f->r[0], gain);
-*/
+
     return gain;
 }
 

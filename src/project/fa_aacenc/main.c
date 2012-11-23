@@ -35,11 +35,11 @@ TODO:
     lfe                                no schecdule           no(easy, need test)
     high frequency optimize            done                   yes(bandwith limited now)
     bitrate control fixed              done                   yes(constant bitrate CBR is OK) 
-    TNS                                no schecdule           no(I think no useless, waste time, no need support)
+    TNS                                done                   yes(not very important, little influence only for the strong hit audio point) 
     LTP                                no schecdule           no(very slow, no need support)
-    add fast xmin/pe caculate method   doing                 
-    add new quantize fast method       doing 
-    optimize the speed performance     doing 
+    add fast xmin/pe caculate method   done                 
+    add new quantize fast method       done 
+    optimize the speed performance     done 
      (maybe not use psy)
 */
 
@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
     }
 
     fmt = fa_wavfmt_readheader(sourcefile);
-    printf("\n\nsamplerate=%lu\n", fmt.samplerate);
+    printf("\n\nsamplerate = %lu\n", fmt.samplerate);
 
     sample_rate = fmt.samplerate;
     chn_num     = fmt.channels;
@@ -104,6 +104,8 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    FA_CLOCK_START(1);
+
     while(1)
     {
         if(is_last)
@@ -115,16 +117,16 @@ int main(int argc, char *argv[])
             is_last = 1;
        
         /*analysis and encode*/
-        FA_CLOCK_START(1);
         fa_aacenc_encode(h_aacenc, (unsigned char *)wavsamples_in, chn_num*2*read_len, aac_buf, &aac_out_len);
-        FA_CLOCK_END(1);
-        FA_CLOCK_COST(1);
 
         fwrite(aac_buf, 1, aac_out_len, destfile);
 
         frame_index++;
         fprintf(stderr,"\rthe frame = [%d]", frame_index);
     }
+
+    FA_CLOCK_END(1);
+    FA_CLOCK_COST(1);
 
     fclose(sourcefile);
     fclose(destfile);
@@ -133,11 +135,11 @@ int main(int argc, char *argv[])
     printf("\n");
 
     FA_GET_TIME_COST(1);
-    FA_GET_TIME_COST(2);
-    FA_GET_TIME_COST(3);
-    FA_GET_TIME_COST(4);
-    FA_GET_TIME_COST(5);
-    FA_GET_TIME_COST(6);
+    /*FA_GET_TIME_COST(2);*/
+    /*FA_GET_TIME_COST(3);*/
+    /*FA_GET_TIME_COST(4);*/
+    /*FA_GET_TIME_COST(5);*/
+    /*FA_GET_TIME_COST(6);*/
 
     return 0;
 }
