@@ -1,0 +1,26 @@
+Normal User:
+
+*  Linux OS
+1. Under fa_aacenc folder, type "make", and falabaac file will be generate;
+2. type "sudo ./install-sh", and the falabaac will be installed
+
+
+
+
+Developer:
+
+*  Linux OS
+1. Under fa_aacenc folder, type "make", and falabaac file will be generate;
+   You can also find libfalabaac.a and libfalabaac.so file under libfalabaac folder, you can use this 
+   2 lib to develope, and the .h file you can find under ./include
+   Besides, you can also type "make DEBUG=Y" to generate falabaac_g which is debug version, and you can use 
+   gdb to debug and trace it.
+2. type "sudo ./install-sh", and the falabaac will be installed, moreover, the libfalabaac.a and libfalabaac.so
+   will be installed under /usr/local/lib, the fa_aacapi.h will be installed under /usr/local/include/. 
+3. 3 functions in fa_aacapi.h, it is very easy to learn and detail description in the fa_aacapi.h, also you can 
+   study it from main.c under the frontend folder.
+
+
+
+Note:
+If you have any problems, you can email to me (luolongzhi@gmail.com), and I will reply to you in my spare time.
