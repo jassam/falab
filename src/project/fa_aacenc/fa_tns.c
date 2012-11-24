@@ -238,11 +238,11 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
 
     /*initial the band parameters*/
     if (f->block_type == ONLY_SHORT_BLOCK) {
-
+/*
         s->tns_data_present = 0;
 
         return ;
-
+*/
         num_windows = 8;
         window_len  = 128;
 
@@ -268,7 +268,7 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
 
         start = s->tns_minband_long;
         end   = max_sfb;
-        band_len = end -start;
+        /*band_len = end -start;*/
         order = s->tns_maxorder_long;
         start = FA_MIN(start, s->tns_maxband_long);
         end   = FA_MAX(end  , s->tns_maxband_long);
@@ -279,7 +279,8 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
     end   = FA_MIN(end  , max_sfb);
     start = FA_MAX(start, 0);
     end   = FA_MAX(end  , 0);
-    /*band_len = end -start;*/
+
+    band_len = end -start;
 
     s->tns_data_present = 0;
 

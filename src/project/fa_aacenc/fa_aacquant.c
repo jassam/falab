@@ -210,7 +210,7 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                 else 
                     find_globalgain = 0;
 
-            } else if (s->chn_info.sce == 1) {
+            } else if (s->chn_info.sce == 1 || s->chn_info.lfe == 1) {
                 chn = 1;
                 if (s->quant_ok)
                     break;
@@ -251,7 +251,7 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                     find_globalgain = 0;
 
             } else {
-                ; // lfe left
+                ; // lfe before 
             }
 
             inner_loop_cnt++;
@@ -436,7 +436,7 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
                 else 
                     find_globalgain = 0;
 
-            } else if (s->chn_info.sce == 1) {
+            } else if (s->chn_info.sce == 1 || s->chn_info.lfe == 1) {
                 chn = 1;
                 if (s->quant_ok)
                     break;
@@ -593,7 +593,7 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                             fa_mdctline_scaled(sr->h_mdctq_long, sr->num_window_groups, sr->scalefactor);
                     }
                 }
-            } else if (s->chn_info.sce == 1) {
+            } else if (s->chn_info.sce == 1 || s->chn_info.lfe == 1) {
                 chn = 1;
                 if (!s->quant_ok) {
                     if (s->block_type == ONLY_SHORT_BLOCK) 
@@ -704,7 +704,7 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                         quant_ok_cnt += 2;
                     }
                 }
-            } else if (s->chn_info.sce == 1) {
+            } else if (s->chn_info.sce == 1 || s->chn_info.lfe == 1) {
                 chn = 1;
                 if (!s->quant_ok) {
                     if (s->block_type == ONLY_SHORT_BLOCK) {
