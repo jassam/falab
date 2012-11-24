@@ -28,13 +28,13 @@
 #ifndef _FA_FFT_H
 #define _FA_FFT_H
 
+#include "fa_inttypes.h"
+
 #ifdef __cplusplus 
 extern "C"
 { 
 #endif  
 
-
-typedef unsigned uintptr_t;
 
 uintptr_t fa_fft_init(int size);
 void fa_fft_uninit(uintptr_t handle);

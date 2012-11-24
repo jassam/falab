@@ -34,11 +34,11 @@ extern "C"
 #endif  
 
 #include "fa_aacenc.h"
+#include "fa_inttypes.h"
 
 #define SINE_WINDOW         0
 #define KBD_WINDOW          1
 
-typedef unsigned uintptr_t;
 
 uintptr_t fa_aacfilterbank_init();
 void fa_aacfilterbank_uninit(uintptr_t handle);

@@ -28,17 +28,17 @@
 #ifndef _FA_AACENC_H
 #define _FA_AACENC_H 
 
+#include "fa_inttypes.h"
+#include "fa_aacapi.h"
 #include "fa_aaccfg.h"
 #include "fa_aacchn.h"
 #include "fa_swbtab.h"
-#include "fa_aacapi.h"
 
 #ifdef __cplusplus 
 extern "C"
 { 
 #endif  
 
-typedef unsigned uintptr_t;
 
 typedef struct _aacenc_ctx_t{
 

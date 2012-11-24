@@ -28,13 +28,13 @@
 #ifndef _FA_BITSTREAM_H
 #define _FA_BITSTREAM_H 
 
+#include "fa_inttypes.h"
+
 #ifdef __cplusplus 
 extern "C"
 { 
 #endif  
 
-
-typedef unsigned uintptr_t;
 
 uintptr_t fa_bitstream_init(int num_bytes);
 void      fa_bitstream_uninit(uintptr_t handle);

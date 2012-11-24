@@ -28,6 +28,7 @@
 #ifndef _FA_MDCTQUANT_H
 #define _FA_MDCTQUANT_H
 
+#include "fa_inttypes.h"
 #include "fa_swbtab.h"
 
 #ifdef __cplusplus 
@@ -35,8 +36,6 @@ extern "C"
 { 
 #endif  
 
-
-typedef unsigned uintptr_t;
 
 #define NUM_WINDOW_GROUPS_MAX 8
 #define NUM_WINDOWS_MAX       8
