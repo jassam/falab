@@ -28,6 +28,14 @@
 #ifndef _FA_PRINT_H
 #define _FA_PRINT_H
 
+
+#ifdef __cplusplus 
+extern "C"
+{ 
+#endif  
+
+
+
 #include <stdio.h>  
 #include <stdlib.h>
 #include <time.h>
@@ -57,10 +65,11 @@
 
 #define FA_PRINT_MAX_LEN     1024
 
+
 int fa_print_init(bool printenable, 
                   bool fileneed, bool stdoutneed, bool stderrneed, 
                   bool pidneed, 
-                  const char *path, const char *fileprefix, const char *printprefix);
+                  const char *path, const char *fileprefix, const char *printprefix, int thr_day);
 int fa_print_uninit();
 
 /*
@@ -105,23 +114,50 @@ int fa_print_err(char *fmtstr, ...);
     #define FA_PRINT_UNINIT     fa_print_uninit
     #define FA_PRINT            fa_print
     #define FA_PRINT_ERR        fa_print_err
+    #ifdef __GNUC__
     #define FA_PRINT_DBG(...)   
+    #else 
+    #define FA_PRINT_DBG   
+    #endif
     #endif
 #else
     #ifdef __DEBUG__
+    #ifdef __GNUC__
     #define FA_PRINT_INIT(...)      
     #define FA_PRINT_UNINIT(...)     
+    #else 
+    #define FA_PRINT_INIT      
+    #define FA_PRINT_UNINIT     
+    #endif
     #define FA_PRINT            printf 
     #define FA_PRINT_ERR        printf 
     #define FA_PRINT_DBG        printf 
     #else
+    #ifdef __GNUC__
     #define FA_PRINT_INIT(...)      
     #define FA_PRINT_UNINIT(...)     
+    #else 
+    #define FA_PRINT_INIT      
+    #define FA_PRINT_UNINIT     
+    #endif
     #define FA_PRINT            printf 
     #define FA_PRINT_ERR        printf 
+    #ifdef __GNUC__
     #define FA_PRINT_DBG(...)   
+    #else 
+    #define FA_PRINT_DBG   
+    #endif
     #endif
 #endif
+
+
+
+
+#ifdef __cplusplus 
+}
+#endif  
+
+
 
 
 #endif

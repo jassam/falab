@@ -1,5 +1,5 @@
 #  falab - free algorithm lab 
-#  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
+#  Copyright (C) 2012 luolongzhi (Chengdu, China)
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,51 +15,43 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#  filename: Makefile.include
+#  filename: Makefile
 #  version : v1.0.0
 #  time    : 2012/07/07 18:42 
 #  author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
-#  code URL: http://code.google.com/p/falab/
 #
 #  comment : this file is the simple template which will be used in falab,
 #            it will be changed according to the project
 #
 
 
-ARCH =
+include Makefile.include
 
-DEBUG = Y
+INCLUDEDIR = ./include
 
-CROSS = 
-
-STRIP = 
-
-ifeq ($(ARCH), ARM)
-CROSS = arm-linux-
-endif
-
-CC = $(CROSS)gcc
-
-CFLAGS = -I. 
-
-ifeq ($(ARCH), ARM)
-	CFLAGS += -D__ARM__ -mcpu=arm9tdmi
-endif
-
-ifeq ($(DEBUG), Y)
-	CFLAGS += -g -D__DEBUG__
-	CFLAGS += -Wall
-	STRIP = file
+ifeq ($(ARCH),ARCH_ARM)
+LDFLAGS += -lm -lpthread -lrt 
 else
-	CFLAGS += -O3	
-#	CFLAGS += -O2	
-	#CFLAGS += -Wall
-	STRIP = strip
+LDFLAGS += -lm -lpthread -lrt 
 endif
 
+TARGET    =  fa_levinson
+CSRCFILES =  $(shell ls *.c)
+COBJFILES =  $(patsubst %.c,%.o,$(CSRCFILES))
 
-AR = $(CROSS)ar
-RANLIB = $(CROSS)ranlib
+SRCFILES  =	 $(CSRCFILES) 
+OBJFILES  =	 $(COBJFILES) 
 
-.PHONY : all install clean 
+CFLAGS    += -I.  -I$(INCLUDEDIR)
+
+all: $(OBJFILES) 
+	rm $(TARGET) -f 
+	$(CC) -o $(TARGET) $(OBJFILES) $(LDFLAGS)	 
+
+clean : 
+	@rm *.o -f
+	@rm *.out -f	
+	@rm $(TARGET) -f	
+
+install :
 

@@ -16,30 +16,40 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-  filename: fa_aacquant.h 
+  filename: fa_lpc.h 
   version : v1.0.0
-  time    : 2012/08/22 - 2012/11/24 
+  time    : 2012/11/17 23:52
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
   code URL: http://code.google.com/p/falab/
 
 */
 
-#ifndef _FA_AACQUANT_H
-#define _FA_AACQUANT_H 
+#ifndef _FA_LPC_H
+#define _FA_LPC_H 
 
-#include "fa_aacenc.h"
-#include "fa_swbtab.h"
+#ifdef __cplusplus 
+extern "C"
+{ 
+#endif  
 
-#ifndef NUM_SFB_MAX
-#define NUM_SFB_MAX           FA_SWB_NUM_MAX
+//#define USE_LPC_HP
+
+typedef unsigned uintptr_t;
+
+uintptr_t fa_lpc_init(int p);
+void      fa_lpc_uninit(uintptr_t handle);
+
+#ifdef USE_LPC_HP 
+double fa_lpc(uintptr_t handle, double *x, int x_len, double *lpc_cof, double *kcof, double *err);
+#else 
+float fa_lpc(uintptr_t handle, float *x, int x_len, float *lpc_cof, float *kcof, float *err);
 #endif
+ 
 
-void fa_quantize_loop(fa_aacenc_ctx_t *f);
-void fa_quantize_fast(fa_aacenc_ctx_t *f);
+#ifdef __cplusplus 
+}
+#endif  
 
-void fa_calculate_scalefactor_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX]);
 
-void fa_fastquant_calculate_sfb_avgenergy(aacenc_ctx_t *s);
-void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX]);
 
 #endif
