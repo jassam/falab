@@ -118,7 +118,12 @@ double fa_lpc(uintptr_t handle, double *x, int x_len, double *lpc_cof, double *k
         kcof[k]    = f->kcof[k];
     }
 
-    gain = f->err / f->r[0];
+    /*gain = f->err / f->r[0];*/
+    if (f->err > 0)
+        gain = f->r[0] / f->err;
+    else 
+        gain = 0.0;
+
 
     return gain;
 }

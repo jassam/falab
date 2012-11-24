@@ -152,7 +152,10 @@ static int get_cutoff_sfb(int sfb_offset_max, int *sfb_offset, int cutoff_line)
             break;
     }
 
-    return (i+1);
+    if (i == sfb_offset_max)
+        return i;
+    else 
+        return (i+1);
 }
 
 static void fa_aacenc_rom_init()
@@ -352,13 +355,22 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
 void fa_aacenc_uninit(uintptr_t handle)
 {
+    int i;
+    int chn_num;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)handle;
 
+    chn_num = f->cfg.chn_num;
     if (f) {
         if (f->sample) {
             free(f->sample);
             f->sample = NULL;
         }
+
+        for (i = 0; i < chn_num; i++) {
+            free(f->ctx[i].res_buf);
+            f->ctx[i].res_buf = NULL;
+        }
+
         free(f);
         f = NULL;
     }
@@ -398,7 +410,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     int speed_index;
 
     if (speed_level > SPEED_LEVEL_MAX || speed_level < 1)
-        return NULL;
+        return 0;
 
     speed_index = speed_level - 1;
 
@@ -549,7 +561,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         if (block_switch_en) {
             f->do_blockswitch(s);
 #if 0 
-            if (s->block_type != 0)
+            if (s->block_type == 2)
                 printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
 #endif
         } else {
@@ -608,12 +620,14 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     /*format bitstream*/
     fa_write_bitstream(f);
 
+#if 0   //for inverse decode debug sign
     for (i = 0; i < 1024; i++) {
         if (s->mdct_line[i] >= 0)
             s->mdct_line_sign[i] = 1;
         else
             s->mdct_line_sign[i] = -1;
     }
+#endif
 
     *outlen = fa_bitstream_getbufval(f->h_bitstream, buf_out);
 
