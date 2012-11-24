@@ -28,7 +28,7 @@
 
 ARCH =
 
-DEBUG = Y
+DEBUG =  
 
 CROSS = 
 
@@ -59,6 +59,7 @@ endif
 
 
 AR = $(CROSS)ar
+ARFLAG = rcs
 RANLIB = $(CROSS)ranlib
 
 .PHONY : all install clean 

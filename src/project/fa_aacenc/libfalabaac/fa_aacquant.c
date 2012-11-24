@@ -33,7 +33,7 @@
 #include "fa_swbtab.h"
 #include "fa_mdctquant.h"
 #include "fa_aacstream.h"
-#include "fa_timeprofile.h"
+/*#include "fa_timeprofile.h"*/
 #include "fa_fastmath.h"
 
 

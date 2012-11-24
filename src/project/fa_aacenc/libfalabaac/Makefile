@@ -28,6 +28,9 @@
 
 include Makefile.include
 
+SHAREFLAG   = -fPIC -shared
+DESTINCLUDE = ../include
+
 INCLUDEDIR = ./include
 
 ifeq ($(ARCH),ARCH_ARM)
@@ -36,7 +39,8 @@ else
 LDFLAGS += -lm -lpthread -lrt 
 endif
 
-TARGET    =  fa_aacenc
+TARGET1   =  libfalabaac.a 
+TARGET2   =  libfalabaac.so
 CSRCFILES =  $(shell ls *.c)
 COBJFILES =  $(patsubst %.c,%.o,$(CSRCFILES))
 
@@ -45,14 +49,20 @@ OBJFILES  =	 $(COBJFILES)
 
 CFLAGS    += -I.  -I$(INCLUDEDIR)
 
+
 all: $(OBJFILES) 
-	rm $(TARGET) -f 
-	$(CC) -o $(TARGET) $(OBJFILES) $(LDFLAGS)	 
+	@rm $(TARGET1) -f 
+	@rm $(TARGET2) -f 
+	$(CC) $(CFLAGS) -c $(OBJFILES) $(LDFLAGS)	 
+	$(AR) $(ARFLAG) $(TARGET1) $(OBJFILES)
+	$(CC) $(SHAREFLAG) -o $(TARGET2) $(OBJFILES) $(LDFLAGS)	 
+	cp fa_aacapi.h $(DESTINCLUDE)
 
 clean : 
 	@rm *.o -f
 	@rm *.out -f	
-	@rm $(TARGET) -f	
+	@rm $(TARGET1) -f	
+	@rm $(TARGET2) -f	
 
 install :
 

@@ -28,7 +28,7 @@
 
 ARCH =
 
-DEBUG = Y
+DEBUG =  
 
 CROSS = 
 
