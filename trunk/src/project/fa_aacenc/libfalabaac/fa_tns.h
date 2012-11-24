@@ -34,7 +34,6 @@ extern "C"
 { 
 #endif  
 
-typedef unsigned uintptr_t;
 
 #define TNS_MAX_ORDER        20
 #define DEF_TNS_GAIN_THRESH  10 //15 //1.4

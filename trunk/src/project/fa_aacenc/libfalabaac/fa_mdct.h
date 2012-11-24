@@ -33,9 +33,8 @@ extern "C"
 { 
 #endif  
 
+#include "fa_inttypes.h"
 
-
-typedef unsigned uintptr_t;
 typedef int mdct_win_t;
 
 /*

@@ -28,6 +28,7 @@
 #ifndef _FA_AACPSY_H
 #define _FA_AACPSY_H 
 
+#include "fa_inttypes.h"
 #include "fa_swbtab.h"
 #include "fa_psychomodel2.h"
 
@@ -36,8 +37,6 @@ extern "C"
 { 
 #endif  
 
-
-typedef unsigned uintptr_t;
 
 uintptr_t fa_aacpsy_init(int sample_rate);
 

@@ -28,6 +28,8 @@
 #ifndef _FA_FIR_H
 #define _FA_FIR_H
 
+#include "fa_inttypes.h"
+
 #ifndef		M_PI
 #define		M_PI							3.14159265358979323846
 #endif
@@ -38,7 +40,6 @@ extern "C"
 #endif  
 
 
-typedef unsigned uintptr_t;
 typedef int win_t;
 
 enum {

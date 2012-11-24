@@ -28,13 +28,13 @@
 #ifndef _FA_PSYCHOMODEL2_H
 #define _FA_PSYCHOMODEL2_H 
 
+#include "fa_inttypes.h"
+
 #ifdef __cplusplus 
 extern "C"
 { 
 #endif  
 
-
-typedef unsigned uintptr_t;
 
 uintptr_t fa_psychomodel2_init(int cbands_num, int *w_low, float *barkval, float *qsthr, 
                                int swb_num   , int *swb_offset,

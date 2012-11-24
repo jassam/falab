@@ -57,6 +57,7 @@ all: $(OBJFILES)
 	$(AR) $(ARFLAG) $(TARGET1) $(OBJFILES)
 	$(CC) $(SHAREFLAG) -o $(TARGET2) $(OBJFILES) $(LDFLAGS)	 
 	cp fa_aacapi.h $(DESTINCLUDE)
+	cp fa_inttypes.h $(DESTINCLUDE)
 
 clean : 
 	@rm *.o -f

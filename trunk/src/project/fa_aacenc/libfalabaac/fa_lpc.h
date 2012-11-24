@@ -27,6 +27,8 @@
 #ifndef _FA_LPC_H
 #define _FA_LPC_H 
 
+#include "fa_inttypes.h"
+
 #ifdef __cplusplus 
 extern "C"
 { 
@@ -34,7 +36,6 @@ extern "C"
 
 //#define USE_LPC_HP
 
-typedef unsigned uintptr_t;
 
 uintptr_t fa_lpc_init(int p);
 void      fa_lpc_uninit(uintptr_t handle);

@@ -27,6 +27,7 @@
 #ifndef _FA_AACCHN_H
 #define _FA_AACCHN_H 
 
+#include "fa_inttypes.h"
 #include "fa_aaccfg.h"
 #include "fa_mdctquant.h"
 
