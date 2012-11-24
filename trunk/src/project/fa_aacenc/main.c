@@ -32,14 +32,14 @@ TODO:
     mono                               done                   yes
     stereo(common_window=0)            done                   yes
     stereo(ms)                         done                   yes 
-    lfe                                no schecdule           no(easy, need test)
+    lfe                                done                   yes(need more test) 
     high frequency optimize            done                   yes(bandwith limited now)
     bitrate control fixed              done                   yes(constant bitrate CBR is OK) 
-    TNS                                no schecdule           no(I think no useless, waste time, no need support)
+    TNS                                done                   yes(not very important, little influence only for the strong hit audio point) 
     LTP                                no schecdule           no(very slow, no need support)
-    add fast xmin/pe caculate method   doing                 
-    add new quantize fast method       doing 
-    optimize the speed performance     doing 
+    add fast xmin/pe caculate method   done                 
+    add new quantize fast method       done 
+    optimize the speed performance     done 
      (maybe not use psy)
 */
 
@@ -47,105 +47,118 @@ TODO:
 #include <stdlib.h>
 #include <math.h>
 #include <memory.h>
-#include "fa_aacenc.h"
+#include "fa_aacapi.h"
 #include "fa_wavfmt.h"
 #include "fa_parseopt.h"
 #include "fa_timeprofile.h"
 
-#define FRAME_SIZE_MAX  2048 
+#define CHNMAX          64
+#define FRAME_SIZE_MAX  (CHNMAX * 1024)//2048 
+#define AAC_FRAME_SIZE  1024
 
 int main(int argc, char *argv[])
 {
     int ret;
-    int frame_index = 0;
 
+    /*set your destination file and source file */
 	FILE  * destfile;
 	FILE  * sourcefile;
+
+    /*file control variable*/
 	fa_wavfmt_t fmt;
     int sample_rate;
     int chn_num;
 
+    /*control the frame */
+    int frame_index = 0;
     int is_last = 0;
     int read_len = 0;
 
+    /*handle the aac encoder*/
     uintptr_t h_aacenc;
 
+    /*sample buffer in and aac buffer out*/
 	short wavsamples_in[FRAME_SIZE_MAX];
     unsigned char aac_buf[FRAME_SIZE_MAX];
     int aac_out_len;
 
-    int ms_enable = 0;//MS_DEFAULT;
-    int lfe_enable = LFE_DEFAULT;
-    int tns_enable = TNS_DEFAULT;
-    int block_switch_enable = BLOCK_SWITCH_DEFAULT;
-    int blockswitch_method = BLOCKSWITCH_VAR;
-    /*int quantize_method = QUANTIZE_LOOP;*/
-    int quantize_method = QUANTIZE_FAST;
-    int psy_enable = PSY_ENABLE;
-
+    /*parse the argument*/
     ret = fa_parseopt(argc, argv);
     if(ret) return -1;
 
+    /*open the dest and src file*/
     if ((destfile = fopen(opt_outputfile, "w+b")) == NULL) {
 		printf("output file can not be opened\n");
 		return 0; 
 	}                         
-
 	if ((sourcefile = fopen(opt_inputfile, "rb")) == NULL) {
 		printf("input file can not be opened;\n");
 		return 0; 
     }
 
+    /*get the source wav file format such as sample rate , channel number...*/
     fmt = fa_wavfmt_readheader(sourcefile);
-    printf("\n\nsamplerate=%lu\n", fmt.samplerate);
-
+    printf("\n\nsamplerate = %lu\n", fmt.samplerate);
     sample_rate = fmt.samplerate;
     chn_num     = fmt.channels;
 
+    /*initial aac encoder, return the handle for the encoder*/
     h_aacenc = fa_aacenc_init(sample_rate, opt_bitrate, chn_num,
-                              2, LOW, 
-                              ms_enable, lfe_enable, tns_enable, block_switch_enable, psy_enable, 
-                              blockswitch_method, quantize_method);
-
+                              FA_AACENC_MPEG_VER_DEF , FA_AACENC_OBJ_TYPE_DEF, opt_lfeenable,
+                              opt_bandwidth,
+                              opt_speedlevel);
     if (!h_aacenc) {
         printf("initial failed, maybe configuration is not proper!\n");
         return -1;
     }
 
+    /*start time count*/
+    FA_CLOCK_START(1);
+
+    /*main loop of encode*/
     while(1)
     {
         if(is_last)
             break;
 
-        memset(wavsamples_in, 0, 2*1024*chn_num);
-        read_len = fread(wavsamples_in, 2, 1024*chn_num, sourcefile);
-        if(read_len < (1024*chn_num))
+        /*read the raw sample from the wav file*/
+        memset(wavsamples_in, 0, 2*AAC_FRAME_SIZE*chn_num);   //2 means the 2 bytes per real sample
+        read_len = fread(wavsamples_in, 2, AAC_FRAME_SIZE*chn_num, sourcefile);
+        if(read_len < (AAC_FRAME_SIZE*chn_num))
             is_last = 1;
        
         /*analysis and encode*/
-        FA_CLOCK_START(1);
         fa_aacenc_encode(h_aacenc, (unsigned char *)wavsamples_in, chn_num*2*read_len, aac_buf, &aac_out_len);
-        FA_CLOCK_END(1);
-        FA_CLOCK_COST(1);
 
+        /*write the aac ADTS stream into destfile*/
         fwrite(aac_buf, 1, aac_out_len, destfile);
+
+        /*printf("the frame[%d]out length = %d\n", frame_index, aac_out_len);*/
 
         frame_index++;
         fprintf(stderr,"\rthe frame = [%d]", frame_index);
     }
 
+    /*stop time count*/
+    FA_CLOCK_END(1);
+    FA_CLOCK_COST(1);
+
+    /*close the files*/
     fclose(sourcefile);
     fclose(destfile);
 
+    /*free the encode handle*/
+    fa_aacenc_uninit(h_aacenc);
 
     printf("\n");
 
+    /*printf the time cost*/
     FA_GET_TIME_COST(1);
-    FA_GET_TIME_COST(2);
-    FA_GET_TIME_COST(3);
-    FA_GET_TIME_COST(4);
-    FA_GET_TIME_COST(5);
-    FA_GET_TIME_COST(6);
+    /*FA_GET_TIME_COST(2);*/
+    /*FA_GET_TIME_COST(3);*/
+    /*FA_GET_TIME_COST(4);*/
+    /*FA_GET_TIME_COST(5);*/
+    /*FA_GET_TIME_COST(6);*/
 
     return 0;
 }

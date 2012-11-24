@@ -1,3 +1,29 @@
+/*
+  falab - free algorithm lab 
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+  filename: fa_aacquant.c 
+  version : v1.0.0
+  time    : 2012/08/22 - 2012/11/24 
+  author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -210,7 +236,7 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                 else 
                     find_globalgain = 0;
 
-            } else if (s->chn_info.sce == 1) {
+            } else if (s->chn_info.sce == 1 || s->chn_info.lfe == 1) {
                 chn = 1;
                 if (s->quant_ok)
                     break;
@@ -251,7 +277,7 @@ static void quant_innerloop(fa_aacenc_ctx_t *f, int outer_loop_count)
                     find_globalgain = 0;
 
             } else {
-                ; // lfe left
+                ; // lfe before 
             }
 
             inner_loop_cnt++;
@@ -436,7 +462,7 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
                 else 
                     find_globalgain = 0;
 
-            } else if (s->chn_info.sce == 1) {
+            } else if (s->chn_info.sce == 1 || s->chn_info.lfe == 1) {
                 chn = 1;
                 if (s->quant_ok)
                     break;
@@ -531,11 +557,35 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
     aacenc_ctx_t *s, *sl, *sr;
     int quant_ok_cnt;
     int outer_loop_count;
+    int outer_loop_count_max;
 
     chn_num = f->cfg.chn_num;
+    switch(f->speed_level) {
+        case 1:
+            break;
+            outer_loop_count_max = 15;
+        case 2:
+            outer_loop_count_max = 15;
+            break;
+        case 3:
+            outer_loop_count_max = 1;
+            break;
+        case 4:
+            outer_loop_count_max = 1;
+            break;
+        case 5:
+            outer_loop_count_max = 1;
+            break;
+        case 6:
+            outer_loop_count_max = 1;
+            break;
+        default:
+            outer_loop_count_max = 15;
+    }
 
     quant_ok_cnt = 0;
     outer_loop_count = 0;
+
     do {
         /*scale the mdctline firstly using scalefactor*/
         i = 0;
@@ -569,7 +619,7 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                             fa_mdctline_scaled(sr->h_mdctq_long, sr->num_window_groups, sr->scalefactor);
                     }
                 }
-            } else if (s->chn_info.sce == 1) {
+            } else if (s->chn_info.sce == 1 || s->chn_info.lfe == 1) {
                 chn = 1;
                 if (!s->quant_ok) {
                     if (s->block_type == ONLY_SHORT_BLOCK) 
@@ -586,11 +636,11 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
 
         /*inner loop, search common_scalefac to fit the available_bits*/
 
-        FA_CLOCK_START(3);
+        /*FA_CLOCK_START(3);*/
         /*quant_innerloop(f, outer_loop_count);*/
         quant_innerloop_fast(f, outer_loop_count);
-        FA_CLOCK_END(3);
-        FA_CLOCK_COST(3);
+        /*FA_CLOCK_END(3);*/
+        /*FA_CLOCK_COST(3);*/
 
 
         /*calculate quant noise */
@@ -625,14 +675,16 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                 if (s->chn_info.common_window == 1) {
                     if (!sl->quant_ok || !sr->quant_ok) {
                         if (s->block_type == ONLY_SHORT_BLOCK) {
-                            sl->quant_ok = fa_fix_quant_noise_couple(sl->h_mdctq_short, sr->h_mdctq_short, outer_loop_count,
+                            sl->quant_ok = fa_fix_quant_noise_couple(sl->h_mdctq_short, sr->h_mdctq_short, 
+                                                                     outer_loop_count, outer_loop_count_max,
                                                                      s->num_window_groups, s->window_group_length,
                                                                      sl->scalefactor, sr->scalefactor, 
                                                                      s->x_quant);
                             sr->quant_ok = sl->quant_ok;
                             quant_ok_cnt += sl->quant_ok * 2;
                         } else {
-                            sl->quant_ok = fa_fix_quant_noise_couple(sl->h_mdctq_long, sr->h_mdctq_long, outer_loop_count,
+                            sl->quant_ok = fa_fix_quant_noise_couple(sl->h_mdctq_long, sr->h_mdctq_long, 
+                                                                     outer_loop_count, outer_loop_count_max,
                                                                      s->num_window_groups, s->window_group_length,
                                                                      sl->scalefactor, sr->scalefactor,
                                                                      s->x_quant);
@@ -645,26 +697,30 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                 } else {
                     if (!sl->quant_ok || !sr->quant_ok) {
                         if (sl->block_type == ONLY_SHORT_BLOCK) {
-                            sl->quant_ok = fa_fix_quant_noise_single(sl->h_mdctq_short, outer_loop_count,
+                            sl->quant_ok = fa_fix_quant_noise_single(sl->h_mdctq_short, 
+                                                                     outer_loop_count, outer_loop_count_max,
                                                                      sl->num_window_groups, sl->window_group_length,
                                                                      sl->scalefactor, 
                                                                      sl->x_quant);
                             quant_ok_cnt += sl->quant_ok;
                         } else {
-                            sl->quant_ok = fa_fix_quant_noise_single(sl->h_mdctq_long, outer_loop_count,
+                            sl->quant_ok = fa_fix_quant_noise_single(sl->h_mdctq_long, 
+                                                                     outer_loop_count, outer_loop_count_max,
                                                                      sl->num_window_groups, sl->window_group_length,
                                                                      sl->scalefactor, 
                                                                      sl->x_quant);
                             quant_ok_cnt += sl->quant_ok;
                         }
                         if (sr->block_type == ONLY_SHORT_BLOCK) {
-                            sr->quant_ok = fa_fix_quant_noise_single(sr->h_mdctq_short, outer_loop_count,
+                            sr->quant_ok = fa_fix_quant_noise_single(sr->h_mdctq_short, 
+                                                                     outer_loop_count, outer_loop_count_max,
                                                                      sr->num_window_groups, sr->window_group_length,
                                                                      sr->scalefactor, 
                                                                      sr->x_quant);
                             quant_ok_cnt += sr->quant_ok;
                         } else {
-                            sr->quant_ok = fa_fix_quant_noise_single(sr->h_mdctq_long, outer_loop_count,
+                            sr->quant_ok = fa_fix_quant_noise_single(sr->h_mdctq_long, 
+                                                                     outer_loop_count, outer_loop_count_max,
                                                                      sr->num_window_groups, sr->window_group_length,
                                                                      sr->scalefactor, 
                                                                      sr->x_quant);
@@ -674,17 +730,19 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                         quant_ok_cnt += 2;
                     }
                 }
-            } else if (s->chn_info.sce == 1) {
+            } else if (s->chn_info.sce == 1 || s->chn_info.lfe == 1) {
                 chn = 1;
                 if (!s->quant_ok) {
                     if (s->block_type == ONLY_SHORT_BLOCK) {
-                        s->quant_ok = fa_fix_quant_noise_single(s->h_mdctq_short, outer_loop_count,
+                        s->quant_ok = fa_fix_quant_noise_single(s->h_mdctq_short, 
+                                                                outer_loop_count, outer_loop_count_max,
                                                                 s->num_window_groups, s->window_group_length,
                                                                 s->scalefactor, 
                                                                 s->x_quant);
                         quant_ok_cnt += sr->quant_ok;
                     } else {
-                        s->quant_ok = fa_fix_quant_noise_single(s->h_mdctq_long, outer_loop_count,
+                        s->quant_ok = fa_fix_quant_noise_single(s->h_mdctq_long, 
+                                                                outer_loop_count, outer_loop_count_max,
                                                                 s->num_window_groups, s->window_group_length,
                                                                 s->scalefactor, 
                                                                 s->x_quant);
@@ -737,10 +795,10 @@ void fa_quantize_loop(fa_aacenc_ctx_t *f)
 
     /*outer loop*/
 
-    FA_CLOCK_START(2);
+    /*FA_CLOCK_START(2);*/
     quant_outerloop(f);
-    FA_CLOCK_END(2);
-    FA_CLOCK_COST(2);
+    /*FA_CLOCK_END(2);*/
+    /*FA_CLOCK_COST(2);*/
 
 #if  0 
     {
@@ -808,7 +866,7 @@ void  fa_fastquant_calculate_sfb_avgenergy(aacenc_ctx_t *s)
 void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
 {
     int k,i,j;
-    float globalthr = 132./10;//s->quality;
+ //   float globalthr = 132./10;//s->quality;
 
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
     fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
@@ -825,7 +883,7 @@ void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
     float lmax;
     float tmp;
     float energy;
-    float thr;
+    /*float thr;*/
 
     memset(xmin, 0, sizeof(float)*8*NUM_SFB_MAX);
 
@@ -925,7 +983,7 @@ void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
 
             xmin[0][i] = 1.12 * thr * globalthr;
 #else 
-            xmin[k][i] = energy/20;
+            xmin[0][i] = energy/20;
 #endif
 
         }
@@ -1045,7 +1103,6 @@ static void calculate_scalefactor(aacenc_ctx_t *s)
     int i;
     int gr;
     int win;
-    float gain;
     int scalefactor;
  
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
@@ -1102,10 +1159,10 @@ void fa_quantize_fast(fa_aacenc_ctx_t *f)
 
     calculate_start_common_scalefac(f);
 
-    FA_CLOCK_START(2);
+    /*FA_CLOCK_START(2);*/
     quant_outerloop(f);
-    FA_CLOCK_END(2);
-    FA_CLOCK_COST(2);
+    /*FA_CLOCK_END(2);*/
+    /*FA_CLOCK_COST(2);*/
 
 #if  0 
     {

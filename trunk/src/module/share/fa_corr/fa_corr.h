@@ -16,30 +16,43 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-  filename: fa_aacquant.h 
+  filename: fa_corr.h 
   version : v1.0.0
-  time    : 2012/08/22 - 2012/11/24 
+  time    : 2012/11/13 22:52
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
   code URL: http://code.google.com/p/falab/
 
 */
 
-#ifndef _FA_AACQUANT_H
-#define _FA_AACQUANT_H 
 
-#include "fa_aacenc.h"
-#include "fa_swbtab.h"
+#ifndef _FA_CORR_H
+#define _FA_CORR_H 
 
-#ifndef NUM_SFB_MAX
-#define NUM_SFB_MAX           FA_SWB_NUM_MAX
-#endif
+#ifdef __cplusplus 
+extern "C"
+{ 
+#endif  
 
-void fa_quantize_loop(fa_aacenc_ctx_t *f);
-void fa_quantize_fast(fa_aacenc_ctx_t *f);
+void  fa_autocorr(float *x, int n, int p, float *r);
+void  fa_autocorr_hp(double *x, int n, int p, double *r);
 
-void fa_calculate_scalefactor_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX]);
+void  fa_crosscorr(float *x, float *y, int n, int p, float *r);
+void  fa_crosscorr_hp(double *x, double *y, int n, int p, double *r);
 
-void fa_fastquant_calculate_sfb_avgenergy(aacenc_ctx_t *s);
-void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX]);
+float fa_corr_cof(float *a, float *b, int len);
+
+
+//fast mode can not support hp(double type)
+typedef unsigned uintptr_t;
+uintptr_t fa_autocorr_fast_init(int n);
+void  fa_autocorr_fast_uninit(uintptr_t handle);
+void  fa_autocorr_fast(uintptr_t handle, float *x, int n, int p, float *r);
+
+
+#ifdef __cplusplus 
+}
+#endif  
+
+
 
 #endif

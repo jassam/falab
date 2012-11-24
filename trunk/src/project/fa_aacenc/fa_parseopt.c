@@ -38,16 +38,18 @@
 
 
 /*global option vaule*/
-char  opt_inputfile[256]  = "ys.wav";
-/*char  opt_inputfile[256]  = "mfs.wav";*/
-char  opt_outputfile[256] = "outaac.aac";
-int   opt_bitrate = 96000;
+char  opt_inputfile[256]  = "";
+char  opt_outputfile[256] = "";
+int   opt_bitrate = 128;
+int   opt_speedlevel = 2;
+int   opt_bandwidth = 20;
+int   opt_lfeenable = 0;
 
 
 
 const char *usage =
 "\n\n"
-"Usage: faasmodel <-i> <inputfile> <-o> <outputfile> [options] \n"
+"Usage: fa_aacenc <-i> <inputfile> \n"
 "\n\n"
 "See also:\n"
 "    --help               for short help on ...\n"
@@ -57,7 +59,9 @@ const char *usage =
 const char *default_set =
 "\n\n"
 "No argument input, run by default settings\n"
-"    --bitrate    [96000]\n"
+"    --bitrate    [128 kbps]\n"
+"    --speedlevel [2]\n"
+"    --bandwidth  [auto]\n"
 "\n\n";
 
 const char *short_help =
@@ -67,6 +71,9 @@ const char *short_help =
 "    -i <inputfile>       Set input filename\n"
 "    -o <outputfile>      Set output filename\n"
 "    -b <bitrate>         Set bitrate\n"
+"    -l <speedlevel>      Set speed level(1~6)\n"
+"    -w <bandwidth>       Set band width, valid when settings permit\n"
+"    -e <lfe_enable>      Set the LFE encode enable\n"
 "    --help               Show this abbreviated help.\n"
 "    --long-help          Show complete help.\n"
 "    --license            for the license terms for falab.\n"
@@ -79,12 +86,18 @@ const char *long_help =
 "    -i <inputfile>       Set input filename\n"
 "    -o <outputfile>      Set output filename\n"
 "    -b                   Set bitrate\n"
+"    -l <speedlevel>      Set speed level(1~6)\n"
+"    -w <bandwidth>       Set band width, valid when settings permit\n"
+"    -e <lfe_enable>      Set the LFE encode enable\n"
 "    --help               Show this abbreviated help.\n"
 "    --long-help          Show complete help.\n"
 "    --license            for the license terms for falab.\n"
 "    --input <inputfile>  Set input filename\n"
 "    --output <outputfile>Set input filename\n"
 "    --bitrate <bitrate>  Set average bitrate\n"
+"    --speedlevel         Set the speed level(1 is slow but good quality, 4 is fastest but less quality)"
+"    --band_width         Set band width, only 5-20 (kHz) valid"
+"    --lfe_enable          Set the LFE encode enable\n"
 "\n\n";
 
 const char *license =
@@ -125,7 +138,8 @@ static void fa_printopt()
     FA_PRINT("NOTE: configuration is below\n");
     FA_PRINT("NOTE: inputfile = %s\n", opt_inputfile);
     FA_PRINT("NOTE: outputfile= %s\n", opt_outputfile);
-    FA_PRINT("NOTE: bitrate   = %d\n", opt_bitrate);
+    FA_PRINT("NOTE: bitrate   = %d kbps\n", opt_bitrate);
+    FA_PRINT("NOTE: speed lev = %d\n", opt_speedlevel);
 }
 
 /**
@@ -135,22 +149,45 @@ static void fa_printopt()
  */
 static int fa_checkopt(int argc)
 {
-/*
-    if(argc < 5) {
+
+    if(argc < 3) {
         FA_PRINT_ERR("FAIL: input and output file should input\n");
         return -1;
     }
-*/
+
+    if (strlen(opt_outputfile) == 0) {
+        char tmp[256];
+        char *t = strrchr(opt_inputfile, '.');
+        int l = t ? strlen(opt_inputfile) - strlen(t) : strlen(opt_inputfile);
+
+        memset(tmp, 0, 256);
+        memset(opt_outputfile, 0, 256);
+
+        strncpy(tmp, opt_inputfile, l);
+        sprintf(opt_outputfile, "%s.aac", tmp);
+    }
+
     if(strlen(opt_inputfile) == 0 || strlen(opt_outputfile) == 0) {
         FA_PRINT_ERR("FAIL: input and output file should input\n");
         return -1;
 
     }
-
-    if(opt_bitrate > 256000 || opt_bitrate < 32000)  {
+/*
+    if(opt_bitrate > 256 || opt_bitrate < 32)  {
         FA_PRINT_ERR("FAIL: the bitrate is too large or too short, should be in [32000, 256000]\n");
         return -1;
     }
+*/
+    if(opt_speedlevel > 6 || opt_speedlevel < 1)  {
+        FA_PRINT_ERR("FAIL: out of range, should be in [1,6]\n");
+        return -1;
+    }
+ 
+    if(opt_bandwidth > 20 || opt_bandwidth < 5)  {
+        FA_PRINT_ERR("FAIL: out of range, should be in [5,20] kHz\n");
+        return -1;
+    }
+         
 
     FA_PRINT("SUCC: check option ok\n");
     return 0;
@@ -172,7 +209,7 @@ int fa_parseopt(int argc, char *argv[])
     const char *die_msg = NULL;
 
     while (1) {
-        static char * const     short_options = "hHLi:o:b:";  
+        static char * const     short_options = "hHLi:o:b:l:w:e:";  
         static struct option    long_options[] = 
                                 {
                                     { "help"       , 0, 0, 'h'}, 
@@ -181,6 +218,9 @@ int fa_parseopt(int argc, char *argv[])
                                     { "input"      , 1, 0, 'i'},                 
                                     { "output"     , 1, 0, 'o'},                 
                                     { "bitrate"    , 1, 0, 'b'},        
+                                    { "speedlevel" , 1, 0, 'l'},        
+                                    { "bandwidth"  , 1, 0, 'w'},        
+                                    { "lfe_enable" , 1, 0, 'e'},        
                                     {0             , 0, 0,  0},
                                 };
         int c = -1;
@@ -240,6 +280,35 @@ int fa_parseopt(int argc, char *argv[])
                           }
                           break;
                       }
+
+            case 'l': {
+                          unsigned int i;
+                          if (sscanf(optarg, "%u", &i) > 0) {
+                              opt_speedlevel = i;
+                              FA_PRINT("SUCC: set speedlevel = %u\n", opt_speedlevel);
+                          }
+                          break;
+                      }
+
+            case 'w': {
+                          unsigned int i;
+                          if (sscanf(optarg, "%u", &i) > 0) {
+                              opt_bandwidth = i;
+                              FA_PRINT("SUCC: set band_width = %u\n", opt_bandwidth);
+                          }
+                          break;
+                      }
+
+            case 'e': {
+                          unsigned int i;
+                          if (sscanf(optarg, "%u", &i) > 0) {
+                              opt_lfeenable = i;
+                              FA_PRINT("SUCC: set lfe enable = %u\n", opt_lfeenable);
+                          }
+                          break;
+                      }
+
+
 
             case '?':
             default:

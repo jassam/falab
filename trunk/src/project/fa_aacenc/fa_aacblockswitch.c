@@ -50,15 +50,16 @@
 
 static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type)
 {
-    int prev_coding_block_type;
+    /*int prev_coding_block_type;*/
     int cur_coding_block_type;
 
     /*get prev coding block type*/
+/*
     if (prev_block_type == ONLY_SHORT_BLOCK)
         prev_coding_block_type = SHORT_CODING_BLOCK;
     else 
         prev_coding_block_type = LONG_CODING_BLOCK;
-
+*/
     /*use pe to decide current coding block type*/
     if (pe > SWITCH_PE) 
         cur_coding_block_type = SHORT_CODING_BLOCK;

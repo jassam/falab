@@ -54,6 +54,9 @@ extern "C"
 extern char  opt_inputfile[] ;
 extern char  opt_outputfile[];
 extern int   opt_bitrate;
+extern int   opt_speedlevel;
+extern int   opt_bandwidth;
+extern int   opt_lfeenable;
 
 int fa_parseopt(int argc, char *argv[]);
 

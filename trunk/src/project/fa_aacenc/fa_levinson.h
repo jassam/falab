@@ -16,30 +16,43 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-  filename: fa_aacquant.h 
+  filename: fa_levinson.h 
   version : v1.0.0
-  time    : 2012/08/22 - 2012/11/24 
+  time    : 2012/11/17 15:19 
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
   code URL: http://code.google.com/p/falab/
 
 */
 
-#ifndef _FA_AACQUANT_H
-#define _FA_AACQUANT_H 
+#ifndef _FA_LEVINSON_H
+#define _FA_LEVINSON_H 
 
-#include "fa_aacenc.h"
-#include "fa_swbtab.h"
+#ifdef __cplusplus 
+extern "C"
+{ 
+#endif  
 
-#ifndef NUM_SFB_MAX
-#define NUM_SFB_MAX           FA_SWB_NUM_MAX
-#endif
+#define FA_LEVINSON_ORDER_MAX   64
 
-void fa_quantize_loop(fa_aacenc_ctx_t *f);
-void fa_quantize_fast(fa_aacenc_ctx_t *f);
+void fa_levinson(float *r,    int p, 
+                 float *acof, float *kcof, float *err);
+void fa_levinson1(float *r, int p, 
+                  float *acof, float *kcof, float *err);
+void fa_levinson_hp(double *r,    int p, 
+                    double *acof, double *kcof, double *err);
+void fa_levinson1_hp(double *r, int p, 
+                     double *acof, double *kcof, double *err);
 
-void fa_calculate_scalefactor_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX]);
 
-void fa_fastquant_calculate_sfb_avgenergy(aacenc_ctx_t *s);
-void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX]);
+int  fa_atlvs(float *r, int n, float *b, 
+              float *x, float *kcof, float *err);
+int  fa_atlvs_hp(double *r, int n, double *b, 
+                 double *x, double *kcof, double *err);
+
+#ifdef __cplusplus 
+}
+#endif  
+
+
 
 #endif

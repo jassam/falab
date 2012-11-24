@@ -31,6 +31,7 @@
 #include "fa_bitstream.h"
 #include "fa_huffman.h"
 #include "fa_huffmantab.h"
+#include "fa_tns.h"
 #include "fa_fastmath.h"
 
 #ifndef FA_MIN
@@ -56,8 +57,10 @@ static int write_sce(uintptr_t h_bs, aacenc_ctx_t *s, int aac_objtype, int write
 static int write_lfe(uintptr_t h_bs, aacenc_ctx_t *s, int aac_objtype, int write_flag);
 
 static int find_grouping_bits(aacenc_ctx_t *s);
+#if 0
 static int write_ltp_predictor_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag);
 static int write_predictor_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag);
+#endif
 static int write_pulse_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag);
 static int write_tns_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag);
 static int write_gaincontrol_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag);
@@ -410,8 +413,8 @@ static int write_icsinfo(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
             fa_bitstream_putbits(h_bs, s->max_sfb, LEN_MAX_SFBL);
         }
         bits += LEN_MAX_SFBL;
-        if (objtype == LTP)
-        {
+#if 0 
+        if (objtype == LTP) {
             bits++;
             if (write_flag)
                 fa_bitstream_putbits(h_bs, s->ltpInfo.global_pred_flag, 1); /* Prediction Global used */
@@ -426,6 +429,17 @@ static int write_icsinfo(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag,
 
             bits += write_predictor_data(h_bs, s, write_flag);
         }
+#else 
+        if (objtype != LTP) {
+            bits++;
+            if (write_flag)
+                fa_bitstream_putbits(h_bs, 0, LEN_PRED_PRES);  /* predictor_data_present */
+        } else {
+            printf("LTP not support! exit now\n");
+            exit(0);
+        }
+
+#endif
     }
 
     return bits;
@@ -594,7 +608,7 @@ static int find_grouping_bits(aacenc_ctx_t *s)
     return grouping_bits;
 }
 
-
+#if 0
 static int write_ltp_predictor_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
 {
     /*unsigned long h_bs = s->h_bitstream;*/
@@ -624,8 +638,8 @@ static int write_ltp_predictor_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_f
                 fa_bitstream_putbits(h_bs, ltpInfo->weight_idx,  LEN_LTP_COEF);
             }
 
-            last_band = ((s->nr_of_sfb < MAX_LT_PRED_LONG_SFB) ?
-                s->nr_of_sfb : MAX_LT_PRED_LONG_SFB);
+            last_band = ((s->max_sfb < MAX_LT_PRED_LONG_SFB) ?
+                s->max_sfb : MAX_LT_PRED_LONG_SFB);
 
             bits += last_band;
             if (write_flag)
@@ -648,7 +662,7 @@ static int write_predictor_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
 
     /* Write global predictor data present */
     short predictorDataPresent = s->pred_global_flag;
-    int numBands = FA_MIN(s->max_pred_sfb, s->nr_of_sfb);
+    int numBands = FA_MIN(s->max_pred_sfb, s->max_sfb);
 
     if (write_flag) {
         if (predictorDataPresent) {
@@ -673,6 +687,8 @@ static int write_predictor_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
 
     return bits;
 }
+
+#endif
 
 
 static int write_pulse_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
@@ -704,15 +720,16 @@ static int write_tns_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
     unsigned long unsignedIndex;
     int w;
 
-    TnsInfo* tnsInfoPtr = &s->tnsInfo;
+    tns_info_t *tns_info = (tns_info_t *)s->h_tns;
 
     if (write_flag) {
-        fa_bitstream_putbits(h_bs,tnsInfoPtr->tnsDataPresent,LEN_TNS_PRES);
+        /*fa_bitstream_putbits(h_bs,tnsInfoPtr->tnsDataPresent,LEN_TNS_PRES);*/
+        fa_bitstream_putbits(h_bs, tns_info->tns_data_present ,LEN_TNS_PRES);
     }
     bits += LEN_TNS_PRES;
 
     /* If TNS is not present, bail */
-    if (!tnsInfoPtr->tnsDataPresent) {
+    if (!tns_info->tns_data_present) {
         return bits;
     }
 
@@ -732,38 +749,38 @@ static int write_tns_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
 
     /* Write TNS data */
     bits += (numWindows * len_tns_nfilt);
-    for (w=0;w<numWindows;w++) {
-        TnsWindowData* windowDataPtr = &tnsInfoPtr->windowData[w];
-        int numFilters = windowDataPtr->numFilters;
+    for (w = 0; w < numWindows; w++) {
+        tns_win_t *tns_win = &(tns_info->tns_win[w]);
+        int numFilters = tns_win->num_flt;
         if (write_flag) {
             fa_bitstream_putbits(h_bs,numFilters,len_tns_nfilt); /* n_filt[] = 0 */
         }
         if (numFilters) {
             bits += LEN_TNS_COEFF_RES;
-            resInBits = windowDataPtr->coefResolution;
+            resInBits = tns_win->coef_resolution;
             if (write_flag) {
                 fa_bitstream_putbits(h_bs,resInBits-DEF_TNS_RES_OFFSET,LEN_TNS_COEFF_RES);
             }
             bits += numFilters * (len_tns_length+len_tns_order);
             for (filtNumber=0;filtNumber<numFilters;filtNumber++) {
-                TnsFilterData* tnsFilterPtr=&windowDataPtr->tnsFilter[filtNumber];
-                int order = tnsFilterPtr->order;
+                tns_flt_t * tns_flt = &tns_win->tns_flt[filtNumber];
+                int order = tns_flt->order;
                 if (write_flag) {
-                    fa_bitstream_putbits(h_bs,tnsFilterPtr->length,len_tns_length);
+                    fa_bitstream_putbits(h_bs,tns_flt->length,len_tns_length);
                     fa_bitstream_putbits(h_bs,order,len_tns_order);
                 }
                 if (order) {
                     bits += (LEN_TNS_DIRECTION + LEN_TNS_COMPRESS);
                     if (write_flag) {
-                        fa_bitstream_putbits(h_bs,tnsFilterPtr->direction,LEN_TNS_DIRECTION);
-                        fa_bitstream_putbits(h_bs,tnsFilterPtr->coefCompress,LEN_TNS_COMPRESS);
+                        fa_bitstream_putbits(h_bs,tns_flt->direction,LEN_TNS_DIRECTION);
+                        fa_bitstream_putbits(h_bs,tns_flt->coef_compress,LEN_TNS_COMPRESS);
                     }
-                    bitsToTransmit = resInBits - tnsFilterPtr->coefCompress;
+                    bitsToTransmit = resInBits - tns_flt->coef_compress;
                     bits += order * bitsToTransmit;
                     if (write_flag) {
                         int i;
                         for (i=1;i<=order;i++) {
-                            unsignedIndex = (unsigned long) (tnsFilterPtr->index[i])&(~(~0<<bitsToTransmit));
+                            unsignedIndex = (unsigned long) (tns_flt->index[i])&(~(~0<<bitsToTransmit));
                             fa_bitstream_putbits(h_bs,unsignedIndex,bitsToTransmit);
                         }
                     }
@@ -773,6 +790,7 @@ static int write_tns_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
     }
     return bits;
 }
+
 
 
 static int write_gaincontrol_data(uintptr_t h_bs, aacenc_ctx_t *s, int write_flag)
