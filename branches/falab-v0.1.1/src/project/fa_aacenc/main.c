@@ -32,7 +32,7 @@ TODO:
     mono                               done                   yes
     stereo(common_window=0)            done                   yes
     stereo(ms)                         done                   yes 
-    lfe                                no schecdule           no(easy, need test)
+    lfe                                done                   yes(need more test) 
     high frequency optimize            done                   yes(bandwith limited now)
     bitrate control fixed              done                   yes(constant bitrate CBR is OK) 
     TNS                                done                   yes(not very important, little influence only for the strong hit audio point) 
@@ -47,12 +47,13 @@ TODO:
 #include <stdlib.h>
 #include <math.h>
 #include <memory.h>
-#include "fa_aacenc.h"
+#include "fa_aacapi.h"
 #include "fa_wavfmt.h"
 #include "fa_parseopt.h"
 #include "fa_timeprofile.h"
 
-#define FRAME_SIZE_MAX  2048 
+#define CHNMAX          64
+#define FRAME_SIZE_MAX  (CHNMAX * 1024)//2048 
 
 int main(int argc, char *argv[])
 {
@@ -74,7 +75,7 @@ int main(int argc, char *argv[])
     unsigned char aac_buf[FRAME_SIZE_MAX];
     int aac_out_len;
 
-    int lfe_enable = 0;
+    int lfe_enable = 1;//0;
 
     ret = fa_parseopt(argc, argv);
     if(ret) return -1;
@@ -96,7 +97,7 @@ int main(int argc, char *argv[])
     chn_num     = fmt.channels;
 
     h_aacenc = fa_aacenc_init(sample_rate, opt_bitrate, chn_num,
-                              2, LOW, lfe_enable,
+                              FA_AACENC_MPEG_VER_DEF , FA_AACENC_OBJ_TYPE_DEF, lfe_enable,
                               opt_bandwidth,
                               opt_speedlevel);
     if (!h_aacenc) {

@@ -38,9 +38,9 @@
 
 
 /*global option vaule*/
-char  opt_inputfile[256]  = "ys.wav";
-char  opt_outputfile[256] = "outaac.aac";
-int   opt_bitrate = 96;
+char  opt_inputfile[256]  = "";
+char  opt_outputfile[256] = "";
+int   opt_bitrate = 128;
 int   opt_speedlevel = 2;
 int   opt_bandwidth = 20;
 
@@ -48,7 +48,8 @@ int   opt_bandwidth = 20;
 
 const char *usage =
 "\n\n"
-"Usage: faasmodel <-i> <inputfile> <-o> <outputfile> [options] \n"
+/*"Usage: faasmodel <-i> <inputfile> <-o> <outputfile> [options] \n"*/
+"Usage: faasmodel <-i> <inputfile> \n"
 "\n\n"
 "See also:\n"
 "    --help               for short help on ...\n"
@@ -145,23 +146,35 @@ static void fa_printopt()
  */
 static int fa_checkopt(int argc)
 {
-/*
-    if(argc < 5) {
+
+    if(argc < 3) {
         FA_PRINT_ERR("FAIL: input and output file should input\n");
         return -1;
     }
-*/
+
+    if (strlen(opt_outputfile) == 0) {
+        char tmp[256];
+        char *t = strrchr(opt_inputfile, '.');
+        int l = t ? strlen(opt_inputfile) - strlen(t) : strlen(opt_inputfile);
+
+        memset(tmp, 0, 256);
+        memset(opt_outputfile, 0, 256);
+
+        strncpy(tmp, opt_inputfile, l);
+        sprintf(opt_outputfile, "%s.aac\0", tmp);
+    }
+
     if(strlen(opt_inputfile) == 0 || strlen(opt_outputfile) == 0) {
         FA_PRINT_ERR("FAIL: input and output file should input\n");
         return -1;
 
     }
-
+/*
     if(opt_bitrate > 256 || opt_bitrate < 32)  {
         FA_PRINT_ERR("FAIL: the bitrate is too large or too short, should be in [32000, 256000]\n");
         return -1;
     }
-
+*/
     if(opt_speedlevel > 6 || opt_speedlevel < 1)  {
         FA_PRINT_ERR("FAIL: out of range, should be in [1,6]\n");
         return -1;

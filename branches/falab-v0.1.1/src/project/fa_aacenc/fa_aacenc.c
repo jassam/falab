@@ -169,12 +169,13 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
     int i;
     int bits_average;
     int bits_res_maxsize;
+    int real_band_width;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)malloc(sizeof(fa_aacenc_ctx_t));
     chn_info_t chn_info_tmp[MAX_CHANNELS];
-
+/*
     if (bit_rate > 256000 || bit_rate < 32000)
         return (uintptr_t)NULL;
-
+*/
     f->speed_level = speed_level;
 
     /*init rom*/
@@ -246,7 +247,6 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
             f->do_quantize = fa_quantize_loop;
 
     }
-    /*f->do_quantize;*/
 
     /*init psy and mdct quant */
     for (i = 0; i < chn_num; i++) {
@@ -288,10 +288,15 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         memcpy(&(f->ctx[i].chn_info), &(chn_info_tmp[i]), sizeof(chn_info_t));
         f->ctx[i].chn_info.common_window = 0;
 
+        if (f->ctx[i].chn_info.lfe == 1) 
+            real_band_width = 2000;
+        else 
+            real_band_width = f->band_width;
+        
         switch (sample_rate) {
             case 48000:
-                f->ctx[i].cutoff_line_long = get_cutoff_line(48000, 1024, f->band_width);
-                f->ctx[i].cutoff_line_short= get_cutoff_line(48000, 128 , f->band_width);
+                f->ctx[i].cutoff_line_long = get_cutoff_line(48000, 1024, real_band_width);
+                f->ctx[i].cutoff_line_short= get_cutoff_line(48000, 128 , real_band_width);
                 f->ctx[i].cutoff_sfb_long  = get_cutoff_sfb(FA_SWB_48k_LONG_NUM , fa_swb_48k_long_offset , f->ctx[i].cutoff_line_long);
                 f->ctx[i].cutoff_sfb_short = get_cutoff_sfb(FA_SWB_48k_SHORT_NUM, fa_swb_48k_short_offset, f->ctx[i].cutoff_line_short);
                 /*f->ctx[i].h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_48k_LONG_NUM ,fa_swb_48k_long_offset, 1);*/
@@ -304,8 +309,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                 f->ctx[i].sfb_num_short= f->ctx[i].cutoff_sfb_short;
                 break;
             case 44100:
-                f->ctx[i].cutoff_line_long = get_cutoff_line(44100, 1024, f->band_width);
-                f->ctx[i].cutoff_line_short= get_cutoff_line(44100, 128 , f->band_width);
+                f->ctx[i].cutoff_line_long = get_cutoff_line(44100, 1024, real_band_width);
+                f->ctx[i].cutoff_line_short= get_cutoff_line(44100, 128 , real_band_width);
                 f->ctx[i].cutoff_sfb_long  = get_cutoff_sfb(FA_SWB_44k_LONG_NUM , fa_swb_44k_long_offset , f->ctx[i].cutoff_line_long);
                 f->ctx[i].cutoff_sfb_short = get_cutoff_sfb(FA_SWB_44k_SHORT_NUM, fa_swb_44k_short_offset, f->ctx[i].cutoff_line_short);
                 /*f->ctx[i].h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_44k_LONG_NUM ,fa_swb_44k_long_offset, 1);*/
@@ -316,8 +321,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                 f->ctx[i].sfb_num_short= f->ctx[i].cutoff_sfb_short;
                 break;
             case 32000:
-                f->ctx[i].cutoff_line_long = get_cutoff_line(32000, 1024, f->band_width);
-                f->ctx[i].cutoff_line_short= get_cutoff_line(32000, 128 , f->band_width);
+                f->ctx[i].cutoff_line_long = get_cutoff_line(32000, 1024, real_band_width);
+                f->ctx[i].cutoff_line_short= get_cutoff_line(32000, 128 , real_band_width);
                 f->ctx[i].cutoff_sfb_long  = get_cutoff_sfb(FA_SWB_32k_LONG_NUM , fa_swb_32k_long_offset , f->ctx[i].cutoff_line_long);
                 f->ctx[i].cutoff_sfb_short = get_cutoff_sfb(FA_SWB_32k_SHORT_NUM, fa_swb_32k_short_offset, f->ctx[i].cutoff_line_short);
                 /*f->ctx[i].h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_32k_LONG_NUM ,fa_swb_32k_long_offset, 1);*/
@@ -330,6 +335,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                 f->ctx[i].sfb_num_short= f->ctx[i].cutoff_sfb_short;
                 break;
         }
+
 
         memset(f->ctx[i].mdct_line, 0, sizeof(float)*2*AAC_FRAME_LEN);
 
@@ -385,6 +391,9 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
     uintptr_t handle;
 
+    int bit_rate_max, bit_rate_min;
+    int bit_rate_chn;
+
 
     int speed_index;
 
@@ -400,6 +409,15 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     blockswitch_method   = speed_level_tab[speed_index][4];
     quantize_method      = speed_level_tab[speed_index][5];
 
+    bit_rate_min = 16;
+    bit_rate_max = 160;
+    bit_rate_chn = bit_rate/chn_num;
+
+    if ((bit_rate_chn > bit_rate_max) || (bit_rate_chn < bit_rate_min)) {
+        printf("total bitrate=%d, per chn = %d\n", bit_rate, bit_rate_chn);
+        printf("bitrate not support, only suporrt [16~160]kbps per chn\n");
+        exit(0);
+    }
 
     handle = aacenc_init(sample_rate, bit_rate*1000, chn_num,
                          mpeg_version, aac_objtype, band_width*1000, speed_level,
@@ -436,6 +454,7 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
         s->window_group_length[6] = 0;
         s->window_group_length[7] = 0;
 #else 
+        /*just for test different group length result*/
         s->num_window_groups = 3;
         s->window_group_length[0] = 6;
         s->window_group_length[1] = 1;
@@ -549,6 +568,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         } else
             zero_cutoff(s->mdct_line, 1024, s->cutoff_line_long);
 
+
         /* 
            calculate xmin and pe
            --use current sample_buf calculate pe to decide which block used in the next frame
@@ -565,7 +585,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             }
         }
 
-        if (tns_enable)
+        if (tns_enable && (!s->chn_info.lfe))
             fa_tns_encode_frame(s);
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/

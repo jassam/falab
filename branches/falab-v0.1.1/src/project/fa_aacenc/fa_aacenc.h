@@ -31,63 +31,15 @@
 #include "fa_aaccfg.h"
 #include "fa_aacchn.h"
 #include "fa_swbtab.h"
+#include "fa_aacapi.h"
 
 #ifdef __cplusplus 
 extern "C"
 { 
 #endif  
 
-
 typedef unsigned uintptr_t;
 
-/*
-#define DELAY 2048
-#define LEN_LTP_DATA_PRESENT 1
-#define LEN_LTP_LAG 11
-#define LEN_LTP_COEF 3
-#define LEN_LTP_SHORT_USED 1
-#define LEN_LTP_SHORT_LAG_PRESENT 1
-#define LEN_LTP_SHORT_LAG 5
-#define LTP_LAG_OFFSET 16
-#define LEN_LTP_LONG_USED 1
-#define MAX_LT_PRED_LONG_SFB 40
-#define MAX_LT_PRED_SHORT_SFB 13
-#define SHORT_SQ_OFFSET (AAC_BLOCK_LONG_LEN-(AAC_BLOCK_SHORT_LEN*4+AAC_BLOCK_SHORT_LEN/2))
-#define CODESIZE 8
-#define NOK_LT_BLEN (3 * AAC_BLOCK_LONG_LEN)
-
-#define SBMAX_L 49
-#define LPC 2
-
-typedef struct
-{
-    int weight_idx;
-    double weight;
-    int sbk_prediction_used[MAX_SHORT_WINDOWS];
-    int sfb_prediction_used[MAX_SCFAC_BANDS];
-    int delay[MAX_SHORT_WINDOWS];
-    int global_pred_flag;
-    int side_info;
-    double *buffer;
-    double *mdct_predicted;
-
-    double *time_buffer;
-    double *ltp_overlap_buffer;
-} LtpInfo;
-
-
-typedef struct
-{
-    int psy_init_mc;
-    double dr_mc[LPC][AAC_BLOCK_LONG_LEN],e_mc[LPC+1+1][AAC_BLOCK_LONG_LEN];
-    double K_mc[LPC+1][AAC_BLOCK_LONG_LEN], R_mc[LPC+1][AAC_BLOCK_LONG_LEN];
-    double VAR_mc[LPC+1][AAC_BLOCK_LONG_LEN], KOR_mc[LPC+1][AAC_BLOCK_LONG_LEN];
-    double sb_samples_pred_mc[AAC_BLOCK_LONG_LEN];
-    int thisLineNeedsResetting_mc[AAC_BLOCK_LONG_LEN];
-    int reset_count_mc;
-} BwpInfo;
-
-*/
 typedef struct _aacenc_ctx_t{
 
     //chn map
@@ -149,15 +101,7 @@ typedef struct _aacenc_ctx_t{
     int   bits_more;
     int   bits_res_maxsize;
     int   bits_res_size;
-/*
-    //ltp var (not support, only the var that the bitstream need, copy from FAAC)
-    LtpInfo ltpInfo;
-    BwpInfo bwpInfo;
-    int   max_pred_sfb;
-    int   pred_global_flag;
-    int   pred_sfb_flag[MAX_SCFAC_BANDS];
-    int   reset_group_number;
-*/
+
 }aacenc_ctx_t;
 
 enum {
@@ -195,20 +139,8 @@ typedef struct _fa_aacenc_ctx_t{
 
 }fa_aacenc_ctx_t;
 
-
-uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
-                         int mpeg_version, int aac_objtype, int lfe_enable,
-                         int band_width,
-                         int speed_level);
-
-void fa_aacenc_uninit(uintptr_t handle);
-
-void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int *outlen);
-
 #ifdef __cplusplus 
 }
 #endif  
-
-
 
 #endif
