@@ -25,34 +25,58 @@
 #            it will be changed according to the project
 #
 
-
 include Makefile.include
 
 INCLUDEDIR = ./include
 
 ifeq ($(ARCH),ARCH_ARM)
-LDFLAGS += -lm -lpthread -lrt 
+LDFLAGS += -L./libfalabaac -static -lfalabaac -lm -lpthread -lrt 
 else
+ifeq ($(DEBUG), Y)
 LDFLAGS += -lm -lpthread -lrt 
+else 
+LDFLAGS += -L./libfalabaac -static -lfalabaac -lm -lpthread -lrt 
+endif
 endif
 
-TARGET    =  fa_aacenc
-CSRCFILES =  $(shell ls *.c)
+ifeq ($(DEBUG), Y)
+TARGET      =  falabaac_g 
+CSRCFILES =  $(shell ls ./frontend/*.c)
+CSRCFILES += $(shell ls ./libfalabaac/*.c)
 COBJFILES =  $(patsubst %.c,%.o,$(CSRCFILES))
+else 
+TARGET      =  falabaac 
+CSRCFILES   =  $(shell ls ./frontend/*.c)
+COBJFILES   =  $(patsubst %.c,%.o,$(CSRCFILES))
+endif
 
-SRCFILES  =	 $(CSRCFILES) 
-OBJFILES  =	 $(COBJFILES) 
 
-CFLAGS    += -I.  -I$(INCLUDEDIR)
+SRCFILES    =  $(CSRCFILES) 
+OBJFILES    =  $(COBJFILES) 
 
-all: $(OBJFILES) 
-	rm $(TARGET) -f 
-	$(CC) -o $(TARGET) $(OBJFILES) $(LDFLAGS)	 
+CFLAGS      += -I.  -I$(INCLUDEDIR)
+
+all: preaction $(OBJFILES) 
+	@rm $(TARGET) -f 
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJFILES) $(LDFLAGS)	 
+
+preaction:
+ifeq ($(DEBUG), Y)
+	cd ./libfalabaac
+	@rm *.o -f
+else 
+	cd ./libfalabaac && $(MAKE) 
+endif
+	cd ..
 
 clean : 
-	@rm *.o -f
+	@rm ./libfalabaac/*.o -f
+	@rm ./libfalabaac/libfalabaac.a -f
+	@rm ./libfalabaac/libfalabaac.so -f
+	@rm ./frontend/*.o -f
 	@rm *.out -f	
-	@rm $(TARGET) -f	
+	@rm falabaac -f	
+	@rm falabaac_g -f	
 
 install :
 

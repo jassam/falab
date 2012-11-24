@@ -33,7 +33,7 @@
 #include "fa_iqtab.h"
 #include "fa_fastmath.h"
 #include "fa_huffman.h"
-#include "fa_timeprofile.h"
+/*#include "fa_timeprofile.h"*/
 
 
 #ifndef FA_MIN

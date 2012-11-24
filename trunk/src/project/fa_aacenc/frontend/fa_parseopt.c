@@ -49,7 +49,7 @@ int   opt_lfeenable = 0;
 
 const char *usage =
 "\n\n"
-"Usage: fa_aacenc <-i> <inputfile> \n"
+"Usage: falabaac <-i> <inputfile> [options] ...\n"
 "\n\n"
 "See also:\n"
 "    --help               for short help on ...\n"
@@ -66,14 +66,14 @@ const char *default_set =
 
 const char *short_help =
 "\n\n"
-"Usage: fa_aacenc <-i> <inputfile> <-o> <outputfile> [options] ...\n"
+"Usage: falabaac <-i> <inputfile> [options] ...\n"
 "Options:\n"
-"    -i <inputfile>       Set input filename\n"
-"    -o <outputfile>      Set output filename\n"
-"    -b <bitrate>         Set bitrate\n"
-"    -l <speedlevel>      Set speed level(1~6)\n"
-"    -w <bandwidth>       Set band width, valid when settings permit\n"
-"    -e <lfe_enable>      Set the LFE encode enable\n"
+"    -i <inputfile>       Set input filename                               [eg: test.wav]\n"
+"    -o <outputfile>      Set output filename                              [eg: test_out.aac]\n"
+"    -b <bitrate>         Set bitrate(kbps)                                [eg: -b 128]\n"
+"    -l <speedlevel>      Set speed level(1~6)                             [eg: -l 2]\n"
+"    -w <bandwidth>       Set band width(kHz, 5~20kHz valid)               [eg: -w 10]\n"
+"    -e <lfeenable>       Set the LFE encode enable(0 or 1)                [eg: -e 1]\n"
 "    --help               Show this abbreviated help.\n"
 "    --long-help          Show complete help.\n"
 "    --license            for the license terms for falab.\n"
@@ -81,23 +81,23 @@ const char *short_help =
 
 const char *long_help =
 "\n\n"
-"Usage: fa_aacenc <-i> <inputfile> <-o> <outputfile> [options] ...\n"
+"Usage: falabaac <-i> <inputfile>  [options] ...\n"
 "Options:\n"
-"    -i <inputfile>       Set input filename\n"
-"    -o <outputfile>      Set output filename\n"
-"    -b                   Set bitrate\n"
-"    -l <speedlevel>      Set speed level(1~6)\n"
-"    -w <bandwidth>       Set band width, valid when settings permit\n"
-"    -e <lfe_enable>      Set the LFE encode enable\n"
+"    -i <inputfile>       Set input filename                               [eg: test.wav]\n"
+"    -o <outputfile>      Set output filename                              [eg: test_out.aac]\n"
+"    -b                   Set bitrate(kbps)                                [eg: -b 128]\n"
+"    -l <speedlevel>      Set speed level(1~6)                             [eg: -l 2]\n"
+"    -w <bandwidth>       Set band width(kHz, 5~20kHz valid)               [eg: -w 10]\n"
+"    -e <lfeenable>       Set the LFE encode enable(0 or 1)                [eg: -e 1]\n"
 "    --help               Show this abbreviated help.\n"
 "    --long-help          Show complete help.\n"
 "    --license            for the license terms for falab.\n"
-"    --input <inputfile>  Set input filename\n"
-"    --output <outputfile>Set input filename\n"
-"    --bitrate <bitrate>  Set average bitrate\n"
-"    --speedlevel         Set the speed level(1 is slow but good quality, 4 is fastest but less quality)"
-"    --band_width         Set band width, only 5-20 (kHz) valid"
-"    --lfe_enable          Set the LFE encode enable\n"
+"    --input <inputfile>  Set input filename, must be wav file, now support 32kHz, 44.1kHz and 48kHz, 16bits/sample \n"
+"    --output <outputfile>Set output filename, aac file, format is MPEG2-ADTS\n"
+"    --bitrate <bitrate>  Set average bitrate, 16~160kbps per channel, default is 128kbps. 96kbps is also good quality\n"
+"    --speedlevel <l>     Set the speed level(1 is slow but good quality, 6 is fastest but less quality)\n"
+"    --bandwidth  <w>     Set band width, only 5-20 (kHz) valid. 20kHz when bitrate >=96kbps\n"
+"    --lfeenable  <e>     Set the LFE encode enable\n"
 "\n\n";
 
 const char *license =
@@ -130,7 +130,9 @@ const char *license =
 "\n"
 "falab src code is based on the signal processing theroy, optimize theroy, ISO ref, etc.\n"
 "The purpose of falab is building a free algorithm lab to help people to learn\n"
-"and study algorithm, exchanging experience.    ---luolongzhi 2012.07.08"
+"and study algorithm, exchanging experience.    ---luolongzhi 2012.07.08\n"
+"                                                                                    \n"
+"code URL: http://code.google.com/p/falab/\n "
 "\n";
 
 static void fa_printopt()
@@ -151,7 +153,7 @@ static int fa_checkopt(int argc)
 {
 
     if(argc < 3) {
-        FA_PRINT_ERR("FAIL: input and output file should input\n");
+        FA_PRINT_ERR("FAIL: input wav file should input, wav file should be 16bits per sample\n");
         return -1;
     }
 
@@ -220,7 +222,7 @@ int fa_parseopt(int argc, char *argv[])
                                     { "bitrate"    , 1, 0, 'b'},        
                                     { "speedlevel" , 1, 0, 'l'},        
                                     { "bandwidth"  , 1, 0, 'w'},        
-                                    { "lfe_enable" , 1, 0, 'e'},        
+                                    { "lfeenable" , 1, 0, 'e'},        
                                     {0             , 0, 0,  0},
                                 };
         int c = -1;
@@ -303,6 +305,10 @@ int fa_parseopt(int argc, char *argv[])
                           unsigned int i;
                           if (sscanf(optarg, "%u", &i) > 0) {
                               opt_lfeenable = i;
+                              if (opt_lfeenable != 0 || opt_lfeenable != 1) {
+                                  FA_PRINT("FAIL: lfe enable should be 0 or 1\n");
+                                  exit(0);
+                              }
                               FA_PRINT("SUCC: set lfe enable = %u\n", opt_lfeenable);
                           }
                           break;
