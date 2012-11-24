@@ -393,7 +393,7 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2,
                                int *x_quant)
 {
     fa_mdctquant_t *f1 = (fa_mdctquant_t *)handle1;
-    fa_mdctquant_t *f2 = (fa_mdctquant_t *)handle2;
+    /*fa_mdctquant_t *f2 = (fa_mdctquant_t *)handle2;*/
 
     int gr, win;
     int sfb;

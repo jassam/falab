@@ -1,5 +1,33 @@
+/*
+  falab - free algorithm lab 
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+  filename: fa_tns.c 
+  version : v1.0.0
+  time    : 2012/11/20 
+  author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
+
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <memory.h>
 #include <math.h>
 #include "fa_tns.h"
 #include "fa_aaccfg.h"
@@ -43,8 +71,6 @@ static int tns_maxband_short[12] =
    
 uintptr_t fa_tns_init(int mpeg_version, int objtype, int sr_index)
 {
-    unsigned int channel;
-
     tns_info_t *f = (tns_info_t *)malloc(sizeof(tns_info_t));
 
     switch (objtype) {
@@ -221,9 +247,9 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
     int window_len;
 
     int start, end, band_len;
-    int swb_num;
+    /*int swb_num;*/
     int *swb_low;
-    int *swb_high;
+    /*int *swb_high;*/
     int max_sfb;
     float *mdct_line;
 
@@ -246,9 +272,9 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
         num_windows = 8;
         window_len  = 128;
 
-        swb_num  = fs->sfb_num;
+        /*swb_num  = fs->sfb_num;*/
         swb_low  = fs->swb_low;
-        swb_high = fs->swb_high;
+        /*swb_high = fs->swb_high;*/
         max_sfb  = f->sfb_num_short;
 
         start = s->tns_minband_short;
@@ -261,9 +287,9 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
         num_windows = 1;
         window_len  = 1024;
 
-        swb_num  = fl->sfb_num;
+        /*swb_num  = fl->sfb_num;*/
         swb_low  = fl->swb_low;
-        swb_high = fl->swb_high;
+        /*swb_high = fl->swb_high;*/
         max_sfb  = f->sfb_num_long;
 
         start = s->tns_minband_long;
@@ -307,13 +333,16 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
         tns_win->coef_resolution = DEF_TNS_COEFF_RES;
         mdct_line_index = w*window_len + swb_low[start];
         mdct_line_len   = swb_low[end] - swb_low[start];
-
+/*
+        if (mdct_line_len < 0)
+            printf("tns error happen\n");
+*/
         gain = fa_lpc(h_lpc, &(mdct_line[mdct_line_index]), mdct_line_len, acof, kcof, &err);
 
         if (gain > DEF_TNS_GAIN_THRESH) {
             int real_order;
             
-            printf("\ngain=%f\n", gain);
+            /*printf("\ngain=%f\n", gain);*/
 
             tns_win->num_flt++;
             s->tns_data_present = 1;
