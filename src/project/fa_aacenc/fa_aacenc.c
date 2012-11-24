@@ -271,7 +271,6 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         memset(f->ctx[i].lastx, 0, sizeof(int)*8);
         memset(f->ctx[i].avgenergy, 0, sizeof(float)*8);
-        f->ctx[i].quality = 100;
 
         f->ctx[i].used_bits= 0;
 
@@ -334,7 +333,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         memset(f->ctx[i].mdct_line, 0, sizeof(float)*2*AAC_FRAME_LEN);
 
-        f->ctx[i].max_pred_sfb = get_max_pred_sfb(f->cfg.sample_rate_index);
+        /*f->ctx[i].max_pred_sfb = get_max_pred_sfb(f->cfg.sample_rate_index);*/
 
         f->ctx[i].quant_ok = 0;
     }
