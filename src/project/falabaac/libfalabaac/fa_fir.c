@@ -525,6 +525,8 @@ uintptr_t fa_fir_filter_bandstop_init(int frame_len,
 
     flt = (fa_fir_filter_t *)malloc(sizeof(fa_fir_filter_t));
 
+    memset(flt, 0, sizeof(fa_fir_filter_t));
+
 	flt->fc = 0;
     flt->fc1 = fc1;
     flt->fc2 = fc2;

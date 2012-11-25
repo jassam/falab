@@ -59,6 +59,8 @@ uintptr_t fa_bitstream_init(int num_bytes)
 {
     fa_bitstream_t *f  = (fa_bitstream_t *)malloc(sizeof(fa_bitstream_t));
 
+    memset(f, 0, sizeof(fa_bitstream_t));
+
     f->data = (unsigned char *)malloc(sizeof(unsigned char)*num_bytes);
     memset(f->data, 0, sizeof(unsigned char)*num_bytes);
     f->num_bytes = num_bytes;

@@ -220,6 +220,7 @@ uintptr_t fa_fft_init(int size)
     fa_fft_ctx_t *f = NULL;
 
     f = (fa_fft_ctx_t *)malloc(sizeof(fa_fft_ctx_t));
+    memset(f, 0, sizeof(fa_fft_ctx_t));
 
     f->length = size;
     f->base   = (int)(log(size)/log(2));

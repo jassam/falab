@@ -57,6 +57,8 @@ uintptr_t fa_lpc_init(int p)
 
     f = (fa_lpc_t *)malloc(sizeof(fa_lpc_t));
 
+    memset(f, 0, sizeof(fa_lpc_t));
+
     f->p = p;
 
 #ifdef USE_LPC_HP

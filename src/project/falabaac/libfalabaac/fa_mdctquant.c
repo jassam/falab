@@ -78,6 +78,8 @@ uintptr_t fa_mdctquant_init(int mdct_line_num, int sfb_num, int *swb_low, int bl
 
     fa_mdctquant_t *f = (fa_mdctquant_t *)malloc(sizeof(fa_mdctquant_t));
     
+    memset(f, 0, sizeof(fa_mdctquant_t));
+
     f->block_type_cof = block_type_cof;
     f->mdct_line_num  = mdct_line_num;
 

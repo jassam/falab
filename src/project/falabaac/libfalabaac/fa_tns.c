@@ -73,6 +73,8 @@ uintptr_t fa_tns_init(int mpeg_version, int objtype, int sr_index)
 {
     tns_info_t *f = (tns_info_t *)malloc(sizeof(tns_info_t));
 
+    memset(f, 0, sizeof(tns_info_t));
+
     switch (objtype) {
     case MAIN:
     case LTP:
