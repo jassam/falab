@@ -64,6 +64,7 @@ uintptr_t fa_aacfilterbank_init()
     float *kbd_win_short;
 
     fa_aacfilterbank_t *f = (fa_aacfilterbank_t *)malloc(sizeof(fa_aacfilterbank_t));
+    memset(f, 0, sizeof(fa_aacfilterbank_t));
 
     /*initial the long and short block window*/
     sin_win_long  = (float *)malloc(sizeof(float)*2*AAC_BLOCK_LONG_LEN);

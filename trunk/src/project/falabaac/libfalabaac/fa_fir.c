@@ -460,6 +460,7 @@ uintptr_t fa_fir_filter_lpf_init(int frame_len,
     fa_fir_filter_t *flt = NULL;
 
     flt = (fa_fir_filter_t *)malloc(sizeof(fa_fir_filter_t));
+    memset(flt, 0, sizeof(fa_fir_filter_t));
 
 	flt->fc = fc;
     flt->fc1 = 0;
@@ -481,6 +482,7 @@ uintptr_t fa_fir_filter_hpf_init(int frame_len,
     fa_fir_filter_t *flt = NULL;
 
     flt = (fa_fir_filter_t *)malloc(sizeof(fa_fir_filter_t));
+    memset(flt, 0, sizeof(fa_fir_filter_t));
 
 	flt->fc = fc;
     flt->fc1 = 0;
@@ -503,6 +505,7 @@ uintptr_t fa_fir_filter_bandpass_init(int frame_len,
     fa_fir_filter_t *flt = NULL;
 
     flt = (fa_fir_filter_t *)malloc(sizeof(fa_fir_filter_t));
+    memset(flt, 0, sizeof(fa_fir_filter_t));
 
 	flt->fc = 0;
     flt->fc1 = fc1;
