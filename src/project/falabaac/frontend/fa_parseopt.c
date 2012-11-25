@@ -305,7 +305,7 @@ int fa_parseopt(int argc, char *argv[])
                           unsigned int i;
                           if (sscanf(optarg, "%u", &i) > 0) {
                               opt_lfeenable = i;
-                              if (opt_lfeenable != 0 || opt_lfeenable != 1) {
+                              if (opt_lfeenable != 0 && opt_lfeenable != 1) {
                                   FA_PRINT("FAIL: lfe enable should be 0 or 1\n");
                                   exit(0);
                               }
