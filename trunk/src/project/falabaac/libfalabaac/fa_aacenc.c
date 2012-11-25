@@ -174,11 +174,13 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
     int bits_res_maxsize;
     int real_band_width;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)malloc(sizeof(fa_aacenc_ctx_t));
+
     chn_info_t chn_info_tmp[MAX_CHANNELS];
 /*
     if (bit_rate > 256000 || bit_rate < 32000)
         return (uintptr_t)NULL;
 */
+    memset(f, 0, sizeof(fa_aacenc_ctx_t));
     f->speed_level = speed_level;
 
     /*init rom*/
@@ -280,6 +282,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].bits_average     = bits_average;
         f->ctx[i].bits_res_maxsize = bits_res_maxsize;
         f->ctx[i].res_buf          = (unsigned char *)malloc(sizeof(unsigned char)*(bits_res_maxsize/8 + 1));
+        memset(f->ctx[i].res_buf, 0, sizeof(unsigned char)*(bits_res_maxsize/8 + 1));
         f->ctx[i].bits_res_size    = 0;
         f->ctx[i].last_common_scalefac = 0;
 

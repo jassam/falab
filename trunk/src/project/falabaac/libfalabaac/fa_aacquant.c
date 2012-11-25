@@ -815,6 +815,7 @@ void fa_quantize_loop(fa_aacenc_ctx_t *f)
     
     }
 
+    exit(0);
 #endif
 }
 
@@ -1164,7 +1165,7 @@ void fa_quantize_fast(fa_aacenc_ctx_t *f)
     /*FA_CLOCK_END(2);*/
     /*FA_CLOCK_COST(2);*/
 
-#if  1 
+#if  0 
     {
         int i,j;
 

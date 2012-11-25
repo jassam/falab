@@ -59,6 +59,8 @@ uintptr_t fa_aacpsy_init(int sample_rate)
 {
     fa_aacpsy_t *f = (fa_aacpsy_t *)malloc(sizeof(fa_aacpsy_t));
 
+    memset(f, 0, sizeof(fa_aacpsy_t));
+
     f->sample_rate = sample_rate;
     /*f->bit_alloc   = 0;*/
     /*f->block_type  = LONG_CODING_BLOCK;*/

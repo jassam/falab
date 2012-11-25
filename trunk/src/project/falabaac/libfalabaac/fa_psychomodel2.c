@@ -175,6 +175,8 @@ uintptr_t fa_psychomodel2_init(int cbands_num, int *w_low, float *barkval, float
     int i, j;
     fa_psychomodel2_t *f = (fa_psychomodel2_t *)malloc(sizeof(fa_psychomodel2_t));
     
+    memset(f, 0, sizeof(fa_psychomodel2_t));
+
     f->cbands_num = cbands_num;
     f->w_low      = (int   *)malloc(sizeof(int)*(cbands_num+1));
     for (i = 0; i <= cbands_num; i++)
