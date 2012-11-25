@@ -79,6 +79,20 @@ II. 3 API functions
     void fa_aacenc_uninit(uintptr_t handle);
     void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int *outlen);
 
+III. Others
+1.  This software was designed to be high moduled structure, many modules can be reused for other smiliar project such as fa_fft,
+    fa_mdct, fa_psychomodle2, fa_lpc, fa_levinson, fa_fir, fa_corr, fa_fastmath, fa_bitbuffer, fa_bitstream, fa_mdctquant....
+    only the files fa_aac*** maybe only be used in aac encoder and decoder. you can extract any module you need. 
+2.  There are no any global variables in the code(except the rom constant global table), it is good for multithread enviroment, 
+    and any module follow the malloc handle and free handle rule. In the process, there are no any malloc and free code, 
+    it is safe for long time running!!
+3.  The complicated mathmatic functions like pow,sin,cos,log are can replaced by the fast funtion in fa_fastmath.h, can speed up
+    the to different platform and enviroment.
+4.  I try use arm-linux-gcc to compile it, it can be compiled successfully, but I didn't test on ARM platform, you can try it.
+5.  The encoder sound quality I tested is good(I think!), I test scan frequency and many audio, it is stable and good! you can 
+    do the sound quality test and experiment.
+    you can download the EBU test audio file frome the web site below to do sound quality test:
+    http://tech.ebu.ch/public-cations/sqamcd
 
 
 Note:
