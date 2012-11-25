@@ -56,7 +56,7 @@ OBJFILES    =  $(COBJFILES)
 
 CFLAGS      += -I.  -I$(INCLUDEDIR)
 
-all: preaction $(OBJFILES) 
+all: clean preaction $(OBJFILES) 
 	@rm $(TARGET) -f 
 	$(CC) $(CFLAGS) -o $(TARGET) $(OBJFILES) $(LDFLAGS)	 
 
@@ -79,4 +79,9 @@ clean :
 	@rm falabaac_g -f	
 
 install :
+	sudo cp ./libfalabaac/libfalabaac.a /usr/local/lib/
+	sudo cp ./libfalabaac/libfalabaac.so /usr/local/lib/
+	sudo cp ./include/fa_aacapi.h /usr/local/include/
+	sudo cp ./include/fa_inttypes.h /usr/local/include/
+	sudo cp ./falabaac /usr/local/bin/
 
