@@ -30,7 +30,8 @@
 
 
 
-const float fa_iqtable[IQ_TABLE_SIZE] =
+/*const float fa_iqtable[IQ_TABLE_SIZE] =*/
+const double fa_iqtable[IQ_TABLE_SIZE] =
 {
     0,
     1,

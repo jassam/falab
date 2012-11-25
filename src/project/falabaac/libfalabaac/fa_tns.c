@@ -258,9 +258,10 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
 
     int w;
 
-    mdct_line = f->mdct_line;
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(f->h_mdctq_short);
     fa_mdctquant_t *fl = (fa_mdctquant_t *)(f->h_mdctq_long);
+
+    mdct_line = f->mdct_line;
 
     /*initial the band parameters*/
     if (f->block_type == ONLY_SHORT_BLOCK) {

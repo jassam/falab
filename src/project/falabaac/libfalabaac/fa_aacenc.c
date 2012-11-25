@@ -394,7 +394,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
                          int speed_level)
 {
 
-    int ms_enable;;
+    int ms_enable;
     int tns_enable;
     int block_switch_enable;
     int blockswitch_method;

@@ -98,7 +98,7 @@ float fa_fast_sin(float angle)
 
     /*normalize the angle in [0,2*M_PI]*/
 	angle = angle + M_PI_MUL2;
-	angle = fmodf(angle, M_PI_MUL2);	//now the angle is in(0,2*M_PI)
+	angle = fmod(angle, M_PI_MUL2);	//now the angle is in(0,2*M_PI)
 
 	if (angle <= M_PI) {
 		real_angle = M_PI - angle;
@@ -132,7 +132,7 @@ float fa_fast_cos(float angle)
 
     /*normalize the angle in [0,2*M_PI]*/
 	angle = angle + M_PI_MUL2;
-	angle = fmodf(angle, M_PI_MUL2);	//now the angle is in(0,2*M_PI)
+	angle = fmod(angle, M_PI_MUL2);	//now the angle is in(0,2*M_PI)
 
 	if (angle <= M_PI){
 		real_angle = M_PI - angle;

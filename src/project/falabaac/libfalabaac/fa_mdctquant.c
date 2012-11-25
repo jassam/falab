@@ -62,12 +62,12 @@ void fa_mdctquant_rom_init()
     int i;
 
     for (i = 0; i < 2*COF_SCALE_NUM; i++) {
-        rom_cof_scale[i] = powf(2, (3./16.) * (i-255)); 
+        rom_cof_scale[i] = pow(2, (3./16.) * (i-255)); 
         rom_cof_quant[i] = 1./rom_cof_scale[i];
     }
 
     for (i = 0; i < 2*COF_SCALE_NUM; i++) {
-        rom_inv_cof[i] = powf(2, 0.25*(i-255)); 
+        rom_inv_cof[i] = pow(2, 0.25*(i-255)); 
     }
 
 }
@@ -166,9 +166,9 @@ int fa_get_start_common_scalefac(float max_mdct_line)
         return 0;
 
 #if 0
-    tmp = ceilf(16./3 * (log2f((powf(max_mdct_line, 0.75))/MAX_QUANT)));
+    tmp = ceil(16./3 * (log2f((powf(max_mdct_line, 0.75))/MAX_QUANT)));
 #else 
-    tmp = ceilf(16./3 * (FA_LOG2((FA_SQRTF(max_mdct_line*FA_SQRTF(max_mdct_line)))/MAX_QUANT)));
+    tmp = ceil(16./3 * (FA_LOG2((FA_SQRTF(max_mdct_line*FA_SQRTF(max_mdct_line)))/MAX_QUANT)));
 #endif
     start_common_scalefac = (int)tmp;
 
@@ -292,7 +292,7 @@ void fa_calculate_quant_noise(uintptr_t handle,
                     inv_cof = rom_inv_cof[common_scalefac - scalefactor[gr][sfb]+255];
                     tmp_xq = FA_ABS(x_quant[mdct_line_offset+i]);
                     /*inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof;*/
-                    inv_x_quant = fa_iqtable[tmp_xq] * inv_cof;
+                    inv_x_quant = (float)(fa_iqtable[tmp_xq] * inv_cof);
 
                     tmp = FA_ABS(mdct_line[mdct_line_offset+i]) - inv_x_quant;
                     f->error_energy[gr][sfb][win] += tmp*tmp;  
@@ -511,9 +511,9 @@ int fa_mdctline_iquantize(uintptr_t handle,
             for (win = 0; win < window_group_length[gr]; win++) {
                 for (i = 0; i < swb_width; i++) {
                     /*inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));*/
-                    inv_cof = powf(2, 0.25*(scalefactor[gr][sfb] - SF_OFFSET));
-                    tmp_xq = (float)fabsf(x_quant[mdct_line_offset+i]);
-                    inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof; 
+                    inv_cof = pow(2, 0.25*(scalefactor[gr][sfb] - SF_OFFSET));
+                    tmp_xq = (float)fabs(x_quant[mdct_line_offset+i]);
+                    inv_x_quant = pow(tmp_xq, 4./3.) * inv_cof; 
                     mdct_line[mdct_line_offset+i] = inv_x_quant;
                 }
                 mdct_line_offset += swb_width;

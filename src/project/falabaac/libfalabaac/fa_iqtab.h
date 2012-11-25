@@ -30,6 +30,7 @@
 
 #define IQ_TABLE_SIZE 8192
 
-extern const float fa_iqtable[IQ_TABLE_SIZE];
+//extern const float fa_iqtable[IQ_TABLE_SIZE];
+extern const double fa_iqtable[IQ_TABLE_SIZE];
 
 #endif

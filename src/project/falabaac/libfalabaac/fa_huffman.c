@@ -52,7 +52,7 @@ void fa_huffman_rom_init()
     int i;
 
     for (i = 0; i < 20; i++)
-        rom_exp2_N[i] = powf(2, i-1);
+        rom_exp2_N[i] = pow(2, i-1);
 }
 /*
    This function takes an element that is larger than 16 and generates the base10 value of the
