@@ -815,7 +815,6 @@ void fa_quantize_loop(fa_aacenc_ctx_t *f)
     
     }
 
-    exit(0);
 #endif
 }
 
@@ -1190,7 +1189,6 @@ void fa_quantize_fast(fa_aacenc_ctx_t *f)
     
     }
 
-    exit(0);
 #endif
 
 }

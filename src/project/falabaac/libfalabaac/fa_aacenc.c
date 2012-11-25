@@ -527,6 +527,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     int chn_num;
     short *sample_in;
     float *sample_buf;
+    float sample_psy_buf[2*AAC_FRAME_LEN];
     float xmin[8][FA_SWB_NUM_MAX];
     int ms_enable;
     int tns_enable;
@@ -589,7 +590,12 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
            --use current sample_buf calculate pe to decide which block used in the next frame
         */
         if (psy_enable) {
+#if  0 
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_buf, s->block_type, &s->pe);
+#else
+            fa_aacfilterbank_get_xbuf(s->h_aac_analysis, sample_psy_buf);
+            fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);
+#endif
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
             fa_calculate_scalefactor_win(s, xmin);
         } else {
