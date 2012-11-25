@@ -1,17 +1,25 @@
 Normal User:
 
 *  Linux OS
+shortcut:  make --> sudo make install  -->OK --> run "falabaac --help" command   (WARN: check gcc manually by yourself)
+
 1. Under falabaac folder(main folder, first level folder), type "make", and falabaac file will be generated;
-2. type "sudo ./install-sh", and the falabaac will be installed
+2. type "sudo make install", and the falabaac will be installed
+
 
 
 *  Windows OS
-1. Open the frontend/win/falabaac.dsw project workspace
+shortcut:  open FALABAAC.DSW  -->select libfalabaac and falabaac project and rebuild  -->run
+
+1. Open the frontend/win/FALABAAC.DSW project workspace
 2. Project->Set Active Project->libfalabaac 
    Rebuild the libfalabaac project , the libfalabaac.lib will be generated in the libfalabaac/win/ folder
 3. Project->Set Active Project->falabaac 
    Rebuild the falabaac project , the falabaac will be generated in the Debug or Release folder for you choice
 4, Run
+
+
+
 
 
 
@@ -24,7 +32,7 @@ I. Install and Build the developement enviroment
    2 lib to develope, and the .h file you can find under ./include
    Besides, you can also type "make DEBUG=Y" to generate falabaac_g which is debug version, and you can use 
    gdb to debug and trace it.
-2. type "sudo ./install-sh", and the falabaac will be installed, moreover, the libfalabaac.a and libfalabaac.so
+2. type "sudo make install", and the falabaac will be installed, moreover, the libfalabaac.a and libfalabaac.so
    will be installed under /usr/local/lib, the fa_aacapi.h will be installed under /usr/local/include/. 
 
 *  Windows OS
@@ -58,10 +66,20 @@ I. Install and Build the developement enviroment
       add the libfalabaac.lib in the Object/library module blank:   ..\..\libfalabaac\win\libfalabaac.lib
    3) Then build your project , falabaac will be generated if success
 
-  
-3. 3 functions in fa_aacapi.h, it is very easy to learn and detail description in the fa_aacapi.h, also you can 
-   study it from main.c under the frontend folder.
+II. 3 API functions 
+    There are 3 functions in fa_aacapi.h, it is very easy to learn and detail description in the fa_aacapi.h, also you can 
+    study it from main.c under the frontend folder.
+
+    API functions:
+    uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
+                             int mpeg_version, int aac_objtype, int lfe_enable,
+                             int band_width,
+                             int speed_level);
+
+    void fa_aacenc_uninit(uintptr_t handle);
+    void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsigned char *buf_out, int *outlen);
+
 
 
 Note:
-If you have any problems, you can email to me (luolongzhi@gmail.com), and I will reply to you in my spare time.
+    If you have any problems, you can email to me (luolongzhi@gmail.com), and I will reply to you in my spare time.
