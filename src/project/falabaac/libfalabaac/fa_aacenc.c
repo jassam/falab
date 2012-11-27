@@ -51,7 +51,7 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
-#define GAIN_ADJUST   4 
+#define GAIN_ADJUST   5 //4 
 
 
 /* Returns the sample rate index */
