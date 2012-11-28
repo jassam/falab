@@ -245,7 +245,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
             break;
         case QUANTIZE_FAST:
             f->quantize_method = QUANTIZE_FAST;
-            f->do_quantize = fa_quantize_fast;
+            /*f->do_quantize = fa_quantize_fast;*/
+            f->do_quantize = fa_quantize_best;
             break;
         default:
             f->quantize_method = QUANTIZE_LOOP;
@@ -263,6 +264,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].common_scalefac   = 0;
         memset(f->ctx[i].scalefactor, 0, sizeof(int)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].scalefactor_win, 0, sizeof(int)*8*FA_SWB_NUM_MAX);
+        memset(f->ctx[i].maxscale_win,0, sizeof(int)*8*FA_SWB_NUM_MAX);
 
         f->ctx[i].num_window_groups = 1;
         f->ctx[i].window_group_length[0] = 1;
@@ -597,7 +599,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);
 #endif
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
-            fa_calculate_scalefactor_win(s, xmin);
+            /*fa_calculate_scalefactor_win(s, xmin);*/
+            fa_calculate_maxscale_win(s, xmin);
         } else {
             if (speed_level < 4) {
                 fa_fastquant_calculate_sfb_avgenergy(s);
