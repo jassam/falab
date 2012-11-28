@@ -88,6 +88,8 @@ typedef struct _aacenc_ctx_t{
     int   mdct_line_sign[1024];
     int   quant_ok;
 
+    int   maxscale_win[8][FA_SWB_NUM_MAX];
+
     //huffman var
     int   hufftab_no[8][FA_SWB_NUM_MAX];
     int   x_quant_code[5*1024];

@@ -36,6 +36,7 @@
 
 void fa_quantize_loop(fa_aacenc_ctx_t *f);
 void fa_quantize_fast(fa_aacenc_ctx_t *f);
+void fa_quantize_best(fa_aacenc_ctx_t *f);
 
 void fa_calculate_scalefactor_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX]);
 

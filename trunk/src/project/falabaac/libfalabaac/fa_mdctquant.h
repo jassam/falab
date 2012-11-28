@@ -89,6 +89,12 @@ void fa_mdctline_scaled(uintptr_t handle,
 
 void fa_mdctline_quant(uintptr_t handle, 
                        int common_scalefac, int *x_quant);
+
+void fa_mdctline_quantdirect(uintptr_t handle, 
+                             int common_scalefac,
+                             int num_window_groups, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX],
+                             int *x_quant);
+
 int fa_mdctline_get_sfbnum(uintptr_t handle);
 
 int fa_mdctline_iquantize(uintptr_t handle, 

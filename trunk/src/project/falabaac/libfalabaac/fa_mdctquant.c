@@ -248,6 +248,50 @@ void fa_mdctline_quant(uintptr_t handle,
     /*FA_CLOCK_COST(5);*/
 }
 
+
+void fa_mdctline_quantdirect(uintptr_t handle, 
+                             int common_scalefac,
+                             int num_window_groups, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX],
+                             int *x_quant)
+{
+    fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
+
+    int i;
+    int gr;
+    int sfb;
+    int sfb_num;
+    float *mdct_line;
+    float cof_scale;
+    float tmp;
+
+    sfb_num    = f->sfb_num;
+    mdct_line  = f->mdct_line;
+
+    for (gr = 0; gr < num_window_groups; gr++) {
+        for (sfb = 0; sfb < sfb_num; sfb++) {
+            cof_scale = powf(2, (1./4.) * (scalefactor[gr][sfb]-common_scalefac));
+
+            for (i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) {
+                tmp = FA_ABS(mdct_line[i]);
+                tmp = tmp * cof_scale;
+                x_quant[i] = FA_SQRTF(tmp*FA_SQRTF(tmp));
+                if (mdct_line[i] > 0)
+                    x_quant[i] = -x_quant[i];
+
+                if (x_quant[i] > 8191) {
+                    x_quant[i] = 8191;
+                } else if(x_quant[i] < -8191) {
+                    x_quant[i] = -8191;
+                }
+
+            }
+        }
+    }
+
+}
+
+
+
 void fa_calculate_quant_noise(uintptr_t handle,
                              int num_window_groups, int *window_group_length,
                              int common_scalefac, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
