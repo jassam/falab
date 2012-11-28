@@ -1,0 +1,30 @@
+* start: 2012-11-25                                                                                                 [DOING]
+  end  :
+  task : find the encoding problem in falabaac encode, which is the "sa sa sa" sound in some attack audio            
+  note :
+
+* start: 2012-11-25                                                                                                 [DOING]
+  end  : 
+  task : fix the falabaac sound pressure level, maybe the GAIN_ADJUST should increase to 5                          
+  note : I test in the past time, when increased, the overflow maybe happen, 
+         so I didn't add it now, need more test. (2012-11-26)
+
+* start: 2012-11-25                                                                                                 [DOING]
+  end  : 
+  task : speed up the falabaac, the code can be speed up, many code is not very resaonable 
+
+* start: 2012-11-26                                                                                                 [DOING]
+  end  :
+  task : fix the potential bug in all the module code if it run on the windows platform, after malloc handle,
+         must memset all the malloc memory, on windows platform, it no clear the memory to 0, we should memset 
+         it manually                                                                                                
+
+* start: 2012-11-26                                                                                                 [DOING]
+  end  :
+  task : add sbr and ps module in falabaac, it is diffcult for the sbr is complicated, but I will try , I hope 
+         that the falabaac can support the HE-AAC v2 in the future
+
+* start: 2012-11-26                                                                                                 [DOING]
+  end  :
+  task : intergrate all the module code in the project and create the big falab project, supply the the .a and .so 
+         library and the header file , after install ,can use #include <falab/**.h> to development
