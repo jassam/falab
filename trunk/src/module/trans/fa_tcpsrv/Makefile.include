@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-#  filename: Makefile
+#  filename: Makefile.include
 #  version : v1.0.0
 #  time    : 2012/07/07 18:42 
 #  author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
@@ -26,36 +26,40 @@
 #
 
 
-include Makefile.include
+ARCH =
 
-INCLUDEDIR = ./include
-FATRANSDIR = ../fa_trans
+DEBUG = Y
 
-ifeq ($(ARCH),ARM)
-LDFLAGS += -lm -lpthread -lrt 
-else
-LDFLAGS += -lm -lpthread -lrt 
+CROSS = 
+
+STRIP = 
+
+ifeq ($(ARCH), ARM)
+CROSS = arm-linux-
 endif
 
-TARGET    =  trans 
-CSRCFILES =  $(shell ls *.c)
-CSRCFILES +=  $(shell ls ../fa_trans/*.c)
-COBJFILES =  $(patsubst %.c,%.o,$(CSRCFILES))
+CC = $(CROSS)gcc
 
-SRCFILES  =	 $(CSRCFILES) 
-OBJFILES  =	 $(COBJFILES) 
+CFLAGS = -I. 
 
-CFLAGS    += -I.  -I$(INCLUDEDIR) -I$(FATRANSDIR)
+ifeq ($(ARCH), ARM)
+	CFLAGS += -D__ARM__ -mcpu=arm9tdmi
+endif
 
-all: $(OBJFILES) 
-	rm $(TARGET) -f
-	$(CC) -o $(TARGET) $(OBJFILES) $(LDFLAGS)	 
+ifeq ($(DEBUG), Y)
+	CFLAGS += -g -D__DEBUG__
+	CFLAGS += -Wall
+	STRIP = file
+else
+	CFLAGS += -O3	
+#	CFLAGS += -O2	
+	CFLAGS += -Wall
+	STRIP = strip
+endif
 
-clean : 
-	@rm *.o -f
-	@rm *.out -f	
-	@rm $(TARGET) -f	
-	@rm ../fa_trans/*.o
 
-install :
+AR = $(CROSS)ar
+RANLIB = $(CROSS)ranlib
+
+.PHONY : all install clean 
 

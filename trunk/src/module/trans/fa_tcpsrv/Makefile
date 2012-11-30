@@ -37,7 +37,7 @@ else
 LDFLAGS += -lm -lpthread -lrt 
 endif
 
-TARGET    =  trans 
+TARGET    =  tcpsrv 
 CSRCFILES =  $(shell ls *.c)
 CSRCFILES +=  $(shell ls ../fa_trans/*.c)
 COBJFILES =  $(patsubst %.c,%.o,$(CSRCFILES))
