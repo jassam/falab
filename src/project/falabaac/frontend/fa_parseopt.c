@@ -44,6 +44,7 @@ int   opt_bitrate = 128;
 int   opt_speedlevel = 2;
 int   opt_bandwidth = 20;
 int   opt_lfeenable = 0;
+int   opt_time_resolution_first = 0;
 
 
 
@@ -74,6 +75,7 @@ const char *short_help =
 "    -l <speedlevel>      Set speed level(1~6)                             [eg: -l 2]\n"
 "    -w <bandwidth>       Set band width(kHz, 5~20kHz valid)               [eg: -w 10]\n"
 "    -e <lfeenable>       Set the LFE encode enable(0 or 1)                [eg: -e 1]\n"
+"    -t <time_resolution> Set the encoder use time resolution first(0 or 1)[eg: -t 1]\n"
 "    --help               Show this abbreviated help.\n"
 "    --long-help          Show complete help.\n"
 "    --license            for the license terms for falab.\n"
@@ -89,6 +91,7 @@ const char *long_help =
 "    -l <speedlevel>      Set speed level(1~6)                             [eg: -l 2]\n"
 "    -w <bandwidth>       Set band width(kHz, 5~20kHz valid)               [eg: -w 10]\n"
 "    -e <lfeenable>       Set the LFE encode enable(0 or 1)                [eg: -e 1]\n"
+"    -t <time_resolution> Set the encoder use time resolution first(0 or 1)[eg: -t 1]\n"
 "    --help               Show this abbreviated help.\n"
 "    --long-help          Show complete help.\n"
 "    --license            for the license terms for falab.\n"
@@ -98,6 +101,7 @@ const char *long_help =
 "    --speedlevel <l>     Set the speed level(1 is slow but good quality, 6 is fastest but less quality)\n"
 "    --bandwidth  <w>     Set band width, only 5-20 (kHz) valid. 20kHz when bitrate >=96kbps\n"
 "    --lfeenable  <e>     Set the LFE encode enable\n"
+"    --time_resolution<t> Set the encoding time resolution first, use short window\n"
 "\n\n";
 
 const char *license =
@@ -142,6 +146,7 @@ static void fa_printopt()
     FA_PRINT("NOTE: outputfile= %s\n", opt_outputfile);
     FA_PRINT("NOTE: bitrate   = %d kbps\n", opt_bitrate);
     FA_PRINT("NOTE: speed lev = %d\n", opt_speedlevel);
+    FA_PRINT("NOTE: timers    = %d\n", opt_time_resolution_first);
 }
 
 /**
@@ -211,7 +216,7 @@ int fa_parseopt(int argc, char *argv[])
     const char *die_msg = NULL;
 
     while (1) {
-        static char * const     short_options = "hHLi:o:b:l:w:e:";  
+        static char * const     short_options = "hHLi:o:b:l:w:e:t:";  
         static struct option    long_options[] = 
                                 {
                                     { "help"       , 0, 0, 'h'}, 
@@ -222,7 +227,8 @@ int fa_parseopt(int argc, char *argv[])
                                     { "bitrate"    , 1, 0, 'b'},        
                                     { "speedlevel" , 1, 0, 'l'},        
                                     { "bandwidth"  , 1, 0, 'w'},        
-                                    { "lfeenable" , 1, 0, 'e'},        
+                                    { "lfeenable"  , 1, 0, 'e'},        
+                                    { "time_resolution"  , 1, 0, 't'},        
                                     {0             , 0, 0,  0},
                                 };
         int c = -1;
@@ -314,6 +320,18 @@ int fa_parseopt(int argc, char *argv[])
                           break;
                       }
 
+            case 't': {
+                          unsigned int i;
+                          if (sscanf(optarg, "%u", &i) > 0) {
+                              opt_time_resolution_first = i;
+                              if (opt_time_resolution_first != 0 && opt_time_resolution_first!= 1) {
+                                  FA_PRINT("FAIL: time_resolution enable should be 0 or 1\n");
+                                  exit(0);
+                              }
+                              FA_PRINT("SUCC: set time_resolution enable = %u\n", opt_time_resolution_first);
+                          }
+                          break;
+                      }
 
 
             case '?':

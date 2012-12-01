@@ -167,7 +167,7 @@ static void fa_aacenc_rom_init()
 uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                       int mpeg_version, int aac_objtype, int band_width, int speed_level,
                       int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable, int psy_enable,
-                      int blockswitch_method, int quantize_method)
+                      int blockswitch_method, int quantize_method, int time_resolution_first)
 {
     int i;
     int bits_average;
@@ -256,6 +256,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
     /*init psy and mdct quant */
     for (i = 0; i < chn_num; i++) {
+        f->ctx[i].time_resolution_first = time_resolution_first;
+
         f->ctx[i].pe                = 0.0;
         f->ctx[i].var_max_prev      = 0.0;
         f->ctx[i].block_type        = ONLY_LONG_BLOCK;
@@ -396,7 +398,8 @@ static int speed_level_tab[SPEED_LEVEL_MAX][6] =
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
                          int mpeg_version, int aac_objtype, int lfe_enable,
                          int band_width,
-                         int speed_level)
+                         int speed_level,
+                         int time_resolution_first)
 {
 
     int ms_enable;
@@ -439,7 +442,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     handle = aacenc_init(sample_rate, bit_rate*1000, chn_num,
                          mpeg_version, aac_objtype, band_width*1000, speed_level,
                          ms_enable, lfe_enable, tns_enable, block_switch_enable, psy_enable,
-                         blockswitch_method, quantize_method);
+                         blockswitch_method, quantize_method, time_resolution_first);
 
     return handle;
 
@@ -563,18 +566,23 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         /*get the input sample*/
         sample_buf = f->sample+i*AAC_FRAME_LEN;
 
+
         /*block switch */
-        if (block_switch_en) {
-        /*if (0) { //(block_switch_en) {*/
-            f->do_blockswitch(s);
-#if 0 
-            /*if (s->block_type == 2)*/
-            if (s->block_type != 0)
-                printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
-#endif
+        if (s->time_resolution_first) {
+            s->block_type = ONLY_SHORT_BLOCK;
         } else {
-            s->block_type = ONLY_LONG_BLOCK;
-            /*s->block_type = ONLY_SHORT_BLOCK;*/
+            if (block_switch_en) {
+            /*if (0) { //(block_switch_en) {*/
+                f->do_blockswitch(s);
+#if 0 
+                /*if (s->block_type == 2)*/
+                if (s->block_type != 0)
+                    printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
+#endif
+            } else {
+                s->block_type = ONLY_LONG_BLOCK;
+                /*s->block_type = ONLY_SHORT_BLOCK;*/
+            }
         }
 
         /*analysis*/
