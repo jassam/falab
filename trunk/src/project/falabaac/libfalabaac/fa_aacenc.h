@@ -55,6 +55,9 @@ typedef struct _aacenc_ctx_t{
     int   num_window_groups;
     int   window_group_length[8];
 
+    int   time_resolution_first;
+
+
     //sfb var 
     int   sfb_num_long;
     int   sfb_num_short;

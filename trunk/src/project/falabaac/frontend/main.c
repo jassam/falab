@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     h_aacenc = fa_aacenc_init(sample_rate, opt_bitrate, chn_num,
                               FA_AACENC_MPEG_VER_DEF , FA_AACENC_OBJ_TYPE_DEF, opt_lfeenable,
                               opt_bandwidth,
-                              opt_speedlevel);
+                              opt_speedlevel, opt_time_resolution_first);
     if (!h_aacenc) {
         printf("initial failed, maybe configuration is not proper!\n");
         return -1;

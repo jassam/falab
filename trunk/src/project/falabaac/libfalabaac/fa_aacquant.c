@@ -1284,6 +1284,7 @@ void fa_quantize_fast(fa_aacenc_ctx_t *f)
 }
 
 
+#if 0
 
 void fa_calculate_maxscale_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
 {
@@ -1596,7 +1597,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
 }
 
-
+#endif
 
 
 
