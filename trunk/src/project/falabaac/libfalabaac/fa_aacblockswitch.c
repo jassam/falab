@@ -99,11 +99,11 @@ int fa_blockswitch_psy(aacenc_ctx_t *s)
     if (s->psy_enable) {
         s->block_type = aac_blockswitch_psy(s->block_type, s->pe);
         s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
-        s->bits_more  = s->bits_alloc - 100;
+        s->bits_more  = s->bits_alloc - 90;//100;
     } else {
         s->block_type = ONLY_LONG_BLOCK;
         s->bits_alloc = s->bits_average;
-        s->bits_more  = s->bits_alloc - 100;
+        s->bits_more  = s->bits_alloc - 90;//100;
     }
 
     return s->block_type;
@@ -121,27 +121,32 @@ static float frame_var_max(float *x, int len)
     float diff;
     float var;
     float var_max;
+    int level;
+    int bands;
 
-    hop = len >> 4;
+    level = 1;//4;
+    bands = (1<<level);
+
+    hop = len >> level;
     var_max = 0.;
 
-    for (k = 0; k < 16; k++) {
+    for (k = 0; k < bands; k++) {
         xp  =  x + k*hop;
         sum =  0.;
         avg =  0.;
         var =  0.;
-#if 0
+#if 1 
         for (i = 0; i < hop; i++) {
             float tmp;
-            tmp = fabsf(xp[i]/32768.);
-            sum += tmp*tmp;
+            tmp = fabs(xp[i]/32768.);
+            sum += tmp;
         }
         avg = sum / hop;
 
         for (i = 0; i < hop; i++) {
             float tmp;
-            tmp = fabsf(xp[i]/32768.);
-            diff =  tmp*tmp - avg;
+            tmp  = fabs(xp[i]/32768.);
+            diff =  tmp - avg;
             var  += diff  * diff; 
         }
 #else 
@@ -171,7 +176,10 @@ static float frame_var_max(float *x, int len)
     return var_max;
 }
 
-#define SWITCH_E_BASE  (32768*32768)
+
+#if 1 
+
+#define SWITCH_E_BASE  1 //(32768*32768)
 #define SWITCH_E   (0.03*SWITCH_E_BASE)
 #define SWITCH_E1  (0.075*SWITCH_E_BASE)
 #define SWITCH_E2  (0.003*SWITCH_E_BASE)
@@ -229,6 +237,7 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
     if (prev_block_type == LONG_STOP_BLOCK)
         cur_block_type = ONLY_LONG_BLOCK;
 #else
+    #if 0
     if (cur_coding_block_type == SHORT_CODING_BLOCK) {
         if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
             cur_block_type = LONG_START_BLOCK;
@@ -240,6 +249,24 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
         if (prev_block_type == LONG_START_BLOCK || prev_block_type == ONLY_SHORT_BLOCK)
             cur_block_type = LONG_STOP_BLOCK;
     }
+    #else 
+
+    if (cur_coding_block_type == SHORT_CODING_BLOCK) {
+        if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+            cur_block_type = LONG_START_BLOCK;
+        if (prev_block_type == LONG_START_BLOCK || prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = ONLY_SHORT_BLOCK;
+    } else {
+        if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+            cur_block_type = ONLY_LONG_BLOCK;
+        if (prev_block_type == LONG_START_BLOCK) // || prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = ONLY_SHORT_BLOCK; //LONG_STOP_BLOCK;
+        if (prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = LONG_STOP_BLOCK;
+    }
+
+
+    #endif
 #endif
 
     s->block_type = cur_block_type;
@@ -247,12 +274,130 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
     if (s->psy_enable) {
         s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
         /*s->bits_alloc = s->bits_average;*/
-        s->bits_more  = s->bits_alloc - 100;
+        s->bits_more  = s->bits_alloc - 90;//100;
     } else {
         s->bits_alloc = s->bits_average;
-        s->bits_more  = s->bits_alloc - 100;
+        s->bits_more  = s->bits_alloc - 90;//100;
     }
 
     return cur_block_type;
 }
 
+#else 
+
+#define SWITCH_E   (0.1)
+#define SWITCH_E1  (0.5)
+#define SWITCH_E2  (0.2)
+
+int fa_blockswitch_var(aacenc_ctx_t *s)
+{
+    float x[2*AAC_FRAME_LEN];
+    float cur_var_max;
+    float var_diff;
+    float var_diff_relative = 0.0;
+
+    int   prev_block_type;
+    int   prev_coding_block_type;
+    int   cur_coding_block_type;
+
+    int   cur_block_type;
+
+    fa_aacfilterbank_get_xbuf(s->h_aac_analysis, x);
+    cur_var_max = frame_var_max(x, 2*AAC_FRAME_LEN);
+    var_diff    = FA_ABS(cur_var_max - s->var_max_prev);
+    var_diff_relative = var_diff / s->var_max_prev;
+    /*printf("var_diff_relative = %f\n", var_diff_relative);*/
+
+    /*var_diff    = fabsf(cur_var_max - s->var_max_prev);*/
+    s->var_max_prev = cur_var_max;
+
+    prev_block_type = s->block_type;
+    /*get prev coding block type*/
+    if (prev_block_type == ONLY_SHORT_BLOCK)
+        prev_coding_block_type = SHORT_CODING_BLOCK;
+    else 
+        prev_coding_block_type = LONG_CODING_BLOCK;
+
+    if (var_diff_relative < SWITCH_E1)
+        cur_coding_block_type = LONG_CODING_BLOCK;
+    else {
+#if 0
+        if (prev_coding_block_type == LONG_CODING_BLOCK) {
+            if (var_diff_relative > SWITCH_E)
+                cur_coding_block_type = SHORT_CODING_BLOCK;
+            else 
+                cur_coding_block_type = LONG_CODING_BLOCK;
+        } else {
+            if (var_diff_relative > SWITCH_E2)
+                cur_coding_block_type = SHORT_CODING_BLOCK;
+            else 
+                cur_coding_block_type = LONG_CODING_BLOCK;
+        }
+#else 
+        cur_coding_block_type = SHORT_CODING_BLOCK;
+#endif
+    }
+ 
+    /*use prev coding block type and current coding block type to decide current block type*/
+#if 0 
+    /*test switch */
+    if (prev_block_type == ONLY_LONG_BLOCK)
+        cur_block_type = LONG_START_BLOCK;
+    if (prev_block_type == LONG_START_BLOCK)
+        cur_block_type = ONLY_SHORT_BLOCK;
+    if (prev_block_type == ONLY_SHORT_BLOCK)
+        cur_block_type = LONG_STOP_BLOCK;
+    if (prev_block_type == LONG_STOP_BLOCK)
+        cur_block_type = ONLY_LONG_BLOCK;
+#else
+    #if 0
+
+    if (cur_coding_block_type == SHORT_CODING_BLOCK) {
+        if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+            cur_block_type = LONG_START_BLOCK;
+        if (prev_block_type == LONG_START_BLOCK || prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = ONLY_SHORT_BLOCK;
+    } else {
+        if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+            cur_block_type = ONLY_LONG_BLOCK;
+        if (prev_block_type == LONG_START_BLOCK || prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = LONG_STOP_BLOCK;
+    }
+
+    #else 
+
+    if (cur_coding_block_type == SHORT_CODING_BLOCK) {
+        if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+            cur_block_type = LONG_START_BLOCK;
+        if (prev_block_type == LONG_START_BLOCK || prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = ONLY_SHORT_BLOCK;
+    } else {
+        if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+            cur_block_type = ONLY_LONG_BLOCK;
+        if (prev_block_type == LONG_START_BLOCK) // || prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = ONLY_SHORT_BLOCK; //LONG_STOP_BLOCK;
+        if (prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = LONG_STOP_BLOCK;
+    }
+
+
+    #endif
+#endif
+
+    s->block_type = cur_block_type;
+
+    if (s->psy_enable) {
+        s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
+        /*s->bits_alloc = s->bits_average;*/
+        s->bits_more  = s->bits_alloc - 90;//100;
+    } else {
+        s->bits_alloc = s->bits_average;
+        s->bits_more  = s->bits_alloc - 90;//100;
+    }
+
+    return cur_block_type;
+}
+
+
+
+#endif

@@ -32,6 +32,7 @@
 #include "fa_fastmath.h"
 #include "fa_psychomodel2.h"
 #include "fa_fft.h"
+/*#include "fa_fir.h"*/
 
 #ifndef		M_PI
 #define		M_PI							3.14159265358979323846
@@ -207,6 +208,7 @@ uintptr_t fa_psychomodel2_init(int cbands_num, int *w_low, float *barkval, float
     
     f->hanning_win = (float *)malloc(sizeof(float)*f->fft_len);
     hanning(f->hanning_win, f->fft_len);
+    /*fa_blackman(f->hanning_win, f->fft_len);*/
 
     f->re         = (float *)malloc(sizeof(float)*iblen);
     f->im         = (float *)malloc(sizeof(float)*iblen);
@@ -441,9 +443,15 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
     /*calculate prediction mag and phi*/
     for (i = 0; i < (fft_len>>1); i++) {
         float tmp, tmp1, tmp2;
-
+#if 1 
         re[i]  = fft_buf[i+i];
         im[i]  = fft_buf[i+i+1];
+#else 
+        //2012-12-01
+        re[i]  = fft_buf[i+i]/fft_len;
+        im[i]  = fft_buf[i+i+1]/fft_len;
+#endif 
+
 #if 1 
         mag[i] = sqrt(re[i]*re[i] + im[i]*im[i]);
         phi[i] = atan2(im[i], re[i]);
@@ -533,7 +541,7 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
         snr = tb*18 + (1-tb)*6;
         bc  = pow(10, -snr/10);
         nb[i] = en[i] * bc;
-        /*nb[i] = FA_MAX(qsthr[i], FA_MIN(nb[i], nb_prev[i]*2));*/
+        /*nb[i] = FA_MAX(qsthr[i], FA_MIN(nb[i], nb_prev[i]));*/
         nb[i] = FA_MAX(qsthr[i], nb[i]);
 
         nb_prev[i] = nb[i];
@@ -547,11 +555,22 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
 #if 0
         tmp = FA_MIN(0, log10(nb[i]/(group_e[i]+1)));
 #else 
+/*
+        if (nb[i] > (group_e[i] + 1)) {
+            printf("nb=%f, group_e=%f, ratio=%f\n", nb[i], group_e[i], log10(nb[i]/(group_e[i]+1)));
+        }
+*/
         tmp = FA_MIN(0, FA_LOG10(nb[i]/(group_e[i]+1)));
+        /*tmp = FA_LOG10(nb[i]/(group_e[i]+1));*/
 #endif
         *pe  = *pe - (w_low[i+1]-1-w_low[i])*tmp;
     }
-
+/*
+    if (*pe < 0.) {
+        printf("pe < 0, = %f\n", *pe);
+        *pe = 0.;
+    }
+*/
     /*calculate epart*/
     for (i = 0; i < swb_num; i++) {
         epart[i] = 0;
@@ -600,7 +619,8 @@ void fa_psychomodel2_calculate_xmin(uintptr_t handle, float *mdct_line, float *x
 
             xmin[i] = codec_e/smr[i];
         } else {
-            xmin[i] = 0;
+            /*xmin[i] = 0;*/
+            xmin[i] = codec_e/20;
         }
     }
 }
