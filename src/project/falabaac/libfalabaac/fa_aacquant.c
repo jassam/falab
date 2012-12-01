@@ -1375,7 +1375,7 @@ static void calculate_scalefactor_usemaxscale(aacenc_ctx_t *s)
             for (i = 0; i < fs->sfb_num; i++) {
                 for (win = 0; win < s->window_group_length[gr]; win++) {
                     scalefactor = common_scalefac - s->maxscale_win[win][i];
-                    s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);
+                    s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], scalefactor);
                     s->scalefactor[gr][i] = FA_MAX(0, s->scalefactor[gr][i]);
                 }
             }
