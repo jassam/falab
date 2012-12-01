@@ -245,8 +245,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
             break;
         case QUANTIZE_FAST:
             f->quantize_method = QUANTIZE_FAST;
-            /*f->do_quantize = fa_quantize_fast;*/
-            f->do_quantize = fa_quantize_best;
+            f->do_quantize = fa_quantize_fast;
+            /*f->do_quantize = fa_quantize_best;*/
             break;
         default:
             f->quantize_method = QUANTIZE_LOOP;
@@ -472,10 +472,10 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
         s->window_group_length[7] = 0;
 #else 
         /*just for test different group length result*/
-        s->num_window_groups = 3;
-        s->window_group_length[0] = 6;
-        s->window_group_length[1] = 1;
-        s->window_group_length[2] = 1;
+        s->num_window_groups = 2;
+        s->window_group_length[0] = 4;
+        s->window_group_length[1] = 4;
+        s->window_group_length[2] = 0;
         s->window_group_length[3] = 0;
         s->window_group_length[4] = 0;
         s->window_group_length[5] = 0;
@@ -565,13 +565,16 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
         /*block switch */
         if (block_switch_en) {
+        /*if (0) { //(block_switch_en) {*/
             f->do_blockswitch(s);
 #if 0 
-            if (s->block_type == 2)
+            /*if (s->block_type == 2)*/
+            if (s->block_type != 0)
                 printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
 #endif
         } else {
             s->block_type = ONLY_LONG_BLOCK;
+            /*s->block_type = ONLY_SHORT_BLOCK;*/
         }
 
         /*analysis*/
@@ -599,8 +602,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);
 #endif
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
-            /*fa_calculate_scalefactor_win(s, xmin);*/
-            fa_calculate_maxscale_win(s, xmin);
+            fa_calculate_scalefactor_win(s, xmin);
+            /*fa_calculate_maxscale_win(s, xmin);*/
         } else {
             if (speed_level < 4) {
                 fa_fastquant_calculate_sfb_avgenergy(s);

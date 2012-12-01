@@ -34,7 +34,11 @@ extern "C"
 { 
 #endif  
 
-#define FA_USE_FASTMATH
+/*
+WARN: if you want to plant this coder into embed system, you can enable FA_USE_FASTMATH and do fix point.
+      OTHERWISE, use the default math library (it will be good quality and fast)
+*/
+//#define FA_USE_FASTMATH
 
 #ifdef  FA_USE_FASTMATH 
 #define FA_USE_FASTLOG
@@ -56,9 +60,9 @@ ieee754_float32_t fa_fast_log2(ieee754_float32_t x);
 #define        FA_LOG10(x)       (fa_fast_log2(x)*(FA_LOG2_V/FA_LOG10_V))      
 #define        FA_LOG(x)         (fa_fast_log2(x)*FA_LOG2_V)              
 #else 
-#define        FA_LOG2(x)        (log2f(x))
-#define        FA_LOG10(x)       (log10f(x))      
-#define        FA_LOG(x)         (logf(x))              
+#define        FA_LOG2(x)        (log2(x))
+#define        FA_LOG10(x)       (log10(x))      
+#define        FA_LOG(x)         (log(x))              
 #endif
 
 
@@ -72,9 +76,9 @@ float fa_fast_atan2(float y, float x);
 #define        FA_COS(x)         (fa_fast_cos(x))
 #define        FA_ATAN2(y,x)     (fa_fast_atan2(y,x))
 #else 
-#define        FA_SIN(x)         (sinf(x))
-#define        FA_COS(x)         (cosf(x))
-#define        FA_ATAN2(y,x)     (atan2f(y,x))
+#define        FA_SIN(x)         (sin(x))
+#define        FA_COS(x)         (cos(x))
+#define        FA_ATAN2(y,x)     (atan2(y,x))
 #endif
 
 float fa_fast_invsqrtf(float x);
@@ -84,8 +88,8 @@ float fa_fast_sqrtf(float x);
 #define        FA_SQRTF(x)       (fa_fast_sqrtf(x))
 #define        FA_INVSQRTF(x)    (fa_fast_invsqrtf(x))
 #else 
-#define        FA_SQRTF(x)       (sqrtf(x))
-#define        FA_INVSQRTF(x)    (1./sqrtf(x))
+#define        FA_SQRTF(x)       (sqrt(x))
+#define        FA_INVSQRTF(x)    (1./sqrt(x))
 #endif
 
 

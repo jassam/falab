@@ -49,6 +49,7 @@
 #define FA_ABS(a)    ( (a) > 0 ? (a) : (-(a)) )
 #endif
 
+#define SF_MAGIC_NUM  (0.449346777778)
 
 static void calculate_start_common_scalefac(fa_aacenc_ctx_t *f)
 {
@@ -105,9 +106,14 @@ static void init_quant_change(int outer_loop_count, aacenc_ctx_t *s)
 static void init_quant_change_fast(int outer_loop_count, aacenc_ctx_t *s)
 {
     if (outer_loop_count == 0) {
-        /*s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);*/
+#if 0 
         s->common_scalefac = s->start_common_scalefac;
         s->quant_change = 64;
+#else 
+        //2012-12-01
+        s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);
+        s->quant_change = 2;
+#endif
     } else {
         /*s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);*/
         s->quant_change = 2;
@@ -362,8 +368,20 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
             sl = s;
             sr = &(f->ctx[i+1]);
             find_globalgain = 0;
+#if 0
             init_quant_change_fast(outer_loop_count, sl);
             sr->common_scalefac = sl->common_scalefac;
+#else 
+            //2012-12-01
+            if (sl->chn_info.common_window == 1) {
+                init_quant_change_fast(outer_loop_count, sl);
+                sr->common_scalefac = sl->common_scalefac;
+            } else {
+                init_quant_change_fast(outer_loop_count, sl);
+                init_quant_change_fast(outer_loop_count, sr);
+            }
+
+#endif
         } else {
             chn = 1;
             find_globalgain = 0;
@@ -565,7 +583,7 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
             break;
             outer_loop_count_max = 15;
         case 2:
-            outer_loop_count_max = 15;
+            outer_loop_count_max = 15;//30;//15;
             break;
         case 3:
             outer_loop_count_max = 1;
@@ -608,6 +626,7 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                         }
                     }
                 } else {
+#if 0
                     if (!sl->quant_ok || !sr->quant_ok) {
                         if (sl->block_type == ONLY_SHORT_BLOCK)
                             fa_mdctline_scaled(sl->h_mdctq_short, sl->num_window_groups, sl->scalefactor);
@@ -618,6 +637,23 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                         else 
                             fa_mdctline_scaled(sr->h_mdctq_long, sr->num_window_groups, sr->scalefactor);
                     }
+#else 
+                    //2012-12-01 
+                    if (!sl->quant_ok) {
+                        if (sl->block_type == ONLY_SHORT_BLOCK)
+                            fa_mdctline_scaled(sl->h_mdctq_short, sl->num_window_groups, sl->scalefactor);
+                        else 
+                            fa_mdctline_scaled(sl->h_mdctq_long, sl->num_window_groups, sl->scalefactor);
+                    }
+
+                    if (!sr->quant_ok) {
+                        if (sr->block_type == ONLY_SHORT_BLOCK)
+                            fa_mdctline_scaled(sr->h_mdctq_short, sr->num_window_groups, sr->scalefactor);
+                        else 
+                            fa_mdctline_scaled(sr->h_mdctq_long, sr->num_window_groups, sr->scalefactor);
+                    }
+
+#endif
                 }
             } else if (s->chn_info.sce == 1 || s->chn_info.lfe == 1) {
                 chn = 1;
@@ -695,6 +731,7 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                         quant_ok_cnt += 2;
                     }
                 } else {
+#if 0
                     if (!sl->quant_ok || !sr->quant_ok) {
                         if (sl->block_type == ONLY_SHORT_BLOCK) {
                             sl->quant_ok = fa_fix_quant_noise_single(sl->h_mdctq_short, 
@@ -726,9 +763,53 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
                                                                      sr->x_quant);
                             quant_ok_cnt += sr->quant_ok;
                         }
+
                     } else {
                         quant_ok_cnt += 2;
                     }
+#else 
+                    //2012-12-01
+                    if (!sl->quant_ok) {
+                        if (sl->block_type == ONLY_SHORT_BLOCK) {
+                            sl->quant_ok = fa_fix_quant_noise_single(sl->h_mdctq_short, 
+                                                                     outer_loop_count, outer_loop_count_max,
+                                                                     sl->num_window_groups, sl->window_group_length,
+                                                                     sl->scalefactor, 
+                                                                     sl->x_quant);
+                            quant_ok_cnt += sl->quant_ok;
+                        } else {
+                            sl->quant_ok = fa_fix_quant_noise_single(sl->h_mdctq_long, 
+                                                                     outer_loop_count, outer_loop_count_max,
+                                                                     sl->num_window_groups, sl->window_group_length,
+                                                                     sl->scalefactor, 
+                                                                     sl->x_quant);
+                            quant_ok_cnt += sl->quant_ok;
+                        }
+                    } else {
+                        quant_ok_cnt += 1;
+                    }
+
+                    if (!sr->quant_ok) {
+                        if (sr->block_type == ONLY_SHORT_BLOCK) {
+                            sr->quant_ok = fa_fix_quant_noise_single(sr->h_mdctq_short, 
+                                                                     outer_loop_count, outer_loop_count_max,
+                                                                     sr->num_window_groups, sr->window_group_length,
+                                                                     sr->scalefactor, 
+                                                                     sr->x_quant);
+                            quant_ok_cnt += sr->quant_ok;
+                        } else {
+                            sr->quant_ok = fa_fix_quant_noise_single(sr->h_mdctq_long, 
+                                                                     outer_loop_count, outer_loop_count_max,
+                                                                     sr->num_window_groups, sr->window_group_length,
+                                                                     sr->scalefactor, 
+                                                                     sr->x_quant);
+                            quant_ok_cnt += sr->quant_ok;
+                        }
+                    } else {
+                        quant_ok_cnt += 1;
+                    }
+
+#endif
                 }
             } else if (s->chn_info.sce == 1 || s->chn_info.lfe == 1) {
                 chn = 1;
@@ -1033,10 +1114,16 @@ void fa_calculate_scalefactor_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
                     tmp = FA_ABS(s->mdct_line[128*k+j]);
                     sfb_sqrenergy += FA_SQRTF(tmp);
                 }
-                if (sfb_sqrenergy == 0.)
+                if (sfb_sqrenergy == 0.) {
                     xmin_sqrenergy_ratio[i] = 0.;
-                else 
-                    xmin_sqrenergy_ratio[i] = xmin[k][i]/(0.4493*sfb_sqrenergy);
+                    /*xmin_sqrenergy_ratio[i] = 20.;*/
+                } else {
+                    xmin_sqrenergy_ratio[i] = xmin[k][i]/(SF_MAGIC_NUM*sfb_sqrenergy);
+/*
+                    printf("xmin_sqrte_ratio=%f, xmin=%f, sfb_sqrenergy=%f\n", 
+                            xmin_sqrenergy_ratio[i], xmin[k][i], sfb_sqrenergy);
+*/
+                }
 
                 if (xmin_sqrenergy_ratio[i] > max_ratio) {
                     max_ratio = xmin_sqrenergy_ratio[i];
@@ -1074,8 +1161,9 @@ void fa_calculate_scalefactor_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
             }
             if (sfb_sqrenergy == 0)
                 xmin_sqrenergy_ratio[i] = 0;
+                /*xmin_sqrenergy_ratio[i] = 20;*/
             else 
-                xmin_sqrenergy_ratio[i] = xmin[0][i]/(0.4493*sfb_sqrenergy);
+                xmin_sqrenergy_ratio[i] = xmin[0][i]/(SF_MAGIC_NUM*sfb_sqrenergy);
 
             if (xmin_sqrenergy_ratio[i] > max_ratio) {
                 max_ratio = xmin_sqrenergy_ratio[i];
@@ -1114,19 +1202,21 @@ static void calculate_scalefactor(aacenc_ctx_t *s)
             for (i = 0; i < fs->sfb_num; i++) {
                 for (win = 0; win < s->window_group_length[gr]; win++) {
                     scalefactor = s->scalefactor_win[win][i];
-                    s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);
-                    s->scalefactor[gr][i] = FA_MIN(20, s->scalefactor[gr][i]);
+                    /*s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);*/
+                    s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], scalefactor);
+                    s->scalefactor[gr][i] = FA_MIN(50, s->scalefactor[gr][i]);
                 }
             }
         }
     } else {
         for (i = 0; i < fl->sfb_num; i++) {
 #if 0 
-            if (s->scalefactor_win[0][i] > 70)
-                printf("s->scalefactor_win[0][i]=%d\n", s->scalefactor_win[0][i]);
+            /*if (s->scalefactor_win[0][i] > 70)*/
+                printf("s->scalefactor_win[0][%d]=%d\t", i, s->scalefactor_win[0][i]);
 #endif
             s->scalefactor[0][i] = FA_MIN(20, s->scalefactor_win[0][i]);
         }
+        /*printf("\n\n");*/
     }
 
 }
@@ -1234,7 +1324,7 @@ void fa_calculate_maxscale_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
                 if (sfb_sqrenergy == 0.)
                     xmin_sqrenergy_ratio = 0.;
                 else 
-                    xmin_sqrenergy_ratio = xmin[k][i]/(0.4493*sfb_sqrenergy);
+                    xmin_sqrenergy_ratio = xmin[k][i]/(SF_MAGIC_NUM*sfb_sqrenergy);
 
                 s->maxscale_win[k][i] = 8./3. * FA_LOG2(xmin_sqrenergy_ratio);// + SF_OFFSET;
             }
@@ -1257,7 +1347,7 @@ void fa_calculate_maxscale_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
                 xmin_sqrenergy_ratio = 0;
                 s->maxscale_win[0][i] = 0;//8./3. * FA_LOG2(xmin_sqrenergy_ratio);// + SF_OFFSET;
             } else {
-                xmin_sqrenergy_ratio = xmin[0][i]/(0.4493*sfb_sqrenergy);
+                xmin_sqrenergy_ratio = xmin[0][i]/(SF_MAGIC_NUM*sfb_sqrenergy);
                 s->maxscale_win[0][i] = 8./3. * FA_LOG2(xmin_sqrenergy_ratio);// + SF_OFFSET;
             }
 
@@ -1483,7 +1573,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         for (i = 0; i < chn_num; i++) {
             s = &(f->ctx[i]);
-#if 1 
+#if 0 
             printf("chn=i, common_scalefac=%d\n", s->common_scalefac);
             for (j = 0; j < 40; j++) {
                 printf("sf%d=%d, ", j, s->scalefactor[0][j]);
