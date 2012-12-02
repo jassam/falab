@@ -269,7 +269,7 @@ void fa_mdctline_quantdirect(uintptr_t handle,
 
     for (gr = 0; gr < num_window_groups; gr++) {
         for (sfb = 0; sfb < sfb_num; sfb++) {
-            cof_scale = powf(2, (1./4.) * (scalefactor[gr][sfb]-common_scalefac));
+            cof_scale = pow(2, (1./4.) * (scalefactor[gr][sfb]-common_scalefac));
 
             for (i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) {
                 tmp = FA_ABS(mdct_line[i]);

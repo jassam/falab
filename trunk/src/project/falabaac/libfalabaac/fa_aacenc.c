@@ -387,11 +387,11 @@ void fa_aacenc_uninit(uintptr_t handle)
 #define SPEED_LEVEL_MAX  6 
 static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
-                                {0,       1,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},
-                                {0,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},
-                                {0,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},
-                                {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},
-                                {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},
+                                {0,       1,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //1
+                                {0,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //2
+                                {0,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //3
+                                {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //4
+                                {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //5
                                 {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //same, but bw=10k
                             };
 
@@ -438,6 +438,9 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
         printf("bitrate not support, only suporrt [16~160]kbps per chn\n");
         exit(0);
     }
+
+    //2012-12-02
+    fa_logtab_init();
 
     handle = aacenc_init(sample_rate, bit_rate*1000, chn_num,
                          mpeg_version, aac_objtype, band_width*1000, speed_level,
