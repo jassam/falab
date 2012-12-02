@@ -60,7 +60,12 @@ ieee754_float32_t fa_fast_log2(ieee754_float32_t x);
 #define        FA_LOG10(x)       (fa_fast_log2(x)*(FA_LOG2_V/FA_LOG10_V))      
 #define        FA_LOG(x)         (fa_fast_log2(x)*FA_LOG2_V)              
 #else 
+#ifdef WIN32
+#define        FA_LOG10_2        (0.301029995664)
+#define        FA_LOG2(x)        (log10(x)/FA_LOG10_2)
+#else 
 #define        FA_LOG2(x)        (log2(x))
+#endif
 #define        FA_LOG10(x)       (log10(x))      
 #define        FA_LOG(x)         (log(x))              
 #endif
