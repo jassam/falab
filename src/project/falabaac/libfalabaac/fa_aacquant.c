@@ -1211,10 +1211,17 @@ static void calculate_scalefactor(aacenc_ctx_t *s)
     } else {
         for (i = 0; i < fl->sfb_num; i++) {
 #if 0 
-            /*if (s->scalefactor_win[0][i] > 70)*/
-                printf("s->scalefactor_win[0][%d]=%d\t", i, s->scalefactor_win[0][i]);
-#endif
             s->scalefactor[0][i] = FA_MIN(20, s->scalefactor_win[0][i]);
+#else
+            /*do not change the para*/
+            if (i < SF_LOW_BAND_POS_LONG) {
+                s->scalefactor[0][i] = FA_MIN(SF_LOW_BAND_VMAX, 4+s->scalefactor_win[0][i]);
+            } else if (i < SF_HIGH_BAND_POS_LONG){
+                s->scalefactor[0][i] = FA_MIN(SF_MID_BAND_VMAX, 6+s->scalefactor_win[0][i]);
+            } else {
+                s->scalefactor[0][i] = FA_MIN(SF_HIGH_BAND_VMAX, 2+s->scalefactor_win[0][i]);
+            }
+#endif
         }
         /*printf("\n\n");*/
     }
