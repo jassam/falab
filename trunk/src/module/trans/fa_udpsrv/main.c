@@ -9,7 +9,7 @@
 #include "fa_print.h"
 
 
-#define		TRANS_BUF_SIZE		(10*1024)		//8k is the best buffer size of the trans(experence)
+#define		TRANS_BUF_SIZE		(6*1024)		//8k is the best buffer size of the trans(experence)
 
 /*#define USE_LOGFILE*/
 
@@ -44,8 +44,9 @@ int main()
         return -1;
 	}
 
-    strcpy(hostname, "192.168.20.82");
-    port = 1982;
+    /*strcpy(hostname, "192.168.20.82");*/
+    strcpy(hostname, "192.168.20.38");
+    port = 1983;
 
 	/*create trans unit*/
 	trans = fa_create_trans(fa_create_trans_udpsrv, fa_destroy_trans_udpsrv);
@@ -63,9 +64,10 @@ int main()
 
         real_recv_len = trans->recv(trans, buf, recv_len);
         printf("-->want %d, recv %d bytes\n", recv_len, real_recv_len);
-
-        sprintf(buf1, "recv %d bytes\n", real_recv_len);
+#if 1 
+        sprintf(buf1, "recv %d bytesiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\n", real_recv_len);
         trans->send(trans, buf1, strlen(buf1));
+#endif
 
         if(real_recv_len< 0){
             printf("recv fail\n");

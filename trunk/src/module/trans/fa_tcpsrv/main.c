@@ -66,7 +66,7 @@ static int handle_connection_read(int socket_fd)
         }
     }
 
-    len = fa_recvfrom_client(socket_fd, buf, 8192);
+    len = fa_recvfrom_client(socket_fd, buf, 7*1024);
 
     if(len > 0) {
         fwrite(buf, len , 1, fp);
@@ -112,7 +112,8 @@ int main()
 
     h_tcpsrv = fa_tcpsrv_init(handle_new_connection, handle_connection_read);
 
-	fa_tcpsrv_start(h_tcpsrv, "192.168.20.82", 1982);
+    fa_tcpsrv_start(h_tcpsrv, "192.168.20.38", 1982);
+	/*fa_tcpsrv_start(h_tcpsrv, "192.168.20.82", 1982);*/
 
     fa_tcpsrv_uninit(h_tcpsrv);
 
