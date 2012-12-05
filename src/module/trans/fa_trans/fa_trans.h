@@ -31,9 +31,6 @@ struct _fa_trans {
 };
 
 
-int fa_trans_init();
-int fa_trans_uninit();
-
 /*this is the common create, the child_arg specified by the specific trans_name
   call the "tcp"or"udp" private global function to implemention*/
 fa_trans_t * fa_create_trans(int (* create_trans_callback)(fa_trans_t *trans),

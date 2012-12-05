@@ -6,9 +6,13 @@
 #include "fa_network.h"
 #include "fa_trans.h"
 #include "fa_udpsrv.h"
+#include "fa_print.h"
 
 
 #define		TRANS_BUF_SIZE		(10*1024)		//8k is the best buffer size of the trans(experence)
+
+/*#define USE_LOGFILE*/
+
 int main()
 {
 	fa_trans_t *trans;
@@ -19,8 +23,26 @@ int main()
     int  real_recv_len;
 	char buf[TRANS_BUF_SIZE];
 
+	
+#ifdef USE_LOGFILE
+#ifdef WIN32 
+    FA_PRINT_INIT(FA_PRINT_ENABLE,
+                  FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,
+                  FA_PRINT_PID_ENABLE,
+                 ".\\log_udpsrv\\", "udpsrvlog", "UDPSRV", 10);
+#else 
+    FA_PRINT_INIT(FA_PRINT_ENABLE,
+                  FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,
+                  FA_PRINT_PID_ENABLE,
+                 "./log_udpsrv/", "udpsrvlog", "UDPSRV", 10);
+#endif
+#endif 
 
-	fa_trans_init();				/*initial trans unit*/
+
+    if (fa_network_init()) {
+        FA_PRINT("FAIL: %s , [err at: %s-%d]\n", FA_ERR_SYS_IO, __FILE__, __LINE__);
+        return -1;
+	}
 
     strcpy(hostname, "192.168.20.82");
     port = 1982;
@@ -37,9 +59,13 @@ int main()
     recv_len = TRANS_BUF_SIZE;
 
     while(1) {
+        char buf1[128];
 
         real_recv_len = trans->recv(trans, buf, recv_len);
         printf("-->want %d, recv %d bytes\n", recv_len, real_recv_len);
+
+        sprintf(buf1, "recv %d bytes\n", real_recv_len);
+        trans->send(trans, buf1, strlen(buf1));
 
         if(real_recv_len< 0){
             printf("recv fail\n");
@@ -47,8 +73,8 @@ int main()
         }
     }
 	
+	fa_network_close();
 
-    fa_trans_uninit();
 
 	return 0;
 

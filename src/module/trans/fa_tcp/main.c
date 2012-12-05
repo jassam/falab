@@ -6,16 +6,10 @@
 
 #include "fa_network.h"
 #include "fa_trans.h"
-
-/*#define SET_SERVER*/
-#ifdef SET_SERVER
-#include "fa_tcpserver.h"
-#else
 #include "fa_tcp.h"
-#endif
+#include "fa_print.h"
 
 
-#ifndef SET_SERVER 
 
 #define		TRANS_BUF_SIZE		(8*1024)		//8k is the best buffer size of the trans(experence)
 int trans_file(char *src_file,char *dest_url)
@@ -24,10 +18,12 @@ int trans_file(char *src_file,char *dest_url)
 	/*int fd;*/
 	int file_len;
 	char buf[TRANS_BUF_SIZE];
+    char buf1[128];
 
 	fa_trans_t *trans;
 	int send_len;
 	int read_len;
+    int recv_len;
 
 	int port;
     char hostname[1024],proto[1024],path[1024];
@@ -70,8 +66,12 @@ int trans_file(char *src_file,char *dest_url)
 			if(read_len < TRANS_BUF_SIZE) {
 
 			}else {
-				send_len = trans->send(trans,buf,read_len);
+                send_len = trans->send(trans,buf,read_len);
                 printf("-->send %d bytes\n", send_len);
+
+                memset(buf1, 0, 128);
+                recv_len = trans->recv(trans,buf1, 128);
+                printf("recv reply %d bytes, info=%s\n", recv_len, buf1);
 
 				if(send_len < 0){
                     printf("send fail\n");
@@ -97,23 +97,36 @@ fail:
 
 }
 
-#endif
+/*#define USE_LOGFILE*/
 
 int main()
 {
-#ifndef SET_SERVER
 
-	/*char *sfile = "/home/luolongzhi/Project/ta/xs.wav";*/
 	char *sfile = "xs.wav";
 	char *dest_url = "tcp://192.168.20.82:1982";
-	
-	fa_trans_init();				/*initial trans unit*/
-	trans_file(sfile,dest_url);	
-    fa_trans_uninit();
-#else
 
-	tcp_server("192.168.20.82", 1982);
+#ifdef USE_LOGFILE
+#ifdef WIN32 
+    FA_PRINT_INIT(FA_PRINT_ENABLE,
+                  FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,
+                  FA_PRINT_PID_ENABLE,
+                 ".\\log_tcptrans\\", "tcptranslog", "TCPTRANS", 10);
+#else 
+    FA_PRINT_INIT(FA_PRINT_ENABLE,
+                  FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,
+                  FA_PRINT_PID_ENABLE,
+                 "./log_tcptrans/", "tcptranslog", "TCPTRANS", 10);
 #endif
+#endif 
+
+    if (fa_network_init()) {
+        FA_PRINT("FAIL: %s , [err at: %s-%d]\n", FA_ERR_SYS_IO, __FILE__, __LINE__);
+        return -1;
+	}
+
+	trans_file(sfile,dest_url);	
+
+	fa_network_close();
 
 	return 0;
 

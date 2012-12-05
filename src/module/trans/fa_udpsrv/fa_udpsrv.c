@@ -35,7 +35,6 @@ static int udpsrv_open(fa_trans_t *trans, char *hostname, int port)
 	int fd = -1;
     int tmp;
 
-
 	if (port <= 0 || port >= 65536) {
         FA_PRINT("FAIL: %s , [err at: %s-%d]\n", FA_ERR_NETWORK_PORTNO, __FILE__, __LINE__);
 		return -1;	//port is not correct
@@ -109,6 +108,7 @@ static int udpsrv_send(fa_trans_t *trans, char *buf , int size)
     int addr_len;
 
     size1 = size;
+    addr_len = sizeof(struct sockaddr);
     while (size > 0) {
         fd_max = s->fd;
         FD_ZERO(&wfds);
@@ -117,7 +117,8 @@ static int udpsrv_send(fa_trans_t *trans, char *buf , int size)
         tv.tv_usec = 100 * 1000;
         ret = select(fd_max + 1, NULL, &wfds, NULL, &tv);
         if (ret > 0 && FD_ISSET(s->fd, &wfds)) {
-            len = sendto(s->fd, buf, size, 0, (struct sockaddr*)&s->src_addr,&addr_len);
+            printf("send to %s:%d\n", inet_ntoa(s->src_addr.sin_addr), ntohs(s->src_addr.sin_port));
+            len = sendto(s->fd, buf, size, 0, (struct sockaddr*)&s->src_addr,addr_len);
             if (len < 0) {
                 if (fa_neterrno() != FA_NETERROR(EINTR) &&
                     fa_neterrno() != FA_NETERROR(EAGAIN))
@@ -155,7 +156,7 @@ static int udpsrv_recv(fa_trans_t *trans, char *buf , int size)
         ret = select(fd_max + 1, &rfds, NULL, NULL, &tv);
         if (ret > 0 && FD_ISSET(s->fd, &rfds)) {
             len = recvfrom(s->fd, buf, size, 0, (struct sockaddr*)&s->src_addr,&addr_len);
-            printf("%s\n", inet_ntoa(s->src_addr.sin_addr));
+            printf("recv from %s:%d\n", inet_ntoa(s->src_addr.sin_addr), ntohs(s->src_addr.sin_port));
             if (len < 0) {
                 if (fa_neterrno() != FA_NETERROR(EINTR) &&
                     fa_neterrno() != FA_NETERROR(EAGAIN))
