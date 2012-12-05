@@ -55,7 +55,7 @@ clean :
 	@rm *.o -f
 	@rm *.out -f	
 	@rm $(TARGET) -f	
-	@rm ../fa_trans/*.o
+	@rm ../fa_trans/*.o -f
 
 install :
 

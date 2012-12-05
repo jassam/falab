@@ -4,8 +4,8 @@
 
 #include "fa_network.h"
 #include "fa_trans.h"
-
 #include "fa_udp.h"
+#include "fa_print.h"
 
 
 
@@ -16,10 +16,12 @@ int trans_file(char *src_file,char *dest_url)
 	/*int fd;*/
 	int file_len;
 	char buf[TRANS_BUF_SIZE];
+    char buf1[128];
 
 	fa_trans_t *trans;
 	int send_len;
 	int read_len;
+    int recv_len;
 
 	int port;
     char hostname[1024],proto[1024],path[1024];
@@ -65,6 +67,10 @@ int trans_file(char *src_file,char *dest_url)
 				send_len = trans->send(trans,buf,read_len);
                 printf("-->send %d bytes\n", send_len);
 
+                memset(buf1, 0, 128);
+                recv_len = trans->recv(trans,buf1, 128);
+                printf("recv reply %d bytes, info=%s\n", recv_len, buf1);
+
 				if(send_len < 0){
                     printf("send fail\n");
 					goto fail;
@@ -89,6 +95,7 @@ fail:
 
 }
 
+/*#define USE_LOGFILE*/
 
 int main()
 {
@@ -98,10 +105,28 @@ int main()
     char *dest_url = "udp://192.168.20.82:1982";
 	/*char *dest_url = "udp://127.0.0.1:1982";*/
 	
-	fa_trans_init();				/*initial trans unit*/
-	trans_file(sfile,dest_url);	
-    fa_trans_uninit();
+#ifdef USE_LOGFILE
+#ifdef WIN32 
+    FA_PRINT_INIT(FA_PRINT_ENABLE,
+                  FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,
+                  FA_PRINT_PID_ENABLE,
+                 ".\\log_udptrans\\", "udptranslog", "UDPTRANS", 10);
+#else 
+    FA_PRINT_INIT(FA_PRINT_ENABLE,
+                  FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,
+                  FA_PRINT_PID_ENABLE,
+                 "./log_udptrans/", "udptranslog", "UDPTRANS", 10);
+#endif
+#endif 
 
+    if (fa_network_init()) {
+        FA_PRINT("FAIL: %s , [err at: %s-%d]\n", FA_ERR_SYS_IO, __FILE__, __LINE__);
+        return -1;
+	}
+
+	trans_file(sfile,dest_url);	
+
+	fa_network_close();
 
 	return 0;
 

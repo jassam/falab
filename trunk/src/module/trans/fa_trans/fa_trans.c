@@ -8,38 +8,6 @@ static fa_trans_func_ext_t trans_func_ext = {
 	NULL,	//ext1: for exp: seek function,need to be filled in the child function
 };
 
-int fa_trans_init()
-{
-#ifdef WIN32 
-    FA_PRINT_INIT(FA_PRINT_ENABLE,
-                  /*FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_DISABLE,FA_PRINT_STDERR_DISABLE,*/
-                  FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,
-                  FA_PRINT_PID_ENABLE,
-                 ".\\log_trans\\", "translog", "TRANS", 10);
-#else 
-    FA_PRINT_INIT(FA_PRINT_ENABLE,
-                  /*FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_DISABLE,FA_PRINT_STDERR_DISABLE,*/
-                  FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,
-                  FA_PRINT_PID_ENABLE,
-                 "./log_trans/", "translog", "TRANS", 10);
-#endif
-
-    if (fa_network_init()) {
-        FA_PRINT("FAIL: %s , [err at: %s-%d]\n", FA_ERR_SYS_IO, __FILE__, __LINE__);
-        return -1;
-	}
-
-    return 0;
-}
-
-int fa_trans_uninit()
-{
-	fa_network_close();
-
-    return 0;
-}
-
-
 fa_trans_t * fa_create_trans(int (* create_trans_callback)(fa_trans_t *trans),
                              int (* destroy_trans_callback)(fa_trans_t *trans))
 {
