@@ -12,7 +12,6 @@
 
 #define	CLIENT_MAX_NUM	2000
 
-static struct sockaddr_in local_addr;
 
 /* resolve host with also IP address parsing */
 static int resolve_host(struct in_addr *sin_addr, const char *hostname)
@@ -122,24 +121,11 @@ static int client_nb  = 0;					//the number of the clients which are in connect 
 static int stop_srv   = 0;
 static int is_running = 0;
 static int heart_hop  = 0;
+static struct sockaddr_in local_addr;
 
 int fa_tcpsrv_init(int (* handle_new_connection_callback)(int socket_fd), 
                    int (* handle_connection_read_callback)(int socket_fd))
 {
-#ifdef WIN32 
-    FA_PRINT_INIT(FA_PRINT_ENABLE,
-                  /*FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_DISABLE,FA_PRINT_STDERR_DISABLE,*/
-                  FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,
-                  FA_PRINT_PID_ENABLE,
-                 ".\\log_tcpsrv\\", "tcpsrvlog", "TCPSRV", 10);
-#else 
-    FA_PRINT_INIT(FA_PRINT_ENABLE,
-                  /*FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_DISABLE,FA_PRINT_STDERR_DISABLE,*/
-                  FA_PRINT_FILE_ENABLE,FA_PRINT_STDOUT_ENABLE,FA_PRINT_STDERR_ENABLE,
-                  FA_PRINT_PID_ENABLE,
-                 "./log_tcpsrv/", "tcpsrvlog", "TCPSRV", 10);
-#endif
-
 
 	/*init the network*/
     if (fa_network_init()) {
