@@ -20,10 +20,12 @@
 typedef struct _udp_context {
     int fd;
 	struct addrinfo *ai;
+	struct addrinfo *ai1;
 }udp_context_t;
 
 
-static int udp_open(fa_trans_t *trans, char *hostname, int port)
+static int udp_open(fa_trans_t *trans, char *hostname, int port,
+                                       char *localname,int localport)
 {
 	
 //	va_list vargs;
@@ -32,6 +34,7 @@ static int udp_open(fa_trans_t *trans, char *hostname, int port)
 
 	/*struct addrinfo hints, *ai, *cur_ai;*/
     struct addrinfo hints, *cur_ai;
+
     int fd_max;
 	udp_context_t *s = NULL;
 	fd_set wfds, efds;
@@ -40,6 +43,7 @@ static int udp_open(fa_trans_t *trans, char *hostname, int port)
 	int ret;
     char portstr[10];
 	int fd = -1;
+    int tmp;
 
 //	va_start(vargs,trans);
 //	hostname = va_arg(vargs,char *);
@@ -67,9 +71,37 @@ static int udp_open(fa_trans_t *trans, char *hostname, int port)
     }
     cur_ai = s->ai;
 
+#if 1 
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    snprintf(portstr, sizeof(portstr), "%d", localport);
+    ret = getaddrinfo(localname, portstr, &hints, &(s->ai1));	//cvt the hostname to the address(support ipv6)
+    if (ret) {
+        FA_PRINT("FAIL: %s , [err at: %s-%d]\n", FA_ERR_SYS_IO, __FILE__, __LINE__);
+        goto fail;
+    }
+    cur_ai = s->ai1;
+#endif
+
     fd = socket(cur_ai->ai_family, cur_ai->ai_socktype, cur_ai->ai_protocol);
     if (fd < 0)
         goto fail;
+#if 1 
+    tmp = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &tmp, sizeof(tmp));
+
+    if (bind (fd, cur_ai->ai_addr, cur_ai->ai_addrlen) < 0) {
+        char bindmsg[32];
+        /*snprintf(bindmsg, sizeof(bindmsg), "bind(port %d)", ntohs(cur_ai->ai_addr->sin_port));*/
+        snprintf(bindmsg, sizeof(bindmsg), "bind fail");
+//        perror (bindmsg);
+        FA_PRINT("FAIL: %s , [err at: %s-%d]\n", bindmsg, __FILE__, __LINE__);
+        closesocket(fd);
+        goto fail;
+    }
+#endif
+
     fa_socket_nonblock(fd, 1);
 
     trans->priv_data = s;
@@ -96,6 +128,9 @@ static int udp_send(fa_trans_t *trans, char *buf , int size)
     int ret, size1, fd_max, len;
     fd_set wfds;
     struct timeval tv;
+    /*int addr_len;*/
+
+    /*addr_len = sizeof(struct sockaddr);*/
 
     size1 = size;
     while (size > 0) {
@@ -107,6 +142,7 @@ static int udp_send(fa_trans_t *trans, char *buf , int size)
         ret = select(fd_max + 1, NULL, &wfds, NULL, &tv);
         if (ret > 0 && FD_ISSET(s->fd, &wfds)) {
             len = sendto(s->fd, buf, size, 0, s->ai->ai_addr, s->ai->ai_addrlen);
+            /*len = sendto(s->fd, buf, size, 0, s->ai->ai_addr, addr_len);*/
             if (len < 0) {
                 if (fa_neterrno() != FA_NETERROR(EINTR) &&
                     fa_neterrno() != FA_NETERROR(EAGAIN))
@@ -130,6 +166,9 @@ static int udp_recv(fa_trans_t *trans, char *buf , int size)
     int len, fd_max, ret;
     fd_set rfds;
     struct timeval tv;
+    int addr_len;
+
+    addr_len = sizeof(struct sockaddr);
 
     for (;;) {
         fd_max = s->fd;
@@ -139,7 +178,8 @@ static int udp_recv(fa_trans_t *trans, char *buf , int size)
         tv.tv_usec = 100 * 1000;	//100ms check once
         ret = select(fd_max + 1, &rfds, NULL, NULL, &tv);
         if (ret > 0 && FD_ISSET(s->fd, &rfds)) {
-            len = recvfrom(s->fd, buf, size, 0, s->ai->ai_addr, s->ai->ai_addrlen);
+            len = recvfrom(s->fd, buf, size, 0, s->ai->ai_addr, &s->ai->ai_addrlen);
+            /*len = recvfrom(s->fd, buf, size, 0, (struct sockaddr *)s->ai->ai_addr, &addr_len);*/
             if (len < 0) {
                 if (fa_neterrno() != FA_NETERROR(EINTR) &&
                     fa_neterrno() != FA_NETERROR(EAGAIN))

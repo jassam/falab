@@ -9,7 +9,7 @@
 
 
 
-#define		TRANS_BUF_SIZE		(8*1024)		//8k is the best buffer size of the trans(experence)
+#define		TRANS_BUF_SIZE		(6*1024)		//8k is the best buffer size of the trans(experence)
 int trans_file(char *src_file,char *dest_url)
 {
     FILE *fp;
@@ -47,7 +47,8 @@ int trans_file(char *src_file,char *dest_url)
 	trans = fa_create_trans(fa_create_trans_udp, fa_destroy_trans_udp);
 
 	/*try to open trans*/
-	if(trans->open(trans,hostname,port)<0){
+	/*if(trans->open(trans,hostname,port)<0){*/
+	if(trans->open(trans,hostname,port, "192.168.20.38", 1982)<0){
         printf("open connect fail\n");
 		goto fail;
 	}
@@ -62,14 +63,16 @@ int trans_file(char *src_file,char *dest_url)
 		}
 		else {
 			if(read_len < TRANS_BUF_SIZE) {
+                break;
 
 			}else {
 				send_len = trans->send(trans,buf,read_len);
                 printf("-->send %d bytes\n", send_len);
-
+#if 1 
                 memset(buf1, 0, 128);
                 recv_len = trans->recv(trans,buf1, 128);
                 printf("recv reply %d bytes, info=%s\n", recv_len, buf1);
+#endif
 
 				if(send_len < 0){
                     printf("send fail\n");
@@ -102,7 +105,8 @@ int main()
 
 	/*char *sfile = "/home/luolongzhi/Project/ta/xs.wav";*/
 	char *sfile = "xs.wav";
-    char *dest_url = "udp://192.168.20.82:1982";
+    /*char *dest_url = "udp://192.168.20.82:1983";*/
+    char *dest_url = "udp://192.168.20.38:1983";
 	/*char *dest_url = "udp://127.0.0.1:1982";*/
 	
 #ifdef USE_LOGFILE

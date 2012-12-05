@@ -18,6 +18,7 @@
 #endif
 
 #include "fa_malloc.h"
+#include "fa_inttypes.h"
 
 
 #ifdef WIN32

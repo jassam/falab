@@ -279,7 +279,7 @@ int fa_tcpsrv_start(unsigned long handle, const char *hostname, const int port)
             f->heart_hop = 0;
 
         if (f->stop_srv) {
-            FA_PRINT("========================== TCP Server is stopped =======================n");
+            FA_PRINT("========================== TCP Server is stopped =======================\n");
             break;
         }
 
@@ -290,8 +290,11 @@ int fa_tcpsrv_start(unsigned long handle, const char *hostname, const int port)
         do {
             client_ready_nb = poll(poll_client, f->client_nb+1, delay);
             if (client_ready_nb < 0 && fa_neterrno() != FA_NETERROR(EAGAIN) &&
-                fa_neterrno() != FA_NETERROR(EINTR))
-                goto fail;
+                fa_neterrno() != FA_NETERROR(EINTR)) {
+                FA_PRINT("poll error, errno=%d\n", fa_neterrno());
+                /*goto fail;*/
+                continue;
+            }
         } while (client_ready_nb < 0);
 
 		/*test the listen fd, check if can be read(POLLRDNORM) )*/
@@ -300,7 +303,8 @@ int fa_tcpsrv_start(unsigned long handle, const char *hostname, const int port)
 			connect_fd = accept(server_fd,(struct sockaddr*)&from_addr, &addr_len);
 			if (connect_fd < 0) {
                 FA_PRINT("FAIL: %s %d, [err at: %s-%d]\n", "connect_fd err when accept fd ", connect_fd,  __FILE__, __LINE__);
-                goto fail;
+                /*goto fail;*/
+                continue;
 			}
 			fa_socket_nonblock(connect_fd, 1);
 
@@ -347,6 +351,7 @@ int fa_tcpsrv_start(unsigned long handle, const char *hostname, const int port)
 						/*connection reset by client */
 						closesocket(socket_fd);
 						poll_client[i].fd = 0;
+                        f->client_nb--;
 					}else {
                         FA_PRINT("FAIL: %s , [err at: %s-%d]\n", "unknown error", __FILE__, __LINE__);
 					}
@@ -354,6 +359,7 @@ int fa_tcpsrv_start(unsigned long handle, const char *hostname, const int port)
 					/*connection closed by client */
 					closesocket(socket_fd);
 					poll_client[i].fd = 0;
+                    f->client_nb--;
 				}
 
 				if(--client_ready_nb <= 0)
@@ -371,7 +377,7 @@ int fa_tcpsrv_start(unsigned long handle, const char *hostname, const int port)
 fail:
     f->is_running = 0;
     f->heart_hop  = 0;
-    FA_PRINT("========================== TCP Server Exit abnormal =======================n");
+    FA_PRINT("========================== TCP Server Exit abnormal =======================\n");
 
     return -1;
 	
@@ -385,7 +391,7 @@ int fa_tcpsrv_stop(unsigned long handle)
     if (f->is_running) {
         f->stop_srv = 1;
     } else {
-        FA_PRINT("========================== TCP Server is not running, no need stop =======================n");
+        FA_PRINT("========================== TCP Server is not running, no need stop =======================\n");
     }
 
     return 0;
