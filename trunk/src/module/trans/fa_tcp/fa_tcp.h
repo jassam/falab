@@ -29,7 +29,16 @@
 
 #include "fa_trans.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int fa_create_trans_tcp(fa_trans_t *trans);
 int fa_destroy_trans_tcp(fa_trans_t *trans);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
