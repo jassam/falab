@@ -1,3 +1,29 @@
+/*
+  falab - free algorithm lab 
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+  filename: fa_udpsrv.c 
+  version : v1.0.0
+  time    : 2012/12/5  
+  author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -143,11 +169,17 @@ static int udpsrv_recv(fa_trans_t *trans, char *buf , int size)
     fd_set rfds;
     struct timeval tv;
     int addr_len;
+    int max_check_cnt=10;
 
     len = 0;
 #ifndef UDP_USE_BLOCK
     addr_len = sizeof(struct sockaddr);
     for(;;) {
+        max_check_cnt--;
+
+        if (max_check_cnt < 0)
+            return -2;  // -2 means timeout
+
         fd_max = s->fd;
         FD_ZERO(&rfds);
         FD_SET(s->fd, &rfds);
@@ -160,7 +192,7 @@ static int udpsrv_recv(fa_trans_t *trans, char *buf , int size)
             if (len < 0) {
                 if (fa_neterrno() != FA_NETERROR(EINTR) &&
                     fa_neterrno() != FA_NETERROR(EAGAIN))
-                    return -1;//fa_neterrno();
+                    return fa_neterrno();
                 continue;
              } else  {
                  return len;

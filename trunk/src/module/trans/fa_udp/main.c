@@ -13,7 +13,6 @@
 int trans_file(char *src_file,char *dest_url)
 {
     FILE *fp;
-	/*int fd;*/
 	int file_len;
 	char buf[TRANS_BUF_SIZE];
     char buf1[128];
@@ -32,7 +31,6 @@ int trans_file(char *src_file,char *dest_url)
     fa_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
                  &port, path, sizeof(path), dest_url);
 
-	/*fd = open(src_file,O_RDONLY|O_BINARY);*/
 	fp = fopen(src_file, "rb");
 
 	if(fp == NULL) {
@@ -47,8 +45,8 @@ int trans_file(char *src_file,char *dest_url)
 	trans = fa_create_trans(fa_create_trans_udp, fa_destroy_trans_udp);
 
 	/*try to open trans*/
-	/*if(trans->open(trans,hostname,port)<0){*/
-	if(trans->open(trans,hostname,port, "192.168.20.38", 1982)<0){
+    if(trans->open(trans,hostname,port)<0){
+	/*if(trans->open(trans,hostname,port, "192.168.20.38", 1982)<0){*/
         printf("open connect fail\n");
 		goto fail;
 	}
@@ -127,6 +125,11 @@ int main()
         FA_PRINT("FAIL: %s , [err at: %s-%d]\n", FA_ERR_SYS_IO, __FILE__, __LINE__);
         return -1;
 	}
+
+#ifdef __GNUC__
+    fa_sigpipe_init(NULL);
+#endif
+
 
 	trans_file(sfile,dest_url);	
 

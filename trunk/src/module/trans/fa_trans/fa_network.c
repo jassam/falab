@@ -1,3 +1,29 @@
+/*
+  falab - free algorithm lab 
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+  filename: fa_network.c 
+  version : v1.0.0
+  time    : 2012/12/5  
+  author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "fa_network.h"
@@ -5,6 +31,7 @@
 #ifndef WIN32
 #include <strings.h>
 #include <string.h>
+#include <signal.h>
 #else
 #include <string.h>
 #endif
@@ -267,7 +294,6 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     int n;
     int rc;
 
-//#if HAVE_WINSOCK2_H
 #ifdef WIN32
     if (numfds >= FD_SETSIZE) {
         errno = EINVAL;
@@ -283,7 +309,7 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     for(i = 0; i < numfds; i++) {
         if (fds[i].fd < 0)
             continue;
-//#if !HAVE_WINSOCK2_H
+
 #ifdef __GNUC__
         if (fds[i].fd >= FD_SETSIZE) {
             errno = EINVAL;
@@ -327,4 +353,31 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout)
     return rc;
 }
 #endif /* HAVE_POLL_H */
+
+
+
+//add by luolongzhi to process broken pipe in Linux (in windows, if peer reset will return -10054 error)
+#ifdef __GNUC__
+
+static void (* handle_brokenpipe_event_local)() = NULL;
+static void handle_brokenpipe();
+
+void fa_sigpipe_init(void (* handle_brokenpipe_event)())
+{
+    signal(SIGPIPE, handle_brokenpipe);
+    handle_brokenpipe_event_local = handle_brokenpipe_event;
+}
+
+static void handle_brokenpipe()
+{
+    printf("boken pipe detected, maybe peer is reset, now will call your own process function to handle this event\n");
+
+    if (handle_brokenpipe_event_local) {
+        handle_brokenpipe_event_local();
+    }
+
+    /*exit(0);*/
+}
+
+#endif
 
