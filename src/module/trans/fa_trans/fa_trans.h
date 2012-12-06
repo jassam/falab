@@ -1,3 +1,29 @@
+/*
+  falab - free algorithm lab 
+  Copyright (C) 2012 luolongzhi 罗龙智 (Chengdu, China)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+  filename: fa_trans.h 
+  version : v1.0.0
+  time    : 2012/12/5  
+  author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
+  code URL: http://code.google.com/p/falab/
+
+*/
+
 #ifndef FA_TRANS_H
 #define FA_TRANS_H
 
@@ -7,17 +33,24 @@ extern "C" {
 
 #include <stdarg.h>
 
-typedef struct _fa_trans            fa_trans_t;
-typedef struct _fa_trans_func_ext   fa_trans_func_ext_t;
+typedef struct _fa_trans_t            fa_trans_t;
+typedef struct _fa_trans_func_ext_t   fa_trans_func_ext_t;
 
 
 /*spec_fun used to expand the fa_tran_t implmention function*/
-struct _fa_trans_func_ext {
+struct _fa_trans_func_ext_t {
 	void (*func_ext1_seek)();
 };
 
-
-struct _fa_trans {
+/*
+    NOTE: open function real instatnce , current support interface
+          int tcp_open(fa_trans_t *trans, char *hostname, int port);                  // destination hostname and port 
+          int udp_open(fa_trans_t *trans, char *hostname, int port);                  // destination hostname and port
+          int udp_open_bind(fa_trans_t *trans, char *hostname, int port,
+                                               char *localname,int localport);        // destination hostname and port, localhostname and port(for bind)
+          int udpsrv_open(fa_trans_t *trans, char *hostname, int port);               // localhost name and port(for bind)
+*/
+struct _fa_trans_t {
 	int (*open) (fa_trans_t *trans, ...);
 	int (*send) (fa_trans_t *trans, char *data , int data_len);
 	int (*recv) (fa_trans_t *trans, char *data , int data_len);

@@ -44,6 +44,11 @@ int main()
         return -1;
 	}
 
+#ifdef __GNUC__
+    fa_sigpipe_init(NULL);
+#endif
+
+
     /*strcpy(hostname, "192.168.20.82");*/
     strcpy(hostname, "192.168.20.38");
     port = 1983;
@@ -63,11 +68,15 @@ int main()
         char buf1[128];
 
         real_recv_len = trans->recv(trans, buf, recv_len);
-        printf("-->want %d, recv %d bytes\n", recv_len, real_recv_len);
+        if (real_recv_len == -2)
+            printf("recv time out, continue try \n");
+        else {
+            printf("-->want %d, recv %d bytes\n", recv_len, real_recv_len);
 #if 1 
-        sprintf(buf1, "recv %d bytesiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\n", real_recv_len);
-        trans->send(trans, buf1, strlen(buf1));
+            sprintf(buf1, "recv %d bytes\n", real_recv_len);
+            trans->send(trans, buf1, strlen(buf1));
 #endif
+        }
 
         if(real_recv_len< 0){
             printf("recv fail\n");

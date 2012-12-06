@@ -60,34 +60,35 @@ int trans_file(char *src_file,char *dest_url)
 
 		if(read_len < TRANS_BUF_SIZE){
             printf("read_len < TRANS_BUF_SIZE\n");
+#if 0
 			goto fail;
+#else 
+            fseek(fp, 0, SEEK_SET);
+            continue;
+#endif
 		}
 		else {
-			if(read_len < TRANS_BUF_SIZE) {
+            send_len = trans->send(trans,buf,read_len);
+            printf("-->send %d bytes\n", send_len);
 
-			}else {
-                send_len = trans->send(trans,buf,read_len);
-                printf("-->send %d bytes\n", send_len);
+            memset(buf1, 0, 128);
+            recv_len = trans->recv(trans,buf1, 128);
+            printf("recv reply %d bytes, info=%s\n", recv_len, buf1);
 
-                memset(buf1, 0, 128);
-                recv_len = trans->recv(trans,buf1, 128);
-                printf("recv reply %d bytes, info=%s\n", recv_len, buf1);
-
-				if(send_len < 0){
-                    printf("send fail\n");
-					goto fail;
-				}
-				
-				if(send_len < read_len) {
-                    printf("send_len < read_len\n");
-                }
-
-			}
+            if(send_len < 0){
+                printf("send fail\n");
+                /*goto fail;*/
+            }
+            
+            if(send_len < read_len) {
+                printf("send_len < read_len\n");
+            }
 
 		}
 
 	}
 
+    printf("finish\n");
 	fa_destroy_trans(trans);
 	return 0;
 
@@ -104,7 +105,7 @@ int main()
 
 	char *sfile = "xs.wav";
     char *dest_url = "tcp://192.168.20.38:1982";
-	/*char *dest_url = "tcp://192.168.20.82:1982";*/
+    /*char *dest_url = "tcp://192.168.20.82:1982";*/
 
 #ifdef USE_LOGFILE
 #ifdef WIN32 
@@ -124,6 +125,11 @@ int main()
         FA_PRINT("FAIL: %s , [err at: %s-%d]\n", FA_ERR_SYS_IO, __FILE__, __LINE__);
         return -1;
 	}
+
+#ifdef __GNUC__
+    fa_sigpipe_init(NULL);
+#endif
+
 
 	trans_file(sfile,dest_url);	
 

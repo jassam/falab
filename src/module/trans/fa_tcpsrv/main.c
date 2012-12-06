@@ -107,13 +107,17 @@ int main()
         return -1;
 	}
 
+#ifdef __GNUC__
+    fa_sigpipe_init(NULL);
+#endif
+
     /*clean the client number*/
     memset(client, 0, sizeof(client_t)*MAX_CNT);
 
     h_tcpsrv = fa_tcpsrv_init(handle_new_connection, handle_connection_read);
 
     fa_tcpsrv_start(h_tcpsrv, "192.168.20.38", 1982);
-	/*fa_tcpsrv_start(h_tcpsrv, "192.168.20.82", 1982);*/
+    /*fa_tcpsrv_start(h_tcpsrv, "192.168.20.82", 1982);*/
 
     fa_tcpsrv_uninit(h_tcpsrv);
 
