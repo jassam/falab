@@ -29,8 +29,22 @@
 
 #include "fa_trans.h"
 
+#ifdef __cplusplus 
+extern "C"
+{ 
+#endif  
+
+
 int fa_create_trans_udp(fa_trans_t *trans);
 int fa_create_trans_udpbind(fa_trans_t *trans);
 int fa_destroy_trans_udp(fa_trans_t *trans);
+
+
+#ifdef __cplusplus 
+}
+#endif  
+
+
+
 
 #endif

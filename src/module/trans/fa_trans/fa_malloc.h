@@ -30,6 +30,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #ifndef FA_ABS
 #define FA_ABS(a)               ((a) >= 0 ? (a) : (-(a)))
 #endif 
@@ -77,6 +82,12 @@ void    * fa_calloc(int num, int size);
 char    * fa_strdup(const char *s);
 
 unsigned int    fa_strlcpy(char *dst, const char *src, unsigned int size);
+
+
+#ifdef __cplusplus
+}
+#endif
+
 
 
 

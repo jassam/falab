@@ -27,6 +27,11 @@
 #ifndef FA_NETWORK_H
 #define FA_NETWORK_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #ifdef WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -238,6 +243,10 @@ int poll(struct pollfd *fds, nfds_t numfds, int timeout);
 void fa_sigpipe_init(void (* handle_brokenpipe_event)());
 #endif
 
+
+#ifdef __cplusplus
+}
+#endif
 
 
 
