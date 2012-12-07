@@ -51,7 +51,7 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
-#define GAIN_ADJUST   5 //4 
+#define GAIN_ADJUST    4 //5 //4 
 
 
 /* Returns the sample rate index */
@@ -467,7 +467,7 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
 
     /*use mdct transform*/
     if (s->block_type == ONLY_SHORT_BLOCK) {
-#if  1 
+#if  0 
         s->num_window_groups = 1;
         s->window_group_length[0] = 8;
         s->window_group_length[1] = 0;
@@ -479,15 +479,15 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
         s->window_group_length[7] = 0;
 #else 
         /*just for test different group length result*/
-        s->num_window_groups = 2;
-        s->window_group_length[0] = 4;
-        s->window_group_length[1] = 4;
-        s->window_group_length[2] = 0;
-        s->window_group_length[3] = 0;
-        s->window_group_length[4] = 0;
-        s->window_group_length[5] = 0;
-        s->window_group_length[6] = 0;
-        s->window_group_length[7] = 0;
+        s->num_window_groups = 8;
+        s->window_group_length[0] = 1;
+        s->window_group_length[1] = 1;
+        s->window_group_length[2] = 1;
+        s->window_group_length[3] = 1;
+        s->window_group_length[4] = 1;
+        s->window_group_length[5] = 1;
+        s->window_group_length[6] = 1;
+        s->window_group_length[7] = 1;
 #endif
         fa_mdctline_sfb_arrange(s->h_mdctq_short, s->mdct_line, 
                 s->num_window_groups, s->window_group_length);

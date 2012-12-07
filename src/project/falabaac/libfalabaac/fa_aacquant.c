@@ -567,6 +567,8 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
 }
 
 
+#define OC1 3
+#define OC2 1
 
 static void quant_outerloop(fa_aacenc_ctx_t *f)
 {
@@ -581,24 +583,24 @@ static void quant_outerloop(fa_aacenc_ctx_t *f)
     switch(f->speed_level) {
         case 1:
             break;
-            outer_loop_count_max = 15;
+            outer_loop_count_max = OC1; //15;
         case 2:
-            outer_loop_count_max = 15;//30;//15;
+            outer_loop_count_max = OC1; //15;//30;//15;
             break;
         case 3:
-            outer_loop_count_max = 1;
+            outer_loop_count_max = OC2;
             break;
         case 4:
-            outer_loop_count_max = 1;
+            outer_loop_count_max = OC2;
             break;
         case 5:
-            outer_loop_count_max = 1;
+            outer_loop_count_max = OC2;
             break;
         case 6:
-            outer_loop_count_max = 1;
+            outer_loop_count_max = OC2;
             break;
         default:
-            outer_loop_count_max = 15;
+            outer_loop_count_max = OC1; //15;
     }
 
     quant_ok_cnt = 0;
@@ -1192,21 +1194,40 @@ static void calculate_scalefactor(aacenc_ctx_t *s)
     int gr;
     int win;
     int scalefactor;
+    int group_offset;
  
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
     fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
 
+    group_offset = 0;
 
     if (s->block_type == ONLY_SHORT_BLOCK) {
         for (gr = 0; gr < s->num_window_groups; gr++) {
             for (i = 0; i < fs->sfb_num; i++) {
+                /*scalefactor = 254;*/
+                scalefactor = 0;
+                /*for (win = 0; win < s->window_group_length[gr]; win++) {*/
                 for (win = 0; win < s->window_group_length[gr]; win++) {
-                    scalefactor = s->scalefactor_win[win][i];
+                    scalefactor = s->scalefactor_win[win+group_offset][i];
                     /*s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);*/
-                    s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], scalefactor);
-                    s->scalefactor[gr][i] = FA_MIN(50, s->scalefactor[gr][i]);
+                    s->scalefactor[gr][i] = scalefactor;
+#if 1 
+                    s->scalefactor[gr][i] = FA_MIN(10, s->scalefactor[gr][i]);
+#else 
+                    /*do not change the para*/
+                    if (i < SF_LOW_BAND_POS_SHORT) {
+                        s->scalefactor[gr][i] = FA_MIN(SF_LOW_BAND_VMAX, 5+s->scalefactor[gr][i]);
+                    } else if (i < SF_HIGH_BAND_POS_LONG){
+                        s->scalefactor[gr][i] = FA_MIN(SF_MID_BAND_VMAX, 5+s->scalefactor[gr][i]);
+                    } else {
+                        s->scalefactor[gr][i] = FA_MIN(SF_HIGH_BAND_VMAX, 10+s->scalefactor[gr][i]);
+                    }
+
+#endif
                 }
             }
+
+            group_offset += s->window_group_length[gr];
         }
     } else {
         for (i = 0; i < fl->sfb_num; i++) {
@@ -1215,11 +1236,11 @@ static void calculate_scalefactor(aacenc_ctx_t *s)
 #else
             /*do not change the para*/
             if (i < SF_LOW_BAND_POS_LONG) {
-                s->scalefactor[0][i] = FA_MIN(SF_LOW_BAND_VMAX, 4+s->scalefactor_win[0][i]);
+                s->scalefactor[0][i] = FA_MIN(SF_LOW_BAND_VMAX, 5+s->scalefactor_win[0][i]);
             } else if (i < SF_HIGH_BAND_POS_LONG){
-                s->scalefactor[0][i] = FA_MIN(SF_MID_BAND_VMAX, 6+s->scalefactor_win[0][i]);
+                s->scalefactor[0][i] = FA_MIN(SF_MID_BAND_VMAX, 5+s->scalefactor_win[0][i]);
             } else {
-                s->scalefactor[0][i] = FA_MIN(SF_HIGH_BAND_VMAX, 2+s->scalefactor_win[0][i]);
+                s->scalefactor[0][i] = FA_MIN(SF_HIGH_BAND_VMAX, 5+s->scalefactor_win[0][i]);
             }
 #endif
         }
