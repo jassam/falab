@@ -92,6 +92,9 @@ typedef struct _aacenc_ctx_t{
     int   quant_ok;
 
     int   maxscale_win[8][FA_SWB_NUM_MAX];
+    int   global_gain_init[8];
+    int   global_gain_init_diff[8];
+    int   scalefac_offset[8];
 
     //huffman var
     int   hufftab_no[8][FA_SWB_NUM_MAX];

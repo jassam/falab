@@ -51,7 +51,7 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
-#define GAIN_ADJUST    4 //5 //4 
+#define GAIN_ADJUST    5 //4 
 
 
 /* Returns the sample rate index */
@@ -268,6 +268,9 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         memset(f->ctx[i].scalefactor, 0, sizeof(int)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].scalefactor_win, 0, sizeof(int)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].maxscale_win,0, sizeof(int)*8*FA_SWB_NUM_MAX);
+        memset(f->ctx[i].global_gain_init, 0, sizeof(int)*8);
+        memset(f->ctx[i].global_gain_init_diff, 0, sizeof(int)*8);
+        memset(f->ctx[i].scalefac_offset, 0, sizeof(int)*8);
 
         f->ctx[i].num_window_groups = 1;
         f->ctx[i].window_group_length[0] = 1;
