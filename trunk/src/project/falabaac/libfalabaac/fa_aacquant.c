@@ -51,7 +51,7 @@
 
 #define SF_MAGIC_NUM  (0.449346777778)
 
-#if 0 
+#if 1 
 static void calculate_start_common_scalefac(fa_aacenc_ctx_t *f)
 {
     int i, chn;
@@ -174,20 +174,20 @@ static void init_quant_change(int outer_loop_count, aacenc_ctx_t *s)
 static void init_quant_change_fast(int outer_loop_count, aacenc_ctx_t *s)
 {
     if (outer_loop_count == 0) {
-#if 1 
+#if 0 
         s->common_scalefac = s->start_common_scalefac;
         s->quant_change = 32;
 #else 
         //2012-12-01
         s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);
         /*printf("startcf=%d, last=%d, diff=%d\n", s->start_common_scalefac, s->last_common_scalefac, s->last_common_scalefac-s->start_common_scalefac);*/
-        /*s->quant_change = 2;*/
-        s->quant_change = 1;
+        s->quant_change = 2;
+        /*s->quant_change = 1;*/
 #endif
     } else {
         /*s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);*/
-        /*s->quant_change = 2;*/
-        s->quant_change = 1;
+        s->quant_change = 2;
+        /*s->quant_change = 1;*/
     }
 
 }
@@ -512,10 +512,10 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
 
                 delta_bits = counted_bits - available_bits;
                 delta_bits = FA_ABS(delta_bits);
-/*
+
                 if (inner_loop_cnt == 0) 
                     sl->quant_change = sr->quant_change = choose_search_step(delta_bits);
-*/
+
                 if (counted_bits > available_bits) { 
                     sl->common_scalefac += sl->quant_change;
                     sr->common_scalefac += sr->quant_change;
@@ -633,7 +633,7 @@ static void quant_innerloop_fast(fa_aacenc_ctx_t *f, int outer_loop_count)
 }
 
 
-#define OC1 0 
+#define OC1 15 //1 
 #define OC2 1
 
 static void quant_outerloop(fa_aacenc_ctx_t *f)
@@ -1302,11 +1302,12 @@ static void calculate_scalefactor(aacenc_ctx_t *s)
     } else {
         for (i = 0; i < fl->sfb_num; i++) {
 #if 0 
-            s->scalefactor[0][i] = FA_MIN(100, s->scalefac_offset[0] +s->global_gain_init_diff[0]+s->scalefactor_win[0][i]);
+            /*s->scalefactor[0][i] = FA_MIN(100, s->scalefac_offset[0] +s->global_gain_init_diff[0]+s->scalefactor_win[0][i]);*/
+            s->scalefactor[0][i] = FA_MIN(100, s->scalefac_offset[0] + s->scalefactor_win[0][i]);
             s->scalefactor[0][i] = FA_MAX(0, s->scalefactor[0][i]);
 #else 
-            /*s->scalefactor[0][i] = FA_MIN(20, s->scalefactor_win[0][i]);*/
-            s->scalefactor[0][i] = FA_MAX(0, s->scalefactor_win[0][i]);
+            s->scalefactor[0][i] = FA_MIN(20, s->scalefactor_win[0][i]);
+            s->scalefactor[0][i] = FA_MAX(0, s->scalefactor[0][i]);
 #endif
 
         }
@@ -1337,12 +1338,9 @@ static void adjust_scalefactor(aacenc_ctx_t *s)
             }
         }
     } else {
-        /*for (i = 0; i < fl->sfb_num; i++) {*/
-        /*}*/
-        /*s->scalefac_offset[0] = s->common_scalefac - s->scalefactor[0][11];*/
-        s->scalefac_offset[0] = s->scalefactor[0][11] - s->scalefactor_win[0][11] ;
-        /*printf("scale offset=%d\n", s->scalefac_offset[0]);*/
-        /*printf("\n\n");*/
+        /*s->scalefactor[0][i] = FA_MIN(80, s->scalefac_offset[0] + s->scalefactor[0][i]);*/
+        s->scalefactor[0][i] = FA_MIN(20, s->scalefactor[0]);
+        s->scalefactor[0][i] = FA_MAX(0, s->scalefactor[0][i]);
     }
 
 }
@@ -1358,7 +1356,6 @@ void fa_quantize_fast(fa_aacenc_ctx_t *f)
 
     chn_num = f->cfg.chn_num;
 
-    /*FA_CLOCK_START(6);*/
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
         if (s->block_type == ONLY_SHORT_BLOCK) {
@@ -1372,35 +1369,29 @@ void fa_quantize_fast(fa_aacenc_ctx_t *f)
             memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
             calculate_scalefactor(s);
         }
+
+        /*calculate_commonscale_usemaxscale(s);*/
+        /*adjust_scalefactor(s);*/
     }
-    /*FA_CLOCK_END(6);*/
-    /*FA_CLOCK_COST(6);*/
 
     calculate_start_common_scalefac(f);
 
-    /*FA_CLOCK_START(2);*/
     quant_outerloop(f);
-    /*FA_CLOCK_END(2);*/
-    /*FA_CLOCK_COST(2);*/
 
-/*
-    for (i = 0; i < chn_num; i++) {
-        s = &(f->ctx[i]);
-        adjust_scalefactor(s);
-    }
-*/
-
+#if 0
     for (i = 0; i < chn_num; i++) {
         int gl_offset;
         s = &(f->ctx[i]);
         if (s->block_type == ONLY_SHORT_BLOCK) {
             memset(s->scalefac_offset, 0, sizeof(int)*8);
         } else {
-            gl_offset = s->common_scalefac - s->global_gain_init[0];
+            /*gl_offset = s->common_scalefac - s->global_gain_init[0];*/
+            gl_offset = s->common_scalefac - s->start_common_scalefac;
             s->scalefac_offset[0] = gl_offset;
             /*printf("scale offset=%d\n", gl_offset);*/
         }
     }
+#endif
 
 #if  0 
     {
@@ -1507,7 +1498,7 @@ void fa_calculate_maxscale_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
 }
 
 
-static void calculate_scalefactor_usemaxscale(aacenc_ctx_t *s)
+void calculate_scalefactor_usemaxscale(aacenc_ctx_t *s)
 {
     int i;
     int gr;
@@ -1544,7 +1535,7 @@ static void calculate_scalefactor_usemaxscale(aacenc_ctx_t *s)
 }
 
 
-static void calculate_commonscale_usemaxscale(aacenc_ctx_t *s)
+void calculate_commonscale_usemaxscale(aacenc_ctx_t *s)
 {
     int i;
     int gr;
@@ -1571,8 +1562,10 @@ static void calculate_commonscale_usemaxscale(aacenc_ctx_t *s)
         s->common_scalefac = 200;
         for (i = 0; i < fl->sfb_num; i++) {
             common_scalefac = s->maxscale_win[0][i] + s->scalefactor[0][i];
-            if (common_scalefac > 0)
+            if (common_scalefac > 0) {
                 s->common_scalefac = FA_MIN(common_scalefac, s->common_scalefac);
+                s->start_common_scalefac = s->common_scalefac;
+            }
             /*printf("maxscale win=%d, common_scalefac=%d\n", s->maxscale_win[0][i], s->common_scalefac);*/
         }
     }
