@@ -33,7 +33,6 @@
 #include "fa_iqtab.h"
 #include "fa_fastmath.h"
 #include "fa_huffman.h"
-#include "fa_aacquant.h"
 /*#include "fa_timeprofile.h"*/
 
 
@@ -191,10 +190,7 @@ void fa_mdctline_pow34(uintptr_t handle)
                        f->xr_pow);
 
 }
-/*
-#define HF_ATTEN   (1.-0.0618)
-#define MF_RISE    1.0618
-*/
+
 void fa_mdctline_scaled(uintptr_t handle,
                         int num_window_groups, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX])
 {
@@ -208,41 +204,17 @@ void fa_mdctline_scaled(uintptr_t handle,
     float *mdct_scaled;
     float cof_scale;
 
-    /*int is_long;*/
-
     sfb_num      = f->sfb_num;
     xr_pow       = f->xr_pow;
     mdct_scaled  = f->mdct_scaled;
-/*
-    if (sfb_num > 20)
-        is_long = 1;
-    else 
-        is_long = 0;
-*/
+
     for (gr = 0; gr < num_window_groups; gr++) {
         for (sfb = 0; sfb < sfb_num; sfb++) {
             /*cof_scale = powf(2, (3./16.) * scalefactor[gr][sfb]);*/
             cof_scale = rom_cof_scale[scalefactor[gr][sfb]+255];
 
-            for (i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) {
-#if 1 
+            for (i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) 
                 mdct_scaled[i] = xr_pow[i] * cof_scale;
-#else 
-/*
-                if (is_long) {
-                    if (sfb > SF_HIGH_BAND_POS_LONG)
-                        mdct_scaled[i] = xr_pow[i] * cof_scale * HF_ATTEN;
-                    else
-                        mdct_scaled[i] = xr_pow[i] * cof_scale * MF_RISE;
-                } else {
-                    if (sfb > SF_HIGH_BAND_POS_SHORT)
-                        mdct_scaled[i] = xr_pow[i] * cof_scale * HF_ATTEN;
-                    else
-                        mdct_scaled[i] = xr_pow[i] * cof_scale * MF_RISE;
-                }
-*/
-#endif
-            }
         }
     }
 
@@ -389,7 +361,6 @@ int  fa_fix_quant_noise_single(uintptr_t handle,
     int gr, win;
     int sfb;
     int sfb_num;
-    /*int is_long;*/
 
     /*three break condition variable*/
     /*no1*/
@@ -402,12 +373,7 @@ int  fa_fix_quant_noise_single(uintptr_t handle,
 
 
     sfb_num  = f->sfb_num;
-/*
-    if (sfb_num > 20)
-        is_long = 1;
-    else 
-        is_long = 0;
-*/
+
 
     memset(energy_err_ok_cnt, 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
     memset(energy_err_ok    , 0, sizeof(int)*NUM_WINDOW_GROUPS_MAX);
@@ -418,11 +384,6 @@ int  fa_fix_quant_noise_single(uintptr_t handle,
     for (gr = 0; gr < num_window_groups; gr++) {
         for (sfb = 0; sfb < sfb_num; sfb++) {
             for (win = 0; win < window_group_length[gr]; win++) {
-/*
-                if (outer_loop_count> 30 && sfb > 27) {
-                    printf("loopcnt=%d, sfb=%d,error=%f, xmin=%f\n", outer_loop_count, sfb, f->error_energy[gr][sfb][win], f->xmin[gr][sfb][win]);
-                }
-*/
                 if (f->error_energy[gr][sfb][win] > f->xmin[gr][sfb][win]) {
                     scalefactor[gr][sfb] += 1;
                     scalefactor[gr][sfb] = FA_MIN(scalefactor[gr][sfb], 255);
@@ -456,33 +417,10 @@ int  fa_fix_quant_noise_single(uintptr_t handle,
     for (gr = 0; gr < num_window_groups; gr++) {
         if ((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
             for (sfb = 1; sfb < sfb_num; sfb++) {
-#if 1 
                 if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
-                /*if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 30)*/
+                /*if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 60)*/
                     return 1;
-#else 
-/*
-                if (is_long) {
-                    if (sfb < SF_HIGH_BAND_POS_LONG) {
-                        if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > SF_MID_BAND_VDIFFMAX)
-                            return 1;
-                    } else {
-                        if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > SF_HIGH_BAND_VDIFFMAX)
-                        return 1;
-                    }
-                } else {
-                    if (sfb < SF_HIGH_BAND_POS_SHORT) {
-                        if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > SF_MID_BAND_VDIFFMAX)
-                            return 1;
-                    } else {
-                        if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > SF_HIGH_BAND_VDIFFMAX)
-                        return 1;
-                    }
-
-                }
-*/
-#endif
-                if (outer_loop_count >= outer_loop_count_max)
+                if (outer_loop_count > outer_loop_count_max)
                     return 1;
             }
             return 0;

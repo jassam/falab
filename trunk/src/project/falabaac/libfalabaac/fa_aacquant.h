@@ -34,20 +34,6 @@
 #define NUM_SFB_MAX           FA_SWB_NUM_MAX
 #endif
 
-//this parameter is defined by luolongzhi for the test experiment, not ISO standard
-/*
-#define SF_LOW_BAND_POS_LONG       11
-#define SF_LOW_BAND_POS_SHORT      2
-#define SF_HIGH_BAND_POS_LONG      39 //45 //do not change
-#define SF_HIGH_BAND_POS_SHORT     11 
-
-#define SF_LOW_BAND_VMAX           40 //do not change
-#define SF_MID_BAND_VMAX           40 //do not change 
-#define SF_HIGH_BAND_VMAX          40 //good para(tested), do not change 
-#define SF_LOW_BAND_VDIFFMAX       7
-#define SF_MID_BAND_VDIFFMAX       30 
-#define SF_HIGH_BAND_VDIFFMAX      10 
-*/
 void fa_quantize_loop(fa_aacenc_ctx_t *f);
 void fa_quantize_fast(fa_aacenc_ctx_t *f);
 void fa_quantize_best(fa_aacenc_ctx_t *f);

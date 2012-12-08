@@ -51,7 +51,7 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
-#define GAIN_ADJUST    5 //4 
+#define GAIN_ADJUST   5 //4 
 
 
 /* Returns the sample rate index */
@@ -95,7 +95,6 @@ static rate_cutoff_t rate_cutoff[] =
     {38000, 12000},
     {48000, 20000},
     {64000, 20000},
-    /*{100000, 22000},*/
     {0    , 0},
 };
 
@@ -268,9 +267,6 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         memset(f->ctx[i].scalefactor, 0, sizeof(int)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].scalefactor_win, 0, sizeof(int)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].maxscale_win,0, sizeof(int)*8*FA_SWB_NUM_MAX);
-        memset(f->ctx[i].global_gain_init, 0, sizeof(int)*8);
-        memset(f->ctx[i].global_gain_init_diff, 0, sizeof(int)*8);
-        memset(f->ctx[i].scalefac_offset, 0, sizeof(int)*8);
 
         f->ctx[i].num_window_groups = 1;
         f->ctx[i].window_group_length[0] = 1;
@@ -391,7 +387,7 @@ void fa_aacenc_uninit(uintptr_t handle)
 #define SPEED_LEVEL_MAX  6 
 static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
-                                {0,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //1
+                                {0,       1,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //1
                                 {0,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //2
                                 {0,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //3
                                 {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //4
@@ -482,15 +478,15 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
         s->window_group_length[7] = 0;
 #else 
         /*just for test different group length result*/
-        s->num_window_groups = 8;
-        s->window_group_length[0] = 1;
-        s->window_group_length[1] = 1;
-        s->window_group_length[2] = 1;
-        s->window_group_length[3] = 1;
-        s->window_group_length[4] = 1;
-        s->window_group_length[5] = 1;
-        s->window_group_length[6] = 1;
-        s->window_group_length[7] = 1;
+        s->num_window_groups = 2;
+        s->window_group_length[0] = 4;
+        s->window_group_length[1] = 4;
+        s->window_group_length[2] = 0;
+        s->window_group_length[3] = 0;
+        s->window_group_length[4] = 0;
+        s->window_group_length[5] = 0;
+        s->window_group_length[6] = 0;
+        s->window_group_length[7] = 0;
 #endif
         fa_mdctline_sfb_arrange(s->h_mdctq_short, s->mdct_line, 
                 s->num_window_groups, s->window_group_length);
@@ -610,16 +606,15 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
            --use current sample_buf calculate pe to decide which block used in the next frame
         */
         if (psy_enable) {
+#if  0 
+            fa_aacpsy_calculate_pe(s->h_aacpsy, sample_buf, s->block_type, &s->pe);
+#else
             fa_aacfilterbank_get_xbuf(s->h_aac_analysis, sample_psy_buf);
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);
-#if 1 
+#endif
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
             fa_calculate_scalefactor_win(s, xmin);
-            fa_calculate_maxscale_win(s, xmin);
-#else
-            fa_fastquant_calculate_sfb_avgenergy(s);
-            fa_fastquant_calculate_xmin(s, xmin);
-#endif
+            /*fa_calculate_maxscale_win(s, xmin);*/
         } else {
             if (speed_level < 4) {
                 fa_fastquant_calculate_sfb_avgenergy(s);
