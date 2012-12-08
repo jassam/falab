@@ -453,6 +453,7 @@ int  fa_fix_quant_noise_single(uintptr_t handle,
             for (sfb = 1; sfb < sfb_num; sfb++) {
 #if 1 
                 if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
+                /*if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 30)*/
                     return 1;
 #else 
 /*
