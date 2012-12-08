@@ -391,7 +391,7 @@ void fa_aacenc_uninit(uintptr_t handle)
 #define SPEED_LEVEL_MAX  6 
 static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
-                                {0,       1,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //1
+                                {0,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //1
                                 {0,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //2
                                 {0,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //3
                                 {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //4
@@ -610,15 +610,16 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
            --use current sample_buf calculate pe to decide which block used in the next frame
         */
         if (psy_enable) {
-#if  0 
-            fa_aacpsy_calculate_pe(s->h_aacpsy, sample_buf, s->block_type, &s->pe);
-#else
             fa_aacfilterbank_get_xbuf(s->h_aac_analysis, sample_psy_buf);
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);
-#endif
+#if 1 
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
             fa_calculate_scalefactor_win(s, xmin);
             fa_calculate_maxscale_win(s, xmin);
+#else
+            fa_fastquant_calculate_sfb_avgenergy(s);
+            fa_fastquant_calculate_xmin(s, xmin);
+#endif
         } else {
             if (speed_level < 4) {
                 fa_fastquant_calculate_sfb_avgenergy(s);

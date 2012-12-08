@@ -418,6 +418,11 @@ int  fa_fix_quant_noise_single(uintptr_t handle,
     for (gr = 0; gr < num_window_groups; gr++) {
         for (sfb = 0; sfb < sfb_num; sfb++) {
             for (win = 0; win < window_group_length[gr]; win++) {
+/*
+                if (outer_loop_count> 30 && sfb > 27) {
+                    printf("loopcnt=%d, sfb=%d,error=%f, xmin=%f\n", outer_loop_count, sfb, f->error_energy[gr][sfb][win], f->xmin[gr][sfb][win]);
+                }
+*/
                 if (f->error_energy[gr][sfb][win] > f->xmin[gr][sfb][win]) {
                     scalefactor[gr][sfb] += 1;
                     scalefactor[gr][sfb] = FA_MIN(scalefactor[gr][sfb], 255);
