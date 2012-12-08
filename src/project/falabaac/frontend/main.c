@@ -82,6 +82,17 @@ int main(int argc, char *argv[])
     unsigned char aac_buf[FRAME_SIZE_MAX];
     int aac_out_len;
 
+    printf("************************************************************\n");
+    printf("*                                                          *\n");
+    printf("*              falabaac encoder v1.1.0.135                 *\n");
+    printf("*                                                          *\n");
+    printf("*   Copyright (C) 2012 luolongzhi ÂÞÁúÖÇ (Chengdu China)   *\n");
+    printf("*                    Free Software                         *\n");
+    printf("*                                                          *\n");
+    printf("*             Email: luolongzhi@gmail.com                  *\n");
+    printf("*                                                          *\n");
+    printf("************************************************************\n\n");
+
     /*parse the argument*/
     ret = fa_parseopt(argc, argv);
     if(ret) return -1;
