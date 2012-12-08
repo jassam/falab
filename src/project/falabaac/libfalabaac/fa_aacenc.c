@@ -246,8 +246,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
             break;
         case QUANTIZE_FAST:
             f->quantize_method = QUANTIZE_FAST;
-            f->do_quantize = fa_quantize_fast;
-            /*f->do_quantize = fa_quantize_best;*/
+            /*f->do_quantize = fa_quantize_fast;*/
+            f->do_quantize = fa_quantize_best;
             break;
         default:
             f->quantize_method = QUANTIZE_LOOP;
@@ -618,7 +618,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 #endif
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
             fa_calculate_scalefactor_win(s, xmin);
-            /*fa_calculate_maxscale_win(s, xmin);*/
+            fa_calculate_maxscale_win(s, xmin);
         } else {
             if (speed_level < 4) {
                 fa_fastquant_calculate_sfb_avgenergy(s);
