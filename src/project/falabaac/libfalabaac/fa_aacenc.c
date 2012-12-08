@@ -470,7 +470,7 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
 
     /*use mdct transform*/
     if (s->block_type == ONLY_SHORT_BLOCK) {
-#if  0 
+#if  1 
         s->num_window_groups = 1;
         s->window_group_length[0] = 8;
         s->window_group_length[1] = 0;
