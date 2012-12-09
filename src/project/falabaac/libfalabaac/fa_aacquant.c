@@ -101,9 +101,14 @@ static void init_quant_change(int outer_loop_count, aacenc_ctx_t *s, int fast)
             s->quant_change = 64;
         } else {
             //2012-12-01
-#if 1 
-            s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);
-            s->quant_change = 2;
+#if 0 
+            if (s->block_type == ONLY_LONG_BLOCK) {
+                s->common_scalefac = FA_MAX(s->start_common_scalefac, s->last_common_scalefac);
+                s->quant_change = 2;
+            } else {
+                s->common_scalefac = s->start_common_scalefac;
+                s->quant_change = 64;
+            }
 #else 
             s->common_scalefac = s->start_common_scalefac;
             s->quant_change = 64;
@@ -1037,7 +1042,8 @@ void fa_quantize_fast(fa_aacenc_ctx_t *f)
             s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_long);
             fa_mdctline_pow34(s->h_mdctq_long);
             memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
-            calculate_scalefactor(s);
+            if (s->block_type == ONLY_LONG_BLOCK)
+                calculate_scalefactor(s);
         }
     }
     /*FA_CLOCK_END(6);*/
