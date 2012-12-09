@@ -93,7 +93,7 @@ static rate_cutoff_t rate_cutoff[] =
     {24000, 5000},
     {32000, 8000},
     {38000, 12000},
-    {48000, 20000},
+    {48000, 16000},
     {64000, 20000},
     {0    , 0},
 };
@@ -387,7 +387,7 @@ void fa_aacenc_uninit(uintptr_t handle)
 #define SPEED_LEVEL_MAX  6 
 static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
-                                {0,       1,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //1
+                                {1,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //1
                                 {0,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //2
                                 {0,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //3
                                 {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //4
@@ -613,7 +613,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);
 #endif
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
-            fa_calculate_scalefactor_win(s, xmin);
+            if (speed_level == 2 || speed_level == 3) 
+                fa_calculate_scalefactor_win(s, xmin);
             /*fa_calculate_maxscale_win(s, xmin);*/
         } else {
             if (speed_level < 4) {
