@@ -418,7 +418,7 @@ int  fa_fix_quant_noise_single(uintptr_t handle,
         if ((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
             for (sfb = 1; sfb < sfb_num; sfb++) {
                 if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
-                /*if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 60)*/
+                /*if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 40)*/
                     return 1;
                 if (outer_loop_count > outer_loop_count_max)
                     return 1;
@@ -507,7 +507,8 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2,
     for (gr = 0; gr < num_window_groups; gr++) {
         if ((energy_err_ok[gr] == 0) && (sfb_allscale[gr] == 0)) {
             for (sfb = 1; sfb < sfb_num; sfb++) {
-                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)
+                /*if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 20)*/
+                if (FA_ABS(scalefactor[gr][sfb] - scalefactor[gr][sfb-1]) > 40)
                     return 1;
                 if (outer_loop_count > outer_loop_count_max)
                     return 1;
