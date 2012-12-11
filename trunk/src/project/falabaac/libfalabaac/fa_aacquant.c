@@ -49,7 +49,8 @@
 #define FA_ABS(a)    ( (a) > 0 ? (a) : (-(a)) )
 #endif
 
-#define SF_MAGIC_NUM  (0.449346777778)
+/*#define SF_MAGIC_NUM  (0.148148148148) //(0.449346777778)*/
+#define SF_MAGIC_NUM  ((16./9.)*(1./12)) //(0.449346777778)
 
 static void calculate_start_common_scalefac(fa_aacenc_ctx_t *f)
 {
@@ -382,10 +383,10 @@ static void quant_outerloop(fa_aacenc_ctx_t *f, int fast)
     chn_num = f->cfg.chn_num;
     switch(f->speed_level) {
         case 1:
-            outer_loop_count_max = 40;
+            outer_loop_count_max = 70;//40;
             break;
         case 2:
-            outer_loop_count_max = 30;//15;//30;//15;
+            outer_loop_count_max = 15;//15;//30;//15;
             break;
         case 3:
             outer_loop_count_max = 1;
@@ -874,7 +875,7 @@ void fa_calculate_scalefactor_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
     int   k;
     int   i, j;
     float tmp;
-    float adjcof = 0.3; //4;//1.2;
+    float adjcof = 0.3; //0.5; //4;//1.2;
 
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
     fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
@@ -960,7 +961,7 @@ void fa_calculate_scalefactor_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
                 xmin_sqrenergy_ratio[i] = 0;
                 /*xmin_sqrenergy_ratio[i] = 20;*/
             else 
-                xmin_sqrenergy_ratio[i] = adjcof*xmin[0][i]/(SF_MAGIC_NUM*sfb_sqrenergy);
+                xmin_sqrenergy_ratio[i] = adjcof*(end-start)*xmin[0][i]/(SF_MAGIC_NUM*sfb_sqrenergy);
 
             if (xmin_sqrenergy_ratio[i] > max_ratio) {
                 max_ratio = xmin_sqrenergy_ratio[i];
@@ -1012,10 +1013,18 @@ static void calculate_scalefactor(aacenc_ctx_t *s)
                 printf("s->scalefactor_win[0][%d]=%d\t", i, s->scalefactor_win[0][i]);
 #endif
             /*do not change the paremeters below, I tested, I think it is good, if change, maybe wores quality*/
-            if (i < 42)
+#if  0 
+            if (i < 40)
                 s->scalefactor[0][i] = FA_MIN(30, 15+s->scalefactor_win[0][i]);
+                /*s->scalefactor[0][i] = FA_MIN(70, 30+s->scalefactor_win[0][i]);*/
             else 
                 s->scalefactor[0][i] = FA_MIN(35, 10+s->scalefactor_win[0][i]);
+                /*s->scalefactor[0][i] = FA_MIN(70, 35+s->scalefactor_win[0][i]);*/
+#else 
+            /*s->scalefactor[0][i] = FA_MIN(100, 10+s->scalefactor_win[0][i]);*/
+            s->scalefactor[0][i] = s->scalefactor_win[0][i];
+
+#endif
         }
         /*printf("\n\n");*/
     }
