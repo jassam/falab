@@ -402,7 +402,7 @@ int  fa_fix_quant_noise_single(uintptr_t handle,
             energy_err_ok[gr] = 1;
         else 
             energy_err_ok[gr] = 0;
-
+#if 1 
         if (sfb_scale_cnt[gr] >= sfb_num) {
             sfb_allscale[gr] = 1;
             /*recover the scalefactor*/
@@ -412,6 +412,7 @@ int  fa_fix_quant_noise_single(uintptr_t handle,
         }
         else
             sfb_allscale[gr] = 0;
+#endif
     }
 
     for (gr = 0; gr < num_window_groups; gr++) {
