@@ -596,9 +596,12 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
     }
 
     /*calculate smr*/
-    for (i = 0; i < swb_num; i++)
+    for (i = 0; i < swb_num; i++) {
         smr[i] = epart[i]/npart[i];
+        /*printf("smr%d=%f", i, smr[i]);*/
+    }
 
+    /*printf("\n\n");*/
 }
 
 void fa_psychomodel2_calculate_xmin(uintptr_t handle, float *mdct_line, float *xmin)

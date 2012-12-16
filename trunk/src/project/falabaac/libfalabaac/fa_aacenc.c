@@ -94,7 +94,8 @@ static rate_cutoff_t rate_cutoff[] =
     {32000, 8000},
     {38000, 12000},
     {48000, 16000},
-    {64000, 20000},
+    {64000, 17000},
+    {100000, 20000},
     {0    , 0},
 };
 
@@ -151,11 +152,14 @@ static int get_cutoff_sfb(int sfb_offset_max, int *sfb_offset, int cutoff_line)
         if (sfb_offset[i] >= cutoff_line)
             break;
     }
-
+#if 0 
     if (i == sfb_offset_max)
         return i;
     else 
         return (i+1);
+#else
+        return i;
+#endif
 }
 
 static void fa_aacenc_rom_init()
@@ -461,6 +465,35 @@ static void zero_cutoff(float *mdct_line, int mdct_line_num, int cutoff_line)
 
 }
 
+static void mdct_line_normarlize(fa_aacenc_ctx_t *f)
+{
+
+    int i;
+    int j,k;
+    int chn_num;
+    aacenc_ctx_t *s;
+
+    chn_num = f->cfg.chn_num;
+
+    /*FA_CLOCK_START(6);*/
+    for (i = 0; i < chn_num; i++) {
+        s = &(f->ctx[i]);
+        if (s->block_type == ONLY_SHORT_BLOCK) {
+            s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_short);
+            for (k = 0; k < 8; k++) {
+                for (j = 0; j < 128; j++)
+                    s->mdct_line[j+k * AAC_BLOCK_SHORT_LEN] /= s->max_mdct_line;
+            }
+        } else {
+            s->max_mdct_line = fa_mdctline_getmax(s->h_mdctq_long);
+            for (j = 0; j < 1024; j++)
+                s->mdct_line[j] /= s->max_mdct_line;
+        }
+    }
+ 
+
+}
+
 static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
 {
 
@@ -600,6 +633,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         } else
             zero_cutoff(s->mdct_line, 1024, s->cutoff_line_long);
 
+        /*mdct_line_normarlize(f);*/
 
         /* 
            calculate xmin and pe
