@@ -166,6 +166,7 @@ static void fa_aacenc_rom_init()
 {
     fa_mdctquant_rom_init();
     fa_huffman_rom_init();
+    fa_protect_db_rom_init();
 }
 
 uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
@@ -249,8 +250,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
             break;
         case QUANTIZE_FAST:
             f->quantize_method = QUANTIZE_FAST;
-            f->do_quantize = fa_quantize_fast;
-            /*f->do_quantize = fa_quantize_best;*/
+            /*f->do_quantize = fa_quantize_fast;*/
+            f->do_quantize = fa_quantize_best;
             break;
         default:
             f->quantize_method = QUANTIZE_LOOP;
@@ -271,6 +272,11 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         memset(f->ctx[i].scalefactor, 0, sizeof(int)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].scalefactor_win, 0, sizeof(int)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].maxscale_win,0, sizeof(int)*8*FA_SWB_NUM_MAX);
+        memset(f->ctx[i].xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
+        memset(f->ctx[i].Px, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
+        memset(f->ctx[i].Ti, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
+        memset(f->ctx[i].Ti1,0, sizeof(float)*8*FA_SWB_NUM_MAX);
+        memset(f->ctx[i].G  ,0, sizeof(float)*8*FA_SWB_NUM_MAX);
 
         f->ctx[i].num_window_groups = 1;
         f->ctx[i].window_group_length[0] = 1;
@@ -356,6 +362,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         /*f->ctx[i].max_pred_sfb = get_max_pred_sfb(f->cfg.sample_rate_index);*/
 
         f->ctx[i].quant_ok = 0;
+
+        fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
     }
 
     /*f->bitres_maxsize = get_aac_bitreservoir_maxsize(f->cfg.bit_rate, f->cfg.sample_rate);*/
@@ -569,7 +577,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     short *sample_in;
     float *sample_buf;
     float sample_psy_buf[2*AAC_FRAME_LEN];
-    float xmin[8][FA_SWB_NUM_MAX];
+    /*float xmin[8][FA_SWB_NUM_MAX];*/
     int ms_enable;
     int tns_enable;
     int block_switch_en;
@@ -585,7 +593,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     chn_num     = f->cfg.chn_num;
     /*assert(inlen == chn_num*AAC_FRAME_LEN*2);*/
 
-    memset(xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
+    /*memset(xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);*/
     /*update sample buffer, ith sample, jth chn*/
     sample_in = (short *)buf_in;
     for (i = 0; i < AAC_FRAME_LEN; i++) 
@@ -598,6 +606,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     /*block switch and use filterbank to generate mdctline*/
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
+
+        memset(s->xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
 
         /*get the input sample*/
         sample_buf = f->sample+i*AAC_FRAME_LEN;
@@ -646,15 +656,15 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_aacfilterbank_get_xbuf(s->h_aac_analysis, sample_psy_buf);
             fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);
 #endif
-            fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, xmin);
-            if (speed_level == 2 || speed_level == 3) 
-                fa_calculate_scalefactor_win(s, xmin);
-            /*fa_calculate_maxscale_win(s, xmin);*/
+            fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);
+            /*if (speed_level == 2 || speed_level == 3) */
+                /*fa_calculate_scalefactor_win(s, xmin);*/
+            fa_calculate_maxscale_win(s, s->xmin);
         } else {
             if (speed_level < 4) {
                 fa_fastquant_calculate_sfb_avgenergy(s);
-                fa_fastquant_calculate_xmin(s, xmin);
-                fa_calculate_scalefactor_win(s, xmin);
+                fa_fastquant_calculate_xmin(s, s->xmin);
+                fa_calculate_scalefactor_win(s, s->xmin);
             }
         }
 
@@ -662,7 +672,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_tns_encode_frame(s);
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/
-        mdctline_reorder(s, xmin);
+        mdctline_reorder(s, s->xmin);
 
         /*reset the quantize status*/
         s->quant_ok = 0;

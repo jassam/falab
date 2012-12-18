@@ -274,6 +274,7 @@ void fa_mdctline_quantdirect(uintptr_t handle,
             for (i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) {
                 tmp = FA_ABS(mdct_line[i]);
                 tmp = tmp * cof_scale;
+                /*tmp = tmp / cof_scale;*/
                 x_quant[i] = FA_SQRTF(tmp*FA_SQRTF(tmp));
                 if (mdct_line[i] > 0)
                     x_quant[i] = -x_quant[i];
