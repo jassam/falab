@@ -1105,7 +1105,7 @@ void fa_quantize_fast(fa_aacenc_ctx_t *f)
 }
 
 
-#if 0
+#if 1 
 
 void fa_calculate_maxscale_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
 {
@@ -1210,6 +1210,43 @@ static void calculate_scalefactor_usemaxscale(aacenc_ctx_t *s)
 #endif
             s->scalefactor[0][i] = common_scalefac - s->maxscale_win[0][i];
             s->scalefactor[0][i] = FA_MAX(0, s->scalefactor[0][i]);
+        }
+    }
+
+}
+
+static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
+{
+    int i;
+    float miu, miuhalf;
+    fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
+    fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
+
+    int swb_num;
+    int *swb_low;
+    int *swb_high;
+
+    int kmin;
+    int kmax;
+
+    float sfb_sqrenergy = 0.0;
+    float xmin_sqrenergy_ratio;
+
+    if (s->block_type == ONLY_SHORT_BLOCK) {
+    } else {
+        swb_num  = fl->sfb_num;
+        swb_low  = fl->swb_low;
+        swb_high = fl->swb_high;
+
+        for (i = 0; i < swb_num; i++) {
+            kmin = swb_low[i];
+            kmax = swb_high[i];
+
+            miu = fa_get_subband_abspower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
+            miuhalf = fa_get_subband_sqrtpower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
+            /*s->scalefactor[0][i] = fa_estimate_sf(s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);*/
+            s->scalefactor[0][i] = s->common_scalefac - fa_estimate_sf(s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);
+            s->scalefactor[0][i] = FA_MAX(0, s->scalefactor[0][i]); 
         }
     }
 
@@ -1353,12 +1390,12 @@ static void mdctline_enc(fa_aacenc_ctx_t *f)
 
 
 
-void fa_quantize_best(fa_aacenc_ctx_t *f)
+void fa_quantize_best1(fa_aacenc_ctx_t *f)
 {
     int i;
     int chn_num;
     aacenc_ctx_t *s;
-    int common_scalefac = 50;
+    int common_scalefac = 0;//50;//90;//70; //50;
 
     chn_num = f->cfg.chn_num;
 
@@ -1395,7 +1432,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         for (i = 0; i < chn_num; i++) {
             s = &(f->ctx[i]);
-#if 0 
+#if 1 
             printf("chn=i, common_scalefac=%d\n", s->common_scalefac);
             for (j = 0; j < 40; j++) {
                 printf("sf%d=%d, ", j, s->scalefactor[0][j]);
@@ -1417,6 +1454,80 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 #endif
 
 }
+
+void fa_quantize_best(fa_aacenc_ctx_t *f)
+{
+    int i;
+    int j;
+    int chn_num;
+    aacenc_ctx_t *s;
+    int common_scalefac = 70;//100;//70;//0;//90;//70; //50;
+
+    chn_num = f->cfg.chn_num;
+
+    for (i = 0; i < chn_num; i++) {
+        s = &(f->ctx[i]);
+        for (j = 0; j < FA_SWB_NUM_MAX; j++)
+            s->Ti[0][j] = s->xmin[0][j];
+    }
+
+    for (i = 0; i < chn_num; i++) {
+        s = &(f->ctx[i]);
+
+        if (s->block_type == ONLY_SHORT_BLOCK) {
+            s->common_scalefac = common_scalefac;//70;//57;
+            memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
+            calculate_scalefactor_usepdf(s);
+
+            fa_mdctline_quantdirect(s->h_mdctq_short, 
+                                    s->common_scalefac,
+                                    s->num_window_groups, s->scalefactor,
+                                    s->x_quant);
+
+        } else {
+            s->common_scalefac = common_scalefac;//70;//57;
+            memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
+            calculate_scalefactor_usepdf(s);
+
+            fa_mdctline_quantdirect(s->h_mdctq_long, 
+                                    s->common_scalefac,
+                                    s->num_window_groups, s->scalefactor,
+                                    s->x_quant);
+
+        }
+    }
+
+    mdctline_enc(f);
+
+#if  0 
+    {
+        int i,j;
+
+        for (i = 0; i < chn_num; i++) {
+            s = &(f->ctx[i]);
+#if 1 
+            printf("chn=i, common_scalefac=%d\n", s->common_scalefac);
+            for (j = 0; j < 40; j++) {
+                printf("sf%d=%d, ", j, s->scalefactor[0][j]);
+            }
+#else 
+                for (j = 0; j < 40; j++) {
+                    if (s->scalefactor[0][j] > 255) {
+                        printf("chn=i, common_scalefac=%d\n", s->common_scalefac);
+                        printf("sf%d=%d, ", j, s->scalefactor[0][j]);
+                    }
+                }
+
+#endif
+
+        }
+    
+    }
+
+#endif
+
+}
+
 
 #endif
 

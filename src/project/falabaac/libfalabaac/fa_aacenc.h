@@ -33,6 +33,7 @@
 #include "fa_aaccfg.h"
 #include "fa_aacchn.h"
 #include "fa_swbtab.h"
+#include "fa_quantpdf.h"
 
 #ifdef __cplusplus 
 extern "C"
@@ -91,7 +92,14 @@ typedef struct _aacenc_ctx_t{
     int   mdct_line_sign[1024];
     int   quant_ok;
 
+    float xmin[8][FA_SWB_NUM_MAX];
     int   maxscale_win[8][FA_SWB_NUM_MAX];
+
+    float Px[8][FA_SWB_NUM_MAX];
+    float Ti[8][FA_SWB_NUM_MAX];
+    float Ti1[8][FA_SWB_NUM_MAX];
+    float G[8][FA_SWB_NUM_MAX];
+    fa_qpdf_para_t qp;
 
     //huffman var
     int   hufftab_no[8][FA_SWB_NUM_MAX];
