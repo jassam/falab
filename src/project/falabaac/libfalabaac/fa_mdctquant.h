@@ -135,6 +135,11 @@ int  fa_mdctline_encode(uintptr_t handle, int *x_quant, int num_window_groups, i
 void fa_mdctline_ms_encode(uintptr_t hl, uintptr_t hr, int num_window_groups,
                            ms_info_t *ms_l, ms_info_t *ms_r);
 
+void fa_balance_energe(uintptr_t handle,
+                       int num_window_groups, int *window_group_length,
+                       int common_scalefac, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
+                       int *x_quant);
+
 #ifdef __cplusplus 
 }
 #endif  

@@ -1075,6 +1075,8 @@ void fa_quantize_fast(fa_aacenc_ctx_t *f)
     /*FA_CLOCK_END(2);*/
     /*FA_CLOCK_COST(2);*/
 
+    fa_adjust_scalefactor(f);
+
 #if  0 
     {
         int i,j;
@@ -1245,8 +1247,8 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
             miu = fa_get_subband_abspower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
             miuhalf = fa_get_subband_sqrtpower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
             /*s->scalefactor[0][i] = fa_estimate_sf(s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);*/
-            s->scalefactor[0][i] = s->common_scalefac - fa_estimate_sf(s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);
-            s->scalefactor[0][i] = FA_MAX(0, s->scalefactor[0][i]); 
+            s->scalefactor[0][i] = s->common_scalefac - fa_estimate_sf(1.0*s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);
+            s->scalefactor[0][i] = FA_MAX(0, s->scalefactor[0][i]);
         }
     }
 
@@ -1455,13 +1457,39 @@ void fa_quantize_best1(fa_aacenc_ctx_t *f)
 
 }
 
+void fa_adjust_scalefactor(fa_aacenc_ctx_t *f)
+{
+    int i;
+    int chn_num;
+    aacenc_ctx_t *s;
+
+    chn_num = f->cfg.chn_num;
+
+    for (i = 0; i < chn_num; i++) {
+        s = &(f->ctx[i]);
+        if (s->block_type == ONLY_SHORT_BLOCK) {
+            fa_balance_energe(s->h_mdctq_short,
+                    s->num_window_groups, s->window_group_length,
+                    s->common_scalefac, s->scalefactor, 
+                    s->x_quant);
+        } else {
+            fa_balance_energe(s->h_mdctq_long,
+                    s->num_window_groups, s->window_group_length,
+                    s->common_scalefac, s->scalefactor, 
+                    s->x_quant);
+        }
+    }
+
+}
+
+
 void fa_quantize_best(fa_aacenc_ctx_t *f)
 {
     int i;
     int j;
     int chn_num;
     aacenc_ctx_t *s;
-    int common_scalefac = 70;//100;//70;//0;//90;//70; //50;
+    int common_scalefac = 100;//100;//100;//100;//70;//0;//90;//70; //50;
 
     chn_num = f->cfg.chn_num;
 
@@ -1496,6 +1524,8 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         }
     }
+
+    /*fa_adjust_scalefactor(f);*/
 
     mdctline_enc(f);
 
