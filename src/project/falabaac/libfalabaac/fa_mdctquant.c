@@ -601,7 +601,7 @@ void fa_balance_energe(uintptr_t handle,
     float tmp;
 
     const float ifqstep = pow(2.0, 0.25);
-    const float logstep_1 = 1.0 / log(ifqstep);
+    const float logstep_1 = 1.0 / log2(ifqstep);
     float inv_x_quant;
     float inv_cof;
 
@@ -637,12 +637,12 @@ void fa_balance_energe(uintptr_t handle,
                     if ((enq == 0.0) || (en0 == 0.0))
                         continue;
 
-                    shift = (int)(log(sqrt(enq / en0)) * logstep_1 + 1000.5);
+                    shift = (int)(log2(sqrt(enq / en0)) * logstep_1 + 1000.5);
                     shift -= 1000;
-                    if (shift > 3)
-                        shift = 3;
-                    if (shift < -3)
-                        shift = -3;
+                    if (shift > 1)
+                        shift = 1;
+                    if (shift < -1)
+                        shift = -1;
 
                     /*printf("shift=%d\n", shift);*/
 
