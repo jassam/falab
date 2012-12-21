@@ -9,6 +9,18 @@ typedef struct _fa_qpdf_para_t {
 
 } fa_qpdf_para_t;
 
+
+extern int fa_protect_db_48k_long[49];
+extern int fa_protect_db_48k_short[14];
+
+extern int fa_protect_db_44k_long[49];
+extern int fa_protect_db_44k_short[14];
+
+extern int fa_protect_db_32k_long[51];
+extern int fa_protect_db_32k_short[14];
+
+
+
 void  fa_protect_db_rom_init();
 float fa_get_subband_power(float *X, int kmin, int kmax);
 float fa_get_subband_abspower(float *X, int kmin, int kmax);
