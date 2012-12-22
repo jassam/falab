@@ -51,7 +51,7 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
-#define GAIN_ADJUST   6 //5 //4 
+#define GAIN_ADJUST   5 //4 //5 //5 //4 
 
 
 /* Returns the sample rate index */
@@ -94,7 +94,7 @@ static rate_cutoff_t rate_cutoff[] =
     {32000, 8000},
     {38000, 12000},
     {48000, 16000},
-    {64000, 20000},
+    {64000, 18000},
     {100000, 20000},
     {0    , 0},
 };
@@ -364,7 +364,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].quant_ok = 0;
 
         /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
-        fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
+        fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);
     }
 
     /*f->bitres_maxsize = get_aac_bitreservoir_maxsize(f->cfg.bit_rate, f->cfg.sample_rate);*/

@@ -292,14 +292,18 @@ void fa_adjust_thr(int subband_num,
             Ti[s] = Px[s];
         } else {                                        //unmasked 
             if ((Ti[s] - Tm[s]) < 6.0) {                //high SNR, use constant NMR adjust
+                assert(Ti[s] >= Tm[s]);
                 Ti1_tmp = Ti[s] + r1;
                 Ti[s]   = FA_MIN(Ti1_tmp, G[s]);
+                Ti[s]   = FA_MAX(Ti[s], Tm[s]);
                 Ti1[s]  = Ti1_tmp;
             } else if (Ti[s] < G[s]) {                  //low SNR, use water-filling adjust
                 Ti1_tmp = FA_MAX(Ti1[s], mi+r1);
                 Ti[s]   = FA_MIN(Ti1_tmp, G[s]);
+                /*printf("-----------tt1\n");*/
             } else {                                    //very low SNR, small constant adjust
                 Ti[s] += r2;
+                /*printf("-----------tt2\n");*/
             }
         }
     }
