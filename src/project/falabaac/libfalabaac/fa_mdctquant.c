@@ -600,8 +600,9 @@ void fa_balance_energe(uintptr_t handle,
 
     float tmp;
 
-    const float ifqstep = pow(2.0, 0.25);
-    const float logstep_1 = 1.0 / log2(ifqstep);
+    /*const float ifqstep = pow(2.0, 0.25);*/
+    /*const float logstep_1 = 1.0 / log2(ifqstep);*/
+    const float qstep = 1./0.25;
     float inv_x_quant;
     float inv_cof;
 
@@ -624,6 +625,8 @@ void fa_balance_energe(uintptr_t handle,
         enqt = 0.0;
         for (sfb = 0; sfb < sfb_num; sfb++) {
             swb_width = swb_high[sfb] - swb_low[sfb] + 1;
+            en0 = 0.0;
+            enq = 0.0;
             for (win = 0; win < window_group_length[gr]; win++) {
                 int tmp_xq;
                 for (i = 0; i < swb_width; i++) {
@@ -634,40 +637,42 @@ void fa_balance_energe(uintptr_t handle,
                     inv_x_quant = (float)(fa_iqtable[tmp_xq] * inv_cof);
 
                     tmp = FA_ABS(mdct_line[mdct_line_offset+i]) - inv_x_quant;
-                    en0 = mdct_line[mdct_line_offset+i] * mdct_line[mdct_line_offset+i];
-                    enq = inv_x_quant * inv_x_quant;
-#if 0 
-                    if ((enq == 0.0) || (en0 == 0.0))
-                        continue;
-
-                    shift = (int)(log2(sqrt(enq / en0)) * logstep_1 + 1000.5);
-                    shift -= 1000;
-                    if (shift > 1)
-                        shift = 1;
-                    if (shift < -1)
-                        shift = -1;
-
-                    /*printf("shift=%d\n", shift);*/
-
-                    shift += scalefactor[gr][sfb];
-                    scalefactor[gr][sfb] = shift;
-#else 
-                    en0t += en0;
-                    enqt += enq;
-#endif
+                    en0 += mdct_line[mdct_line_offset+i] * mdct_line[mdct_line_offset+i];
+                    enq += inv_x_quant * inv_x_quant;
                 }
                 mdct_line_offset += swb_width;
-           }
+            }
+#if 1
+            if ((enq == 0.0) || (en0 == 0.0))
+                continue;
+            /*shift = (int)(log2(sqrt(enq / en0)) * logstep_1 + 1000.5);*/
+            shift = (int)(log2(sqrt(enq / en0)) * qstep + 1000.5);
+            shift -= 1000;
+
+            /*if (shift > 1)*/
+                /*shift = 1;*/
+            if (shift < -2)
+                shift = -2;
+              
+            /*printf("shift=%d\n", shift);*/
+
+            shift += scalefactor[gr][sfb];
+            scalefactor[gr][sfb] = shift;
+//#else 
+            en0t += en0;
+            enqt += enq;
+#endif
+
         }
-#if 1 
-        shift = (int)(log2(sqrt(enqt / en0t)) * logstep_1 + 1000.5);
+#if  0 
+        shift = (int)(log2(sqrt(enqt / en0t)) * qstep + 1000.5);
         shift -= 1000;
-/*
+
         if (shift > 1)
             shift = 1;
         if (shift < -1)
             shift = -1;
-*/
+
         printf("shift=%d\n", shift);
 
         for (sfb = 0; sfb < sfb_num; sfb++) {
