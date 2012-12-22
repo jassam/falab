@@ -1319,6 +1319,7 @@ static void adj_pdf_para(aacenc_ctx_t *s)
         for (i = 0; i < swb_num; i++) {
             s->Ti[0][i] = pow(10, 0.1*Ti[i]);
             s->Ti1[0][i] = pow(10, 0.1*Ti1[i]);
+            /*printf("Ti1[%d] = %f\n", i, s->Ti1[0][i]);*/
         }
     }
 
@@ -1689,36 +1690,24 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
     int j;
     int chn_num;
     aacenc_ctx_t *s;
-    int common_scalefac = 100;////0;//90;//70; //50;
+    int common_scalefac = 80;//100;////0;//90;//70; //50;
     int quant_ok_cnt;
-    int cnt=10;
+    int max_loop_cnt;
+    int cur_cnt;
 
     chn_num = f->cfg.chn_num;
 
-#if 0 
-    for (i = 0; i < chn_num; i++) {
-        s = &(f->ctx[i]);
-        if (s->block_type == ONLY_SHORT_BLOCK) {
-        } else {
-            for (j = 0; j < FA_SWB_NUM_MAX; j++) {
-                s->Ti[0][j] = s->xmin[0][j];
-            }
-        }
-    }
-#endif 
-
-#if 1
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
         init_pdf_para(s);
     }
-#endif
 
-    cnt = 10;
+    max_loop_cnt = 10;
+    cur_cnt = 0;
     while (1) {
-        cnt--;
+        cur_cnt++;
 
-        if (cnt < 0)
+        if (cur_cnt > max_loop_cnt)
             break;
 
         for (i = 0; i < chn_num; i++) {
@@ -1747,7 +1736,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
             }
         }
 
-        /*fa_adjust_scalefactor(f);*/
+        fa_adjust_scalefactor(f);
         mdctline_enc1(f);
 
         quant_ok_cnt = 0;
@@ -1765,6 +1754,8 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
             adj_pdf_para(s);
         }
     }
+    /*printf("loop cnt = %d\n", cur_cnt);*/
+
 
 #if  0 
     {

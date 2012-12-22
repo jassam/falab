@@ -606,6 +606,7 @@ void fa_balance_energe(uintptr_t handle,
     float inv_cof;
 
     float en0, enq;
+    float en0t, enqt;
     int   shift;
 
     int mdct_line_offset;
@@ -619,6 +620,8 @@ void fa_balance_energe(uintptr_t handle,
     /*calculate error_energy*/
     mdct_line_offset = 0;
     for (gr = 0; gr < num_window_groups; gr++) {
+        en0t = 0.0;
+        enqt = 0.0;
         for (sfb = 0; sfb < sfb_num; sfb++) {
             swb_width = swb_high[sfb] - swb_low[sfb] + 1;
             for (win = 0; win < window_group_length[gr]; win++) {
@@ -633,7 +636,7 @@ void fa_balance_energe(uintptr_t handle,
                     tmp = FA_ABS(mdct_line[mdct_line_offset+i]) - inv_x_quant;
                     en0 = mdct_line[mdct_line_offset+i] * mdct_line[mdct_line_offset+i];
                     enq = inv_x_quant * inv_x_quant;
-
+#if 0 
                     if ((enq == 0.0) || (en0 == 0.0))
                         continue;
 
@@ -648,10 +651,32 @@ void fa_balance_energe(uintptr_t handle,
 
                     shift += scalefactor[gr][sfb];
                     scalefactor[gr][sfb] = shift;
+#else 
+                    en0t += en0;
+                    enqt += enq;
+#endif
                 }
                 mdct_line_offset += swb_width;
            }
         }
+#if 1 
+        shift = (int)(log2(sqrt(enqt / en0t)) * logstep_1 + 1000.5);
+        shift -= 1000;
+/*
+        if (shift > 1)
+            shift = 1;
+        if (shift < -1)
+            shift = -1;
+*/
+        printf("shift=%d\n", shift);
+
+        for (sfb = 0; sfb < sfb_num; sfb++) {
+            /*shift += scalefactor[gr][sfb];*/
+            /*scalefactor[gr][sfb] = shift;*/
+            scalefactor[gr][sfb] += shift;
+        }
+#endif
+
     }
 
 }
