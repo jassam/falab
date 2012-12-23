@@ -658,7 +658,7 @@ void fa_balance_energe(uintptr_t handle,
 
             shift += scalefactor[gr][sfb];
             scalefactor[gr][sfb] = shift;
-//#else 
+#else 
             en0t += en0;
             enqt += enq;
 #endif
@@ -667,13 +667,13 @@ void fa_balance_energe(uintptr_t handle,
 #if  0 
         shift = (int)(log2(sqrt(enqt / en0t)) * qstep + 1000.5);
         shift -= 1000;
-
+/*
         if (shift > 1)
             shift = 1;
         if (shift < -1)
             shift = -1;
-
-        printf("shift=%d\n", shift);
+*/
+        /*printf("shift=%d\n", shift);*/
 
         for (sfb = 0; sfb < sfb_num; sfb++) {
             /*shift += scalefactor[gr][sfb];*/

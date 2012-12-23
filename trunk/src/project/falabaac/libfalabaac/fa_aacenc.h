@@ -100,6 +100,9 @@ typedef struct _aacenc_ctx_t{
     float Ti1[8][FA_SWB_NUM_MAX];
     float G[8][FA_SWB_NUM_MAX];
     fa_qpdf_para_t qp;
+    int   up;
+    float step_down_db;
+    float bit_thr_cof;
 
     //huffman var
     int   hufftab_no[8][FA_SWB_NUM_MAX];

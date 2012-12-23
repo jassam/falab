@@ -99,6 +99,27 @@ static rate_cutoff_t rate_cutoff[] =
     {0    , 0},
 };
 
+typedef struct _bit_thr_cof_t{
+    int bit_rate;
+    float cof;
+}bit_thr_cof_t;
+
+static bit_thr_cof_t bit_thr_cof[] = 
+{
+    {16000, 0.5},
+    {24000, 0.6},
+    {32000, 0.7},
+    {38000, 0.7},
+    {48000, 0.9},
+    {64000, 1.0},
+    {80000, 1.2},
+    {100000, 3},
+    {120000, 4},
+    {0    , 0},
+
+
+};
+
 static int get_bandwidth(int chn, int sample_rate, int bit_rate) 
 {
     int i;
@@ -127,6 +148,32 @@ static int get_bandwidth(int chn, int sample_rate, int bit_rate)
 
     return bandwidth;
 
+}
+
+
+static float get_bit_thr_cof(int chn, int sample_rate, int bit_rate)
+{
+    int i;
+    float thr_cof;
+    int tmpbitrate;
+    int bandwidth;
+    float ratio;
+
+    ratio = (float) 48000/sample_rate;
+    tmpbitrate = bit_rate * ratio;
+    tmpbitrate = tmpbitrate/chn;
+
+    for (i = 0; i < bit_thr_cof[i].bit_rate; i++) {
+        if (bit_thr_cof[i].bit_rate >= tmpbitrate)
+            break;
+    }
+
+    if (i > 0)
+        thr_cof = bit_thr_cof[i-1].cof;
+    else 
+        thr_cof = 1.0;
+
+    return thr_cof;
 }
 
 static int get_cutoff_line(int sample_rate, int fmax_line_offset, int bandwidth)
@@ -178,6 +225,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
     int bits_average;
     int bits_res_maxsize;
     int real_band_width;
+    float bits_thr_cof;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)malloc(sizeof(fa_aacenc_ctx_t));
 
     chn_info_t chn_info_tmp[MAX_CHANNELS];
@@ -209,6 +257,9 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
     f->psy_enable      = psy_enable;
 
     f->band_width = get_bandwidth(chn_num, sample_rate, bit_rate);
+    bits_thr_cof  = get_bit_thr_cof(chn_num, sample_rate, bit_rate);
+    printf("bits thr cof=%f\n", bits_thr_cof);
+
     if (speed_level > 5) {
         if (f->band_width > 10000)
             f->band_width = 10000;
@@ -277,6 +328,9 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         memset(f->ctx[i].Ti, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].Ti1,0, sizeof(float)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].G  ,0, sizeof(float)*8*FA_SWB_NUM_MAX);
+        f->ctx[i].up = 0;
+        f->ctx[i].step_down_db = 0.0;
+        f->ctx[i].bit_thr_cof = bits_thr_cof;
 
         f->ctx[i].num_window_groups = 1;
         f->ctx[i].window_group_length[0] = 1;
@@ -661,7 +715,6 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);
             /*if (speed_level == 2 || speed_level == 3) */
                 /*fa_calculate_scalefactor_win(s, xmin);*/
-            fa_calculate_maxscale_win(s, s->xmin);
         } else {
             if (speed_level < 4) {
                 fa_fastquant_calculate_sfb_avgenergy(s);
