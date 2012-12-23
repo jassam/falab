@@ -50,8 +50,8 @@
 #endif
 
 /*#define SF_MAGIC_NUM  (0.148148148148) //(0.449346777778)*/
-//#define SF_MAGIC_NUM  (4./27) //((16./9.)*(1./12)) //(0.449346777778)
-#define SF_MAGIC_NUM  ((16./9.)*(1./12)) //(0.449346777778)
+#define SF_MAGIC_NUM  (4./27) //((16./9.)*(1./12)) //(0.449346777778)
+//#define SF_MAGIC_NUM  ((16./9.)*(1./12)) //(0.449346777778)
 
 static void calculate_start_common_scalefac(fa_aacenc_ctx_t *f)
 {
@@ -1217,6 +1217,74 @@ static void calculate_scalefactor_usemaxscale(aacenc_ctx_t *s)
 
 }
 
+
+static void calculate_scalefactor_usespecific(aacenc_ctx_t *s)
+{
+    int i;
+    float miu, miuhalf;
+    fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
+    fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
+
+    int swb_num;
+    int *swb_low;
+    int *swb_high;
+
+    int kmin;
+    int kmax;
+
+    float sfb_sqrenergy = 0.0;
+    float xmin_sqrenergy_ratio;
+    int sf;
+    /*int gl;*/
+
+    s->common_scalefac = 0;
+    /*gl = 0;*/
+
+    if (s->block_type == ONLY_SHORT_BLOCK) {
+    } else {
+        swb_num  = fl->sfb_num;
+        swb_low  = fl->swb_low;
+        swb_high = fl->swb_high;
+#if 0
+        for (i = 0; i < swb_num; i++) {
+            kmin = swb_low[i];
+            kmax = swb_high[i];
+
+            miu = fa_get_subband_abspower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
+            miuhalf = fa_get_subband_sqrtpower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
+            sf = fa_estimate_sf(1.0*s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);
+            s->scalefactor[0][i] = s->common_scalefac - sf;
+            s->scalefactor[0][i] = FA_MAX(0, s->scalefactor[0][i]);
+        }
+#else 
+        for (i = 0; i < swb_num; i++) {
+            kmin = swb_low[i];
+            kmax = swb_high[i];
+
+            miuhalf = fa_get_subband_sqrtpower(s->mdct_line, kmin, kmax);///(kmax-kmin+1);
+            if (miuhalf > 0)
+                sf = 8./3. * FA_LOG2(27.0*s->Ti[0][i]/(4.0*miuhalf));
+            else 
+                sf = 0;
+            /*printf("sf=%d\n",sf);*/
+            s->common_scalefac = FA_MAX(s->common_scalefac, sf);
+            /*gl = FA_MAX(gl, sf);*/
+            s->scalefactor[0][i] = sf; 
+        }
+
+        for (i = 0; i < swb_num; i++) {
+            s->scalefactor[0][i] = s->common_scalefac - s->scalefactor[0][i];
+            /*s->scalefactor[0][i] = gl - s->scalefactor[0][i];*/
+            s->scalefactor[0][i] = FA_MAX(0, s->scalefactor[0][i]);
+        }
+
+#endif
+    }
+
+}
+
+
+
 static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
 {
     int i;
@@ -1233,23 +1301,42 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
 
     float sfb_sqrenergy = 0.0;
     float xmin_sqrenergy_ratio;
+    int sf;
+
+    s->common_scalefac = 0;
 
     if (s->block_type == ONLY_SHORT_BLOCK) {
     } else {
         swb_num  = fl->sfb_num;
         swb_low  = fl->swb_low;
         swb_high = fl->swb_high;
-
+#if 0
         for (i = 0; i < swb_num; i++) {
             kmin = swb_low[i];
             kmax = swb_high[i];
 
             miu = fa_get_subband_abspower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
             miuhalf = fa_get_subband_sqrtpower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
-            /*s->scalefactor[0][i] = fa_estimate_sf(s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);*/
-            s->scalefactor[0][i] = s->common_scalefac - fa_estimate_sf(1.0*s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);
+            sf = fa_estimate_sf(1.0*s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);
+            s->scalefactor[0][i] = s->common_scalefac - sf;
             s->scalefactor[0][i] = FA_MAX(0, s->scalefactor[0][i]);
         }
+#else 
+        for (i = 0; i < swb_num; i++) {
+            kmin = swb_low[i];
+            kmax = swb_high[i];
+
+            miu = fa_get_subband_abspower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
+            miuhalf = fa_get_subband_sqrtpower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
+            sf = fa_estimate_sf(1.0*s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);
+            s->common_scalefac = FA_MAX(s->common_scalefac, sf);
+            s->scalefactor[0][i] = sf; 
+        }
+
+        for (i = 0; i < swb_num; i++)
+            s->scalefactor[0][i] = s->common_scalefac - s->scalefactor[0][i];
+
+#endif
     }
 
 }
@@ -1702,7 +1789,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
         init_pdf_para(s);
     }
 
-    max_loop_cnt = 10;
+    max_loop_cnt = 20;
     cur_cnt = 0;
     while (1) {
         cur_cnt++;
@@ -1724,9 +1811,11 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
                         s->x_quant);
 
             } else {
-                s->common_scalefac = common_scalefac;//70;//57;
+                /*s->common_scalefac = common_scalefac;//70;//57;*/
+                /*printf("globagain=%d\n", s->common_scalefac);*/
                 memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
                 calculate_scalefactor_usepdf(s);
+                /*calculate_scalefactor_usespecific(s);*/
 
                 fa_mdctline_quantdirect(s->h_mdctq_long, 
                         s->common_scalefac,
@@ -1738,6 +1827,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         fa_adjust_scalefactor(f);
         mdctline_enc1(f);
+        /*break;*/
 
         quant_ok_cnt = 0;
         for (i = 0; i < chn_num; i++) {
