@@ -104,6 +104,7 @@ void  fa_protect_db_rom_init()
     }
 
     /*44k long*/
+#if 0
     for (i = 0; i < 49; i++) {
         if (i < 3)
             fa_protect_db_44k_long[i] = 10;
@@ -126,6 +127,32 @@ void  fa_protect_db_rom_init()
         else 
             fa_protect_db_44k_long[i] = 0;
     }
+#else 
+    for (i = 0; i < 49; i++) {
+        if (i < 3)
+            fa_protect_db_44k_long[i] = 10;
+        else if (i < 5)
+            fa_protect_db_44k_long[i] = 9;
+        else if (i < 6)
+            fa_protect_db_44k_long[i] = 8;
+        else if (i < 8)
+            fa_protect_db_44k_long[i] = 7;
+        else if (i < 10)
+            fa_protect_db_44k_long[i] = 6;
+        else if (i < 12)
+            fa_protect_db_44k_long[i] = 5;
+        else if (i < 13)
+            fa_protect_db_44k_long[i] = 5;
+        else if (i < 14)
+            fa_protect_db_44k_long[i] = 5;
+        else if (i < 40)
+            fa_protect_db_44k_long[i] = 4;
+        else 
+            fa_protect_db_44k_long[i] = 0;
+    }
+
+
+#endif
 
     /*44k short*/
     for (i = 0; i < 14; i++) {
@@ -314,12 +341,14 @@ void fa_adjust_thr(int subband_num,
             mi = Ti1[s];
     }
 
+    mi = FA_MAX(mi, 0);
+
     for (s = 0; s < subband_num; s++) {
         if (Px[s] <= Tm[s]) {                           //masked by thr
             Ti[s] = Px[s];
         } else {                                        //unmasked 
-            if ((Ti[s] - Tm[s]) < 6.0) {                //high SNR, use constant NMR adjust
-                assert(Ti[s] >= Tm[s]);
+            if ((Ti[s] - Tm[s]) < 4.0) {                //high SNR, use constant NMR adjust
+                /*assert(Ti[s] >= Tm[s]);*/
                 Ti1_tmp = Ti[s] + r1;
                 Ti[s]   = FA_MIN(Ti1_tmp, G[s]);
                 Ti[s]   = FA_MAX(Ti[s], Tm[s]);
