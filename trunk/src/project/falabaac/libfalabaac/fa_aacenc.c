@@ -93,7 +93,7 @@ static rate_cutoff_t rate_cutoff[] =
     {24000, 5000},
     {32000, 10000},
     {38000, 12000},
-    {48000, 18000},
+    {48000, 16000},
     {64000, 19000},
     {100000, 20000},
     {0    , 0},
@@ -419,7 +419,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
         /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
-        fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
+        /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);*/
+        fa_quantqdf_para_init(&(f->ctx[i].qp), 0.8);
     }
 
     /*f->bitres_maxsize = get_aac_bitreservoir_maxsize(f->cfg.bit_rate, f->cfg.sample_rate);*/
