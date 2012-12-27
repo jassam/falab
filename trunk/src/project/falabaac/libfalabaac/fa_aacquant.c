@@ -744,7 +744,6 @@ void  fa_fastquant_calculate_sfb_avgenergy(aacenc_ctx_t *s)
 void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
 {
     int k,i,j;
- //   float globalthr = 132./10;//s->quality;
 
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
     fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
@@ -1018,10 +1017,6 @@ static void calculate_scalefactor(aacenc_ctx_t *s)
         }
     } else {
         for (i = 0; i < fl->sfb_num; i++) {
-#if 0 
-            /*if (s->scalefactor_win[0][i] > 70)*/
-                printf("s->scalefactor_win[0][%d]=%d\t", i, s->scalefactor_win[0][i]);
-#endif
             /*do not change the paremeters below, I tested, I think it is good, if change, maybe wores quality*/
 #if  1 
             if (i < 40)
@@ -1124,10 +1119,8 @@ static void calculate_scalefactor_usespecific(aacenc_ctx_t *s)
     float sfb_sqrenergy = 0.0;
     float xmin_sqrenergy_ratio;
     int sf;
-    /*int gl;*/
 
     s->common_scalefac = 0;
-    /*gl = 0;*/
 
     if (s->block_type == ONLY_SHORT_BLOCK) {
     } else {
@@ -1544,11 +1537,9 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
     int j;
     int chn_num;
     aacenc_ctx_t *s;
-    //int common_scalefac = 80;//100;////0;//90;//70; //50;
     int quant_ok_cnt;
     int max_loop_cnt;
     int cur_cnt;
-    /*int up;*/
 
     chn_num = f->cfg.chn_num;
 
@@ -1570,7 +1561,6 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
             s->quant_ok = 0;
             if (s->block_type == ONLY_SHORT_BLOCK) {
-     //           s->common_scalefac = common_scalefac;//70;//57;
                 memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
                 calculate_scalefactor_usepdf(s);
 
@@ -1580,8 +1570,6 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
                         s->x_quant);
 
             } else {
-                /*s->common_scalefac = common_scalefac;//70;//57;*/
-                /*printf("globagain=%d\n", s->common_scalefac);*/
                 memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
                 calculate_scalefactor_usepdf(s);
                 /*calculate_scalefactor_usespecific(s);*/
