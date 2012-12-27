@@ -93,7 +93,7 @@ static rate_cutoff_t rate_cutoff[] =
     {24000, 5000},
     {32000, 10000},
     {38000, 12000},
-    {48000, 16000},
+    {48000, 17000},
     {64000, 19000},
     {100000, 20000},
     {0    , 0},
@@ -115,6 +115,7 @@ static bit_thr_cof_t bit_thr_cof[] =
     {80000, 1.2},
     {100000, 3},
     {120000, 4},
+    {180000, 6},
     {0    , 0},
 
 
@@ -419,8 +420,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
         /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
-        /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);*/
-        fa_quantqdf_para_init(&(f->ctx[i].qp), 0.8);
+        fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
+        /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.8);*/
     }
 
     /*f->bitres_maxsize = get_aac_bitreservoir_maxsize(f->cfg.bit_rate, f->cfg.sample_rate);*/
@@ -458,7 +459,7 @@ static int speed_level_tab[SPEED_LEVEL_MAX][6] =
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
                                 {1,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //1
                                 {0,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //2
-                                {0,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //3
+                                {1,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //3
                                 {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //4
                                 {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //5
                                 {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //same, but bw=10k
