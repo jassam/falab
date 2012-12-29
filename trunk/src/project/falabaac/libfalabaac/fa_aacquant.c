@@ -1548,7 +1548,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
         init_pdf_para(s);
     }
 
-    max_loop_cnt = 10;
+    max_loop_cnt = 7;
     cur_cnt = 0;
     while (1) {
         cur_cnt++;

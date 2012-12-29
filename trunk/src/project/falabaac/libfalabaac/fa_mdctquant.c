@@ -646,11 +646,15 @@ void fa_balance_energe(uintptr_t handle,
             if ((enq == 0.0) || (en0 == 0.0))
                 continue;
             /*shift = (int)(log2(sqrt(enq / en0)) * logstep_1 + 1000.5);*/
+#if 0
             shift = (int)(log2(sqrt(enq / en0)) * qstep + 1000.5);
             shift -= 1000;
+#else 
+            shift = (int)(log2(sqrt(enq / en0)) * qstep);
+#endif
 
-            if (shift > 3)
-                shift = 3;
+            if (shift > 4)
+                shift = 4;
             if (shift < -2)
                 shift = -2;
               
