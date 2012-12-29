@@ -420,7 +420,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
         /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
-        fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
+        fa_quantqdf_para_init(&(f->ctx[i].qp), 0.92);
         /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.8);*/
     }
 
@@ -656,7 +656,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     sample_in = (short *)buf_in;
     for (i = 0; i < AAC_FRAME_LEN; i++) 
         for (j = 0; j < chn_num; j++) 
-            f->sample[i+j*AAC_FRAME_LEN] = (float)(sample_in[i*chn_num+j]);
+            f->sample[i+j*AAC_FRAME_LEN] = (float)(0.98 * sample_in[i*chn_num+j]);
 
     block_switch_en = f->block_switch_en;
     psy_enable      = f->psy_enable;
