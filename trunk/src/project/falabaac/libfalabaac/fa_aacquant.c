@@ -1210,7 +1210,7 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
 
             miu = fa_get_subband_abspower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
             miuhalf = fa_get_subband_sqrtpower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
-            sf = fa_estimate_sf(1.0*s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);
+            sf = fa_estimate_sf(0.97*s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);
             s->common_scalefac = FA_MAX(s->common_scalefac, sf);
             s->scalefactor[0][i] = sf; 
         }
@@ -1312,11 +1312,11 @@ static float choose_stepsize_db(int delta_bits, float cof)
 {
 	float step;
 
-	if (delta_bits < 150*cof)
+	if (delta_bits < 160*cof)
 		step = 0.25;
 	else if (delta_bits < 300*cof)
 		step = 0.5;
-	else if (delta_bits < 500*cof)
+	else if (delta_bits < 700*cof)
 		step = 1;
 	else if (delta_bits < 1000*cof)
 		step = 3;
@@ -1358,7 +1358,7 @@ static void mdctline_enc(fa_aacenc_ctx_t *f)
     while (i < chn_num) {
         inner_loop_cnt = 0;
         s = &(f->ctx[i]);
-        bit_thr = 150.0*s->bit_thr_cof;
+        bit_thr = 160.0*s->bit_thr_cof;
 
         if (s->chn_info.cpe == 1) {
             chn = 2;

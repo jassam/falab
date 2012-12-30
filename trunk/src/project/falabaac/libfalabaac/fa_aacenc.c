@@ -51,7 +51,7 @@
 #define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
 #endif
 
-#define GAIN_ADJUST   5 //5  
+#define GAIN_ADJUST   4 //5  
 
 
 /* Returns the sample rate index */
@@ -94,7 +94,7 @@ static rate_cutoff_t rate_cutoff[] =
     {32000, 10000},
     {38000, 12000},
     {48000, 17000},
-    {64000, 19000},
+    {64000, 20000},
     {100000, 20000},
     {0    , 0},
 };
@@ -107,15 +107,15 @@ typedef struct _bit_thr_cof_t{
 static bit_thr_cof_t bit_thr_cof[] = 
 {
     {16000, 0.5},
-    {24000, 0.6},
-    {32000, 0.7},
-    {38000, 0.7},
-    {48000, 0.9},
-    {64000, 1.0},
-    {80000, 1.2},
-    {100000, 3},
-    {120000, 4},
-    {180000, 6},
+    {24000, 0.5},
+    {32000, 0.6},
+    {38000, 0.6},
+    {48000, 0.7},
+    {64000, 1.3},
+    {80000, 2.0},
+    {100000, 4},
+    {120000, 5},
+    {180000, 7},
     {0    , 0},
 
 
@@ -420,7 +420,10 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
         /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
-        fa_quantqdf_para_init(&(f->ctx[i].qp), 0.92);
+        if (f->band_width < 20000)
+            fa_quantqdf_para_init(&(f->ctx[i].qp), 0.93);
+        else 
+            fa_quantqdf_para_init(&(f->ctx[i].qp), 1.0);
         /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.8);*/
     }
 
@@ -656,7 +659,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     sample_in = (short *)buf_in;
     for (i = 0; i < AAC_FRAME_LEN; i++) 
         for (j = 0; j < chn_num; j++) 
-            f->sample[i+j*AAC_FRAME_LEN] = (float)(0.98 * sample_in[i*chn_num+j]);
+            f->sample[i+j*AAC_FRAME_LEN] = (float)(0.99 * sample_in[i*chn_num+j]);
 
     block_switch_en = f->block_switch_en;
     psy_enable      = f->psy_enable;
