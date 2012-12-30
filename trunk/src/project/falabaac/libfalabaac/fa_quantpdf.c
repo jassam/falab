@@ -230,6 +230,7 @@ float fa_get_subband_abspower(float *X, int kmin, int kmax)
     return Px;
 }
 
+
 float fa_get_subband_sqrtpower(float *X, int kmin, int kmax)
 {
     int k;
@@ -245,6 +246,23 @@ float fa_get_subband_sqrtpower(float *X, int kmin, int kmax)
     return Px;
 }
 
+void fa_get_subband_abssqrtpower(float *X, int kmin, int kmax, float *Px1, float *Px2)
+{
+    int k;
+    float tmp;
+    float tPx1, tPx2;
+
+    tPx1 = 0.0;
+    tPx2 = 0.0;
+    for (k = kmin; k <= kmax; k++) {
+        tmp = FA_ABS(X[k]);
+        tPx1 += tmp;
+        tPx2 += FA_SQRTF(tmp);
+    }
+
+    *Px1 = tPx1;
+    *Px2 = tPx2;
+}
 
 
 float fa_get_scaling_para(int scale_factor)
@@ -298,8 +316,8 @@ int   fa_estimate_sf(float T, int K, float beta,
 
 
     diff = a4*miu - a2*a2*miuhalf*miuhalf;
-    if (diff < 0)
-        printf("diff=%f\n", diff);
+    /*if (diff < 0)*/
+        /*printf("diff=%f\n", diff);*/
     /*assert(diff >= 0);*/
 
     t = K*a2*miuhalf + beta*FA_SQRTF(2*K*diff);
@@ -312,6 +330,24 @@ int   fa_estimate_sf(float T, int K, float beta,
 
     return sf;
 }
+
+
+int   fa_estimate_sf_fast(float T, float t)
+{
+    float ratio;
+    int sf;
+
+    if (t > 0) {
+        ratio = T/t;
+        sf = fa_mpeg_round((8./3.) * FA_LOG2(ratio));
+    } else {
+        sf = 0;
+    }
+
+    return sf;
+}
+
+
 
 float fa_pow2db(float power)
 {
