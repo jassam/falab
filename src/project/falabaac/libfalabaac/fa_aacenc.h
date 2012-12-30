@@ -96,9 +96,12 @@ typedef struct _aacenc_ctx_t{
     int   maxscale_win[8][FA_SWB_NUM_MAX];
 
     float Px[8][FA_SWB_NUM_MAX];
+    float Tm[8][FA_SWB_NUM_MAX];
     float Ti[8][FA_SWB_NUM_MAX];
     float Ti1[8][FA_SWB_NUM_MAX];
     float G[8][FA_SWB_NUM_MAX];
+    int   *Pt_long;
+    int   *Pt_short;
     fa_qpdf_para_t qp;
     int   up;
     float step_down_db;

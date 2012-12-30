@@ -270,19 +270,15 @@ void fa_mdctline_quantdirect(uintptr_t handle,
     sfb_num    = f->sfb_num;
     mdct_line  = f->mdct_line;
 
+#if  0 
     for (gr = 0; gr < num_window_groups; gr++) {
         for (sfb = 0; sfb < sfb_num; sfb++) {
             cof_scale = pow(2, (1./4.) * (scalefactor[gr][sfb]-common_scalefac));
-            /*cof_scale = pow(2, (1./4.) * (scalefactor[gr][sfb]+common_scalefac));*/
-            /*cof_scale = pow(2, (1./4.) * (scalefactor[gr][sfb]));*/
 
             for (i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) {
                 tmp = FA_ABS(mdct_line[i]);
                 tmp = tmp * cof_scale;
-                /*tmp = tmp / cof_scale;*/
-                x_quant[i] = FA_SQRTF(tmp*FA_SQRTF(tmp));
-                /*x_quant[i] = fa_mpeg_round(x_quant[i]);*/
-                x_quant[i] = (int)(x_quant[i] + MAGIC_NUMBER);
+                x_quant[i] = (int)(FA_SQRTF(tmp*FA_SQRTF(tmp)));
                 if (mdct_line[i] > 0)
                     x_quant[i] = -x_quant[i];
 
@@ -295,6 +291,29 @@ void fa_mdctline_quantdirect(uintptr_t handle,
             }
         }
     }
+#else 
+    for (gr = 0; gr < num_window_groups; gr++) {
+        for (sfb = 0; sfb < sfb_num; sfb++) {
+            /*cof_scale = pow(2, (3./16.) * (scalefactor[gr][sfb]-common_scalefac));*/
+            cof_scale = 1./rom_cof_quant[(scalefactor[gr][sfb]-common_scalefac)+255];
+
+            for (i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) {
+                tmp = FA_ABS(f->xr_pow[i]);
+                tmp = tmp * cof_scale;
+                x_quant[i] = (int)(tmp);
+                if (mdct_line[i] > 0)
+                    x_quant[i] = -x_quant[i];
+
+                if (x_quant[i] > 8191) {
+                    x_quant[i] = 8191;
+                } else if(x_quant[i] < -8191) {
+                    x_quant[i] = -8191;
+                }
+
+            }
+        }
+    }
+#endif
 
 }
 
