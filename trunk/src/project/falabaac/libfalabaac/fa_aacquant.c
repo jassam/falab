@@ -1167,7 +1167,7 @@ static void calculate_scalefactor_usespecific(aacenc_ctx_t *s)
 
 static void calculate_pow_miu(aacenc_ctx_t *s)
 {
-    int i;
+    int i, k;
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
     fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
 
@@ -1189,6 +1189,24 @@ static void calculate_pow_miu(aacenc_ctx_t *s)
     s->common_scalefac = 0;
 
     if (s->block_type == ONLY_SHORT_BLOCK) {
+        swb_num  = fs->sfb_num;
+        swb_low  = fs->swb_low;
+        swb_high = fs->swb_high;
+
+        for (k = 0; k < 8; k++) {
+            for (i = 0; i < swb_num; i++) {
+                kmin = swb_low[i];
+                kmax = swb_high[i];
+                fa_get_subband_abssqrtpower(s->mdct_line+k*128, kmin, kmax, &tmp1, &tmp2);
+                width = kmax-kmin+1;
+                miu = s->miu[k][i] = tmp1/width;
+                miuhalf = s->miuhalf[k][i] = tmp2/width;
+                a2 = s->qp.a2;
+                a4 = s->qp.a4;
+                diff = a4*miu - a2*a2*miuhalf*miuhalf; 
+                s->pdft[k][i] = width*a2*miuhalf+s->qp.beta*FA_SQRTF(2*width*diff);
+            }
+        }
     } else {
         swb_num  = fl->sfb_num;
         swb_low  = fl->swb_low;
@@ -1196,10 +1214,6 @@ static void calculate_pow_miu(aacenc_ctx_t *s)
         for (i = 0; i < swb_num; i++) {
             kmin = swb_low[i];
             kmax = swb_high[i];
-#if 0
-            s->miu[0][i] = fa_get_subband_abspower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
-            s->miuhalf[0][i] = fa_get_subband_sqrtpower(s->mdct_line, kmin, kmax)/(kmax-kmin+1);
-#else 
             fa_get_subband_abssqrtpower(s->mdct_line, kmin, kmax, &tmp1, &tmp2);
             width = kmax-kmin+1;
             miu = s->miu[0][i] = tmp1/width;
@@ -1208,7 +1222,6 @@ static void calculate_pow_miu(aacenc_ctx_t *s)
             a4 = s->qp.a4;
             diff = a4*miu - a2*a2*miuhalf*miuhalf; 
             s->pdft[0][i] = width*a2*miuhalf+s->qp.beta*FA_SQRTF(2*width*diff);
-#endif
         }
     }
 
@@ -1216,7 +1229,7 @@ static void calculate_pow_miu(aacenc_ctx_t *s)
 
 static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
 {
-    int i;
+    int i, k;
     float miu, miuhalf;
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
     fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
@@ -1230,11 +1243,44 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
 
     float sfb_sqrenergy = 0.0;
     float xmin_sqrenergy_ratio;
+    int gl;
     int sf;
+    int scalefactor;
+
+    int gr, win;
 
     s->common_scalefac = 0;
 
     if (s->block_type == ONLY_SHORT_BLOCK) {
+        swb_num  = fs->sfb_num;
+        swb_low  = fs->swb_low;
+        swb_high = fs->swb_high;
+
+        for (k = 0; k < 8; k++) {
+            gl = 0;
+            for (i = 0; i < swb_num; i++) {
+                kmin = swb_low[i];
+                kmax = swb_high[i];
+                sf = fa_estimate_sf_fast(0.97*s->Ti[k][i], s->pdft[k][i]);
+                /*s->common_scalefac = FA_MAX(s->common_scalefac, sf);*/
+                gl = FA_MAX(gl, sf);
+                s->scalefactor_win[k][i] = sf; 
+            }
+            for (i = 0; i < swb_num; i++)
+                s->scalefactor_win[k][i] = gl - s->scalefactor_win[k][i];
+            s->common_scalefac = FA_MAX(s->common_scalefac, gl);
+        }
+
+        for (gr = 0; gr < s->num_window_groups; gr++) {
+            for (i = 0; i < fs->sfb_num; i++) {
+                for (win = 0; win < s->window_group_length[gr]; win++) {
+                    scalefactor = s->scalefactor_win[win][i];
+                    /*s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);*/
+                    s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], scalefactor);
+                }
+            }
+        }
+
     } else {
         swb_num  = fl->sfb_num;
         swb_low  = fl->swb_low;
@@ -1243,15 +1289,7 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
         for (i = 0; i < swb_num; i++) {
             kmin = swb_low[i];
             kmax = swb_high[i];
-
-#if 0
-            miu = s->miu[0][i];
-            miuhalf = s->miuhalf[0][i];
-            sf = fa_estimate_sf(0.97*s->Ti[0][i], kmax-kmin+1, s->qp.beta, s->qp.a2, s->qp.a4, miu, miuhalf);
-#else 
             sf = fa_estimate_sf_fast(0.97*s->Ti[0][i], s->pdft[0][i]);
-
-#endif
             s->common_scalefac = FA_MAX(s->common_scalefac, sf);
             s->scalefactor[0][i] = sf; 
         }
@@ -1265,7 +1303,7 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
 
 static void init_pdf_para(aacenc_ctx_t *s)
 {
-    int i;
+    int i, k;
     float miu, miuhalf;
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
     fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
@@ -1280,6 +1318,26 @@ static void init_pdf_para(aacenc_ctx_t *s)
     float tmp;
 
     if (s->block_type == ONLY_SHORT_BLOCK) {
+        swb_num  = fs->sfb_num;
+        swb_low  = fs->swb_low;
+        swb_high = fs->swb_high;
+
+        for (k = 0; k < 8; k++) {
+            for (i = 0; i < swb_num; i++) {
+                kmin = swb_low[i];
+                kmax = swb_high[i];
+
+                tmp = fa_get_subband_power(s->mdct_line+128*k, kmin, kmax);
+                s->Px[k][i] = 10*FA_LOG10(tmp);
+                s->Tm[k][i] = 10*FA_LOG10(s->xmin[k][i]);
+                s->Tm[k][i] = FA_MAX(s->Tm[k][i], 0);
+                s->G[k][i]  = s->Px[k][i] - s->Pt_long[i];
+                s->G[k][i]  = FA_MAX(s->G[k][i], 0);
+
+                s->Ti[k][i] = s->xmin[k][i];
+                s->Ti1[k][i] = 1;
+            }
+        }
     } else {
         swb_num  = fl->sfb_num;
         swb_low  = fl->swb_low;
@@ -1289,12 +1347,6 @@ static void init_pdf_para(aacenc_ctx_t *s)
             kmin = swb_low[i];
             kmax = swb_high[i];
 
-#if 0 
-            s->Ti[0][i] = s->xmin[0][i];
-            s->Ti1[0][i] = 1;
-            s->Px[0][i] = fa_get_subband_power(s->mdct_line, kmin, kmax);
-            /*s->G[0][i] = FA_MAX(1, (s->Px[0][i] - fa_protect_db_44k_long[i]));*/
-#else 
             tmp = fa_get_subband_power(s->mdct_line, kmin, kmax);
             s->Px[0][i] = 10*FA_LOG10(tmp);
             s->Tm[0][i] = 10*FA_LOG10(s->xmin[0][i]);
@@ -1304,7 +1356,6 @@ static void init_pdf_para(aacenc_ctx_t *s)
 
             s->Ti[0][i] = s->xmin[0][i];
             s->Ti1[0][i] = 1;
-#endif
         }
     }
 
@@ -1312,7 +1363,7 @@ static void init_pdf_para(aacenc_ctx_t *s)
 
 static void adjust_noise_thr(aacenc_ctx_t *s)
 {
-    int i;
+    int i, k;
     float miu, miuhalf;
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(s->h_mdctq_short);
     fa_mdctquant_t *fl = (fa_mdctquant_t *)(s->h_mdctq_long);
@@ -1320,6 +1371,43 @@ static void adjust_noise_thr(aacenc_ctx_t *s)
     int swb_num;
 
     if (s->block_type == ONLY_SHORT_BLOCK) {
+        swb_num  = fs->sfb_num;
+        for (k = 0; k < 8; k++) {
+            float Px[FA_SWB_NUM_MAX];
+            float Ti[FA_SWB_NUM_MAX];
+            float Tm[FA_SWB_NUM_MAX];
+            float Ti1[FA_SWB_NUM_MAX];
+            float G[FA_SWB_NUM_MAX];
+
+            for (i = 0; i < swb_num; i++) {
+                Px[i] = s->Px[k][i];
+                Tm[i] = s->Tm[k][i];
+                G[i]   = s->G[k][i]; 
+
+                Ti[i] = 10*FA_LOG10(s->Ti[k][i]);
+                Ti[i] = FA_MAX(Ti[i], 0);
+                Ti1[i]= 10*FA_LOG10(s->Ti1[k][i]);
+                Ti1[i] = FA_MAX(Ti1[i], 0);
+            }
+
+            if (s->up)
+                fa_adjust_thr(swb_num, Px, Tm, G, Ti, Ti1);
+            else {
+                for (i = 0; i < swb_num; i++) {
+                    Ti[i] -= s->step_down_db; //0.25;
+                    Ti[i] = FA_MAX(Ti[i], 0);
+                    Ti1[i] -= s->step_down_db; //0.25;
+                    Ti1[i] = FA_MAX(Ti1[i], 0);
+                }
+            }
+
+            for (i = 0; i < swb_num; i++) {
+                /*printf("index=%d,Ti=%f, Ti1 = %f\n", i, Ti[i], Ti1[i]);*/
+                s->Ti[k][i] = pow(10, 0.1*Ti[i]);
+                s->Ti1[k][i] = pow(10, 0.1*Ti1[i]);
+                /*printf("index=%d,Ti=%f, Ti1 = %f\n", i, s->Ti[0][i], s->Ti1[0][i]);*/
+            }
+        }
     } else {
         float Px[FA_SWB_NUM_MAX];
         float Ti[FA_SWB_NUM_MAX];
@@ -1636,6 +1724,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         fa_adjust_scalefactor(f);
         mdctline_enc(f);
+        /*break;*/
 
         quant_ok_cnt = 0;
         for (i = 0; i < chn_num; i++) {
