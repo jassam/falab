@@ -95,6 +95,9 @@ typedef struct _aacenc_ctx_t{
     float xmin[8][FA_SWB_NUM_MAX];
     int   maxscale_win[8][FA_SWB_NUM_MAX];
 
+    float miu[8][FA_SWB_NUM_MAX];
+    float miuhalf[8][FA_SWB_NUM_MAX];
+    float pdft[8][FA_SWB_NUM_MAX];
     float Px[8][FA_SWB_NUM_MAX];
     float Tm[8][FA_SWB_NUM_MAX];
     float Ti[8][FA_SWB_NUM_MAX];
