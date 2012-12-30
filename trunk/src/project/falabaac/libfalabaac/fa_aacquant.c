@@ -1237,6 +1237,8 @@ static void init_pdf_para(aacenc_ctx_t *s)
     int kmin;
     int kmax;
 
+    float tmp;
+
     if (s->block_type == ONLY_SHORT_BLOCK) {
     } else {
         swb_num  = fl->sfb_num;
@@ -1247,10 +1249,22 @@ static void init_pdf_para(aacenc_ctx_t *s)
             kmin = swb_low[i];
             kmax = swb_high[i];
 
+#if 0 
             s->Ti[0][i] = s->xmin[0][i];
             s->Ti1[0][i] = 1;
             s->Px[0][i] = fa_get_subband_power(s->mdct_line, kmin, kmax);
             /*s->G[0][i] = FA_MAX(1, (s->Px[0][i] - fa_protect_db_44k_long[i]));*/
+#else 
+            tmp = fa_get_subband_power(s->mdct_line, kmin, kmax);
+            s->Px[0][i] = 10*FA_LOG10(tmp);
+            s->Tm[0][i] = 10*FA_LOG10(s->xmin[0][i]);
+            s->Tm[0][i] = FA_MAX(s->Tm[0][i], 0);
+            s->G[0][i]  = s->Px[0][i] - s->Pt_long[i];
+            s->G[0][i]  = FA_MAX(s->G[0][i], 0);
+
+            s->Ti[0][i] = s->xmin[0][i];
+            s->Ti1[0][i] = 1;
+#endif
         }
     }
 
@@ -1276,6 +1290,7 @@ static void adjust_noise_thr(aacenc_ctx_t *s)
         swb_num  = fl->sfb_num;
 
         for (i = 0; i < swb_num; i++) {
+#if 0 
             Px[i] = 10*log10(s->Px[0][i]);
             Tm[i] = 10*log10(s->xmin[0][i]);
             Tm[i] = FA_MAX(Tm[i], 0);
@@ -1283,8 +1298,17 @@ static void adjust_noise_thr(aacenc_ctx_t *s)
             Ti[i] = FA_MAX(Ti[i], 0);
             Ti1[i]= 10*log10(s->Ti1[0][i]);
             Ti1[i] = FA_MAX(Ti1[i], 0);
-            
-            G[i]  = Px[i] - fa_protect_db_44k_long[i];//s->G[0][i];
+            G[i]  = Px[i] - s->Pt_long[i];
+#else 
+            Px[i] = s->Px[0][i];
+            Tm[i] = s->Tm[0][i];
+            G[i]   = s->G[0][i]; 
+
+            Ti[i] = 10*FA_LOG10(s->Ti[0][i]);
+            Ti[i] = FA_MAX(Ti[i], 0);
+            Ti1[i]= 10*FA_LOG10(s->Ti1[0][i]);
+            Ti1[i] = FA_MAX(Ti1[i], 0);
+#endif
         }
 
         if (s->up)
@@ -1299,9 +1323,10 @@ static void adjust_noise_thr(aacenc_ctx_t *s)
         }
 
         for (i = 0; i < swb_num; i++) {
+            /*printf("index=%d,Ti=%f, Ti1 = %f\n", i, Ti[i], Ti1[i]);*/
             s->Ti[0][i] = pow(10, 0.1*Ti[i]);
             s->Ti1[0][i] = pow(10, 0.1*Ti1[i]);
-            /*printf("Ti1[%d] = %f\n", i, s->Ti1[0][i]);*/
+            /*printf("index=%d,Ti=%f, Ti1 = %f\n", i, s->Ti[0][i], s->Ti1[0][i]);*/
         }
     }
 
@@ -1548,6 +1573,15 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
         init_pdf_para(s);
     }
 
+    for (i = 0; i < chn_num; i++) {
+        s = &(f->ctx[i]);
+        if (s->block_type == ONLY_SHORT_BLOCK) {
+            fa_mdctline_pow34(s->h_mdctq_short);
+        } else {
+            fa_mdctline_pow34(s->h_mdctq_long);
+        }
+    }
+ 
     max_loop_cnt = 7;
     cur_cnt = 0;
     while (1) {

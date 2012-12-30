@@ -326,9 +326,12 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         memset(f->ctx[i].maxscale_win,0, sizeof(int)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].Px, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
+        memset(f->ctx[i].Tm, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].Ti, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].Ti1,0, sizeof(float)*8*FA_SWB_NUM_MAX);
         memset(f->ctx[i].G  ,0, sizeof(float)*8*FA_SWB_NUM_MAX);
+        f->ctx[i].Pt_long  = 0;
+        f->ctx[i].Pt_short = 0;
         f->ctx[i].up = 0;
         f->ctx[i].step_down_db = 0.0;
         f->ctx[i].bit_thr_cof = bits_thr_cof;
@@ -382,6 +385,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                 /*f->ctx[i].sfb_num_short= FA_SWB_48k_SHORT_NUM;*/
                 f->ctx[i].sfb_num_long = f->ctx[i].cutoff_sfb_long;
                 f->ctx[i].sfb_num_short= f->ctx[i].cutoff_sfb_short;
+                f->ctx[i].Pt_long  = fa_protect_db_48k_long;
+                f->ctx[i].Pt_short = fa_protect_db_48k_short;
                 break;
             case 44100:
                 f->ctx[i].cutoff_line_long = get_cutoff_line(44100, 1024, real_band_width);
@@ -394,6 +399,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                 f->ctx[i].h_mdctq_short= fa_mdctquant_init(128 , f->ctx[i].cutoff_sfb_short, fa_swb_44k_short_offset, 8);
                 f->ctx[i].sfb_num_long = f->ctx[i].cutoff_sfb_long;
                 f->ctx[i].sfb_num_short= f->ctx[i].cutoff_sfb_short;
+                f->ctx[i].Pt_long  = fa_protect_db_44k_long;
+                f->ctx[i].Pt_short = fa_protect_db_44k_short;
                 break;
             case 32000:
                 f->ctx[i].cutoff_line_long = get_cutoff_line(32000, 1024, real_band_width);
@@ -408,6 +415,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                 /*f->ctx[i].sfb_num_short= FA_SWB_32k_SHORT_NUM;*/
                 f->ctx[i].sfb_num_long = f->ctx[i].cutoff_sfb_long;
                 f->ctx[i].sfb_num_short= f->ctx[i].cutoff_sfb_short;
+                f->ctx[i].Pt_long  = fa_protect_db_32k_long;
+                f->ctx[i].Pt_short = fa_protect_db_32k_short;
                 break;
         }
 
@@ -721,11 +730,13 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             /*if (speed_level == 2 || speed_level == 3) */
                 /*fa_calculate_scalefactor_win(s, xmin);*/
         } else {
+#if 0
             if (speed_level < 4) {
                 fa_fastquant_calculate_sfb_avgenergy(s);
                 fa_fastquant_calculate_xmin(s, s->xmin);
                 fa_calculate_scalefactor_win(s, s->xmin);
             }
+#endif
         }
 
         if (tns_enable && (!s->chn_info.lfe))

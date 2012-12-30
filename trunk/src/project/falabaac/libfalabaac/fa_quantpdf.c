@@ -30,6 +30,7 @@
 #include <math.h>
 #include <assert.h>
 #include "fa_quantpdf.h"
+#include "fa_fastmath.h"
 
 #ifndef M_PI
 #define M_PI			3.14159265358979323846
@@ -224,7 +225,7 @@ float fa_get_subband_abspower(float *X, int kmin, int kmax)
 
     Px = 0.0;
     for (k = kmin; k <= kmax; k++) 
-        Px += fabs(X[k]);
+        Px += FA_ABS(X[k]);
 
     return Px;
 }
@@ -237,8 +238,8 @@ float fa_get_subband_sqrtpower(float *X, int kmin, int kmax)
 
     Px = 0.0;
     for (k = kmin; k <= kmax; k++) {
-        tmp = fabs(X[k]);
-        Px += sqrt(tmp);
+        tmp = FA_ABS(X[k]);
+        Px += FA_SQRTF(tmp);
     }
 
     return Px;
@@ -301,10 +302,10 @@ int   fa_estimate_sf(float T, int K, float beta,
         printf("diff=%f\n", diff);
     /*assert(diff >= 0);*/
 
-    t = K*a2*miuhalf + beta*sqrt(2*K*diff);
+    t = K*a2*miuhalf + beta*FA_SQRTF(2*K*diff);
     if (t > 0) {
         ratio = T/t;
-        sf = fa_mpeg_round((8./3.) * log2(ratio));
+        sf = fa_mpeg_round((8./3.) * FA_LOG2(ratio));
     } else {
         sf = 0;
     }
@@ -314,7 +315,7 @@ int   fa_estimate_sf(float T, int K, float beta,
 
 float fa_pow2db(float power)
 {
-    return 10*log10(power);
+    return 10*FA_LOG10(power);
 }
 
 float fa_db2pow(float db)
