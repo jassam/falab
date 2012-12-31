@@ -170,7 +170,7 @@ void  fa_protect_db_rom_init()
 #else 
     for (i = 0; i < 14; i++) {
         if (i < 1)
-            fa_protect_db_44k_short[i] = 8;
+            fa_protect_db_44k_short[i] = 7;
         else if (i < 2)
             fa_protect_db_44k_short[i] = 3;
         else if (i < 11) 
@@ -425,15 +425,14 @@ void fa_adjust_thr(int subband_num,
         } else {                                        //unmasked 
             if ((Ti[s] - Tm[s]) < 15.0) {                //high SNR, use constant NMR adjust
                 /*assert(Ti[s] >= Tm[s]);*/
-                Ti1_tmp = Ti[s] + r1;
-                /*Ti[s]   = Ti1_tmp;*/
+                Ti1_tmp = Ti[s] + 1;//r1;
                 Ti[s]   = FA_MIN(Ti1_tmp, G[s]);
                 Ti[s]   = FA_MAX(Ti[s], Tm[s]);
                 Ti1[s]  = Ti1_tmp;
                 /*printf("-----------tt0\n");*/
             } else if (Ti[s] < G[s]) {                  //low SNR, use water-filling adjust
-                Ti1_tmp = mi+r1;//FA_MAX(Ti1[s], mi+r1);
-                Ti[s]   = Ti1_tmp; //FA_MIN(Ti1_tmp, G[s]);
+                Ti1_tmp = FA_MAX(Ti1[s], mi+r1);
+                Ti[s]   = FA_MIN(Ti1_tmp, G[s]);
                 /*printf("-----------tt1\n");*/
             } else {                                    //very low SNR, small constant adjust
                 Ti[s] += r2;

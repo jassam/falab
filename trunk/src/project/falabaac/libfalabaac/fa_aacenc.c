@@ -433,12 +433,12 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         if (f->band_width < 20000) {
             if (time_resolution_first)
-                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.85);
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.8);
             else 
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.93);
         } else { 
             if (time_resolution_first)
-                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.85);
             else 
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 1.0);
         }
@@ -479,7 +479,7 @@ static int speed_level_tab[SPEED_LEVEL_MAX][6] =
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
                                 {1,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //1
                                 {0,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //2
-                                {1,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //3
+                                {1,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_FAST},  //3
                                 {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //4
                                 {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //5
                                 {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //same, but bw=10k
@@ -698,7 +698,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             if (block_switch_en) {
             /*if (0) { //(block_switch_en) {*/
                 f->do_blockswitch(s);
-#if 0 
+#if 1 
                 /*if (s->block_type == 2)*/
                 if (s->block_type != 0)
                     printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
