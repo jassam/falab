@@ -89,12 +89,12 @@ typedef struct _rate_cutoff {
 /*reference to 48000kHz sample rate*/
 static rate_cutoff_t rate_cutoff[] = 
 {
-    {16000, 5000},
-    {24000, 5000},
-    {32000, 10000},
-    {38000, 12000},
-    {48000, 17000},
-    {64000, 20000},
+    {15000, 5000},
+    {23000, 5000},
+    {31000, 10000},
+    {37000, 12000},
+    {47000, 17000},
+    {63000, 20000},
     {100000, 20000},
     {0    , 0},
 };
@@ -259,7 +259,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
     f->band_width = get_bandwidth(chn_num, sample_rate, bit_rate);
     bits_thr_cof  = get_bit_thr_cof(chn_num, sample_rate, bit_rate);
-    printf("bits thr cof=%f\n", bits_thr_cof);
+    /*printf("bits thr cof=%f\n", bits_thr_cof);*/
 
     if (speed_level > 5) {
         if (f->band_width > 10000)
@@ -384,12 +384,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                 f->ctx[i].cutoff_line_short= get_cutoff_line(48000, 128 , real_band_width);
                 f->ctx[i].cutoff_sfb_long  = get_cutoff_sfb(FA_SWB_48k_LONG_NUM , fa_swb_48k_long_offset , f->ctx[i].cutoff_line_long);
                 f->ctx[i].cutoff_sfb_short = get_cutoff_sfb(FA_SWB_48k_SHORT_NUM, fa_swb_48k_short_offset, f->ctx[i].cutoff_line_short);
-                /*f->ctx[i].h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_48k_LONG_NUM ,fa_swb_48k_long_offset, 1);*/
-                /*f->ctx[i].h_mdctq_short= fa_mdctquant_init(128 , FA_SWB_48k_SHORT_NUM,fa_swb_48k_short_offset, 8);*/
                 f->ctx[i].h_mdctq_long = fa_mdctquant_init(1024, f->ctx[i].cutoff_sfb_long , fa_swb_48k_long_offset, 1);
                 f->ctx[i].h_mdctq_short= fa_mdctquant_init(128 , f->ctx[i].cutoff_sfb_short, fa_swb_48k_short_offset, 8);
-                /*f->ctx[i].sfb_num_long = FA_SWB_48k_LONG_NUM;*/
-                /*f->ctx[i].sfb_num_short= FA_SWB_48k_SHORT_NUM;*/
                 f->ctx[i].sfb_num_long = f->ctx[i].cutoff_sfb_long;
                 f->ctx[i].sfb_num_short= f->ctx[i].cutoff_sfb_short;
                 f->ctx[i].Pt_long  = fa_protect_db_48k_long;
@@ -400,8 +396,6 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                 f->ctx[i].cutoff_line_short= get_cutoff_line(44100, 128 , real_band_width);
                 f->ctx[i].cutoff_sfb_long  = get_cutoff_sfb(FA_SWB_44k_LONG_NUM , fa_swb_44k_long_offset , f->ctx[i].cutoff_line_long);
                 f->ctx[i].cutoff_sfb_short = get_cutoff_sfb(FA_SWB_44k_SHORT_NUM, fa_swb_44k_short_offset, f->ctx[i].cutoff_line_short);
-                /*f->ctx[i].h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_44k_LONG_NUM ,fa_swb_44k_long_offset, 1);*/
-                /*f->ctx[i].h_mdctq_short= fa_mdctquant_init(128 , FA_SWB_44k_SHORT_NUM,fa_swb_44k_short_offset, 8);*/
                 f->ctx[i].h_mdctq_long = fa_mdctquant_init(1024, f->ctx[i].cutoff_sfb_long , fa_swb_44k_long_offset, 1);
                 f->ctx[i].h_mdctq_short= fa_mdctquant_init(128 , f->ctx[i].cutoff_sfb_short, fa_swb_44k_short_offset, 8);
                 f->ctx[i].sfb_num_long = f->ctx[i].cutoff_sfb_long;
@@ -414,12 +408,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                 f->ctx[i].cutoff_line_short= get_cutoff_line(32000, 128 , real_band_width);
                 f->ctx[i].cutoff_sfb_long  = get_cutoff_sfb(FA_SWB_32k_LONG_NUM , fa_swb_32k_long_offset , f->ctx[i].cutoff_line_long);
                 f->ctx[i].cutoff_sfb_short = get_cutoff_sfb(FA_SWB_32k_SHORT_NUM, fa_swb_32k_short_offset, f->ctx[i].cutoff_line_short);
-                /*f->ctx[i].h_mdctq_long = fa_mdctquant_init(1024, FA_SWB_32k_LONG_NUM ,fa_swb_32k_long_offset, 1);*/
-                /*f->ctx[i].h_mdctq_short= fa_mdctquant_init(128 , FA_SWB_32k_SHORT_NUM,fa_swb_32k_short_offset, 8);*/
                 f->ctx[i].h_mdctq_long = fa_mdctquant_init(1024, f->ctx[i].cutoff_sfb_long , fa_swb_32k_long_offset, 1);
                 f->ctx[i].h_mdctq_short= fa_mdctquant_init(128 , f->ctx[i].cutoff_sfb_short, fa_swb_32k_short_offset, 8);
-                /*f->ctx[i].sfb_num_long = FA_SWB_32k_LONG_NUM;*/
-                /*f->ctx[i].sfb_num_short= FA_SWB_32k_SHORT_NUM;*/
                 f->ctx[i].sfb_num_long = f->ctx[i].cutoff_sfb_long;
                 f->ctx[i].sfb_num_short= f->ctx[i].cutoff_sfb_short;
                 f->ctx[i].Pt_long  = fa_protect_db_32k_long;
