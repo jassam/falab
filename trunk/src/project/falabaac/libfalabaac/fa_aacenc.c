@@ -53,6 +53,7 @@
 
 #define GAIN_ADJUST   4 //5  
 
+#define BW_MAX        22000
 
 /* Returns the sample rate index */
 int get_samplerate_index(int sample_rate)
@@ -90,12 +91,13 @@ typedef struct _rate_cutoff {
 static rate_cutoff_t rate_cutoff[] = 
 {
     {15000, 5000},
-    {23000, 5000},
-    {31000, 10000},
-    {37000, 12000},
-    {47000, 17000},
-    {63000, 20000},
-    {100000, 20000},
+    {23000, 8000},
+    {31000, 15000},
+    {39000, 17000},
+    {45000, 20000},
+    {63000, 22000},
+    /*{100000, 20000},*/
+    {100000, BW_MAX},
     {0    , 0},
 };
 
@@ -106,9 +108,9 @@ typedef struct _bit_thr_cof_t{
 
 static bit_thr_cof_t bit_thr_cof[] = 
 {
-    {16000, 0.5},
-    {24000, 0.5},
-    {32000, 0.6},
+    {16000, 0.4},
+    {24000, 0.4},
+    {32000, 0.5},
     {38000, 0.6},
     {48000, 0.7},
     {64000, 1.3},
@@ -118,7 +120,26 @@ static bit_thr_cof_t bit_thr_cof[] =
     {180000, 7},
     {0    , 0},
 
+};
 
+typedef struct _adj_cof_t {
+    int bit_rate;
+    float adj;
+} adj_cof_t;
+
+static adj_cof_t adj_cof[] = 
+{
+    {16000, 0.4},
+    {24000, 0.4},
+    {32000, 0.35},
+    {40000, 0.3},
+    {48000, 0.2},
+    {64000, 0},
+    {80000, -0.2},
+    {100000, -0.25},
+    {120000, -0.3},
+    {180000, -0.4},
+    {0    , 0},
 };
 
 static int get_bandwidth(int chn, int sample_rate, int bit_rate) 
@@ -143,9 +164,11 @@ static int get_bandwidth(int chn, int sample_rate, int bit_rate)
         bandwidth = 5000;
 
     if (bandwidth == 0)
-        bandwidth = 20000;
+        /*bandwidth = 20000;*/
+        bandwidth = BW_MAX;
     /*printf("bandwidth = %d\n", bandwidth);*/
-    assert(bandwidth > 0 && bandwidth <= 20000);
+    /*assert(bandwidth > 0 && bandwidth <= 20000);*/
+    assert(bandwidth > 0 && bandwidth <= BW_MAX);
 
     return bandwidth;
 
@@ -176,6 +199,35 @@ static float get_bit_thr_cof(int chn, int sample_rate, int bit_rate)
 
     return thr_cof;
 }
+
+
+static float get_adj_cof(int chn, int sample_rate, int bit_rate)
+{
+    int i;
+    float adj;
+    int tmpbitrate;
+    int bandwidth;
+    float ratio;
+
+    ratio = (float) 48000/sample_rate;
+    tmpbitrate = bit_rate * ratio;
+    tmpbitrate = tmpbitrate/chn;
+
+    for (i = 0; i < adj_cof[i].bit_rate; i++) {
+        if (adj_cof[i].bit_rate >= tmpbitrate)
+            break;
+    }
+
+    if (i > 0)
+        adj = adj_cof[i-1].adj;
+    else 
+        adj = 0.0;
+
+    return adj;
+}
+
+
+
 
 static int get_cutoff_line(int sample_rate, int fmax_line_offset, int bandwidth)
 {
@@ -227,6 +279,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
     int bits_res_maxsize;
     int real_band_width;
     float bits_thr_cof;
+    float adj;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)malloc(sizeof(fa_aacenc_ctx_t));
 
     chn_info_t chn_info_tmp[MAX_CHANNELS];
@@ -259,13 +312,15 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
     f->band_width = get_bandwidth(chn_num, sample_rate, bit_rate);
     bits_thr_cof  = get_bit_thr_cof(chn_num, sample_rate, bit_rate);
+    adj = get_adj_cof(chn_num, sample_rate, bit_rate);
     /*printf("bits thr cof=%f\n", bits_thr_cof);*/
 
     if (speed_level > 5) {
         if (f->band_width > 10000)
             f->band_width = 10000;
     }
-    if (band_width >= 5000 && band_width <= 20000) {
+    /*if (band_width >= 5000 && band_width <= 20000) {*/
+    if (band_width >= 5000 && band_width <= BW_MAX) {
         if (band_width < f->band_width)
             f->band_width = band_width;
     }
@@ -342,6 +397,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].up = 0;
         f->ctx[i].step_down_db = 0.0;
         f->ctx[i].bit_thr_cof = bits_thr_cof;
+        f->ctx[i].adj         = adj;
 
         f->ctx[i].num_window_groups = 1;
         f->ctx[i].window_group_length[0] = 1;
@@ -424,7 +480,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         f->ctx[i].quant_ok = 0;
 
-        if (f->band_width < 20000) {
+        /*if (f->band_width < 20000) {*/
+        if (f->band_width < BW_MAX) {
             if (time_resolution_first)
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.8);
             else 

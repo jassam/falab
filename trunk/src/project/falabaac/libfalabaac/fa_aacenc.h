@@ -104,6 +104,7 @@ typedef struct _aacenc_ctx_t{
     float Ti[8][FA_SWB_NUM_MAX];
     float Ti1[8][FA_SWB_NUM_MAX];
     float G[8][FA_SWB_NUM_MAX];
+    float adj;
     int   *Pt_long;
     int   *Pt_short;
     fa_qpdf_para_t qp;

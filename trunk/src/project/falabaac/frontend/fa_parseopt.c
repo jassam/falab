@@ -36,13 +36,15 @@
 
 #include "fa_parseopt.h"
 
+/*#define BW_MAXS  20*/
+#define BW_MAXS  22
 
 /*global option vaule*/
 char  opt_inputfile[256]  = "";
 char  opt_outputfile[256] = "";
 int   opt_bitrate = 128;
 int   opt_speedlevel = 2;
-int   opt_bandwidth = 20;
+int   opt_bandwidth = BW_MAXS;
 int   opt_lfeenable = 0;
 int   opt_time_resolution_first = 0;
 
@@ -190,8 +192,9 @@ static int fa_checkopt(int argc)
         return -1;
     }
  
-    if(opt_bandwidth > 20 || opt_bandwidth < 5)  {
-        FA_PRINT_ERR("FAIL: out of range, should be in [5,20] kHz\n");
+    if(opt_bandwidth > BW_MAXS || opt_bandwidth < 5)  {
+        /*FA_PRINT_ERR("FAIL: out of range, should be in [5,20] kHz\n");*/
+        FA_PRINT_ERR("FAIL: out of range, should be in [5,22] kHz\n");
         return -1;
     }
          
