@@ -134,6 +134,7 @@ enum {
 enum {
     QUANTIZE_LOOP = 0,
     QUANTIZE_FAST,
+    QUANTIZE_BEST,
 };
 
 typedef struct _fa_aacenc_ctx_t{

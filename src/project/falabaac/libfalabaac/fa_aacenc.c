@@ -302,12 +302,15 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
             break;
         case QUANTIZE_FAST:
             f->quantize_method = QUANTIZE_FAST;
-            /*f->do_quantize = fa_quantize_fast;*/
+            f->do_quantize = fa_quantize_fast;
+            break;
+        case QUANTIZE_BEST:
+            f->quantize_method = QUANTIZE_FAST;
             f->do_quantize = fa_quantize_best;
             break;
         default:
-            f->quantize_method = QUANTIZE_LOOP;
-            f->do_quantize = fa_quantize_loop;
+            f->quantize_method = QUANTIZE_BEST;
+            f->do_quantize = fa_quantize_best;
 
     }
 
@@ -475,6 +478,7 @@ void fa_aacenc_uninit(uintptr_t handle)
 }
 
 #define SPEED_LEVEL_MAX  6 
+#if 0
 static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
                                 {1,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //1
@@ -484,6 +488,18 @@ static int speed_level_tab[SPEED_LEVEL_MAX][6] =
                                 {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //5
                                 {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //same, but bw=10k
                             };
+#else 
+static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
+                            { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
+                                {1,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //1
+                                {1,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //2
+                                {1,       0,        1,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //3
+                                {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //4
+                                {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //5
+                                {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //same, but bw=10k
+                            };
+
+#endif
 
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
                          int mpeg_version, int aac_objtype, int lfe_enable,
@@ -698,7 +714,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             if (block_switch_en) {
             /*if (0) { //(block_switch_en) {*/
                 f->do_blockswitch(s);
-#if 1 
+#if 0 
                 /*if (s->block_type == 2)*/
                 if (s->block_type != 0)
                     printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
@@ -732,13 +748,11 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             /*if (speed_level == 2 || speed_level == 3) */
                 /*fa_calculate_scalefactor_win(s, xmin);*/
         } else {
-#if 1 
-            if (speed_level < 4) {
+            if (speed_level < 5) {
                 fa_fastquant_calculate_sfb_avgenergy(s);
                 fa_fastquant_calculate_xmin(s, s->xmin);
-                fa_calculate_scalefactor_win(s, s->xmin);
+                /*fa_calculate_scalefactor_win(s, s->xmin);*/
             }
-#endif
         }
 
         if (tns_enable && (!s->chn_info.lfe))

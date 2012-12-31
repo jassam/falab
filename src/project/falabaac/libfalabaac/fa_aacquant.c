@@ -756,11 +756,8 @@ void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
     int end;
     int lastsb;
 
-    float enmax = -1.0;
-    float lmax;
     float tmp;
     float energy;
-    /*float thr;*/
 
     memset(xmin, 0, sizeof(float)*8*NUM_SFB_MAX);
 
@@ -770,6 +767,7 @@ void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
         swb_high = fs->swb_high;
 
         for (k = 0; k < 8; k++) {
+
             lastsb = 0;
             for (i = 0; i < swb_num; i++) {
                 if (s->lastx[k] > swb_low[i])
@@ -791,18 +789,7 @@ void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
                     energy += tmp * tmp;
                 }
 
-#if 0
-                thr = energy/(s->avgenergy[k] * (end-start));
-                thr = pow(thr, 0.1*(lastsb-i)/lastsb + 0.3);
-                tmp = 1.0 - ((float)start/(float)s->lastx[k]);
-                tmp = tmp * tmp * tmp + 0.075;
-                thr = 1.0 / (1.4*thr + tmp);
-
-                xmin[k][i] = 1.12 * thr * globalthr;
-#else 
-                xmin[k][i] = energy/20;
-
-#endif
+                xmin[k][i] = energy/9;
             }
         }
     } else {
@@ -825,44 +812,13 @@ void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
             start = swb_low[i];
             end   = swb_high[i]+1;
 
-            enmax = -1.0;
-            lmax  = start;
-            for (j = start; j < end; j++) {
-                tmp = s->mdct_line[j];
-                tmp = tmp * tmp;
-                if (enmax < tmp) {
-                    enmax = tmp;
-                    lmax  = j;
-                }
-            }
-
-            start = lmax - 2;
-            end   = lmax + 3;
-            if (start < 0)
-                start = 0;
-            if (end > s->lastx[0])
-                end = s->lastx[0];
-            if (end > swb_high[i] + 1)
-                end = swb_high[i] + 1;
-
             energy = 0.0;
             for (j = start; j < end; j++) {
                 tmp = s->mdct_line[j];
                 energy += tmp * tmp;
             }
 
-#if 0
-            thr = energy/(s->avgenergy[0] * (end-start));
-            thr = pow(thr, 0.1*(lastsb-i)/lastsb + 0.3);
-            tmp = 1.0 - ((float)start/(float)s->lastx[0]);
-            tmp = tmp * tmp * tmp + 0.075;
-            thr = 1.0 / (1.4*thr + tmp);
-
-            xmin[0][i] = 1.12 * thr * globalthr;
-#else 
-            xmin[0][i] = energy/20;
-#endif
-
+            xmin[0][i] = energy/7;
         }
     }
 

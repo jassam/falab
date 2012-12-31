@@ -41,7 +41,7 @@
 char  opt_inputfile[256]  = "";
 char  opt_outputfile[256] = "";
 int   opt_bitrate = 128;
-int   opt_speedlevel = 3;
+int   opt_speedlevel = 2;
 int   opt_bandwidth = 20;
 int   opt_lfeenable = 0;
 int   opt_time_resolution_first = 0;
@@ -61,7 +61,7 @@ const char *default_set =
 "\n\n"
 "No argument input, run by default settings\n"
 "    --bitrate    [128 kbps]\n"
-"    --speedlevel [3]\n"
+"    --speedlevel [2]\n"
 "    --bandwidth  [auto]\n"
 "\n\n";
 
@@ -72,7 +72,7 @@ const char *short_help =
 "    -i <inputfile>       Set input filename                               [eg: test.wav]\n"
 "    -o <outputfile>      Set output filename                              [eg: test_out.aac]\n"
 "    -b <bitrate>         Set bitrate(kbps)                                [eg: -b 128]\n"
-"    -l <speedlevel>      Set speed level(1~6)                             [eg: -l 3]\n"
+"    -l <speedlevel>      Set speed level(1~6)                             [eg: -l 2]\n"
 "    -w <bandwidth>       Set band width(kHz, 5~20kHz valid)               [eg: -w 10]\n"
 "    -e <lfeenable>       Set the LFE encode enable(0 or 1)                [eg: -e 1]\n"
 "    -t <time_resolution> Set the encoder use time resolution first(0 or 1)[eg: -t 1]\n"
@@ -88,7 +88,7 @@ const char *long_help =
 "    -i <inputfile>       Set input filename                               [eg: test.wav]\n"
 "    -o <outputfile>      Set output filename                              [eg: test_out.aac]\n"
 "    -b                   Set bitrate(kbps)                                [eg: -b 128]\n"
-"    -l <speedlevel>      Set speed level(1~6)                             [eg: -l 3]\n"
+"    -l <speedlevel>      Set speed level(1~6)                             [eg: -l 2]\n"
 "    -w <bandwidth>       Set band width(kHz, 5~20kHz valid)               [eg: -w 10]\n"
 "    -e <lfeenable>       Set the LFE encode enable(0 or 1)                [eg: -e 1]\n"
 "    -t <time_resolution> Set the encoder use time resolution first(0 or 1)[eg: -t 1]\n"
