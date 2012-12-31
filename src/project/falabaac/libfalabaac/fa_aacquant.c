@@ -1261,7 +1261,7 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
             for (i = 0; i < swb_num; i++) {
                 kmin = swb_low[i];
                 kmax = swb_high[i];
-                sf = fa_estimate_sf_fast(1.0*s->Ti[k][i], s->pdft[k][i]);
+                sf = fa_estimate_sf_fast(1.1*s->Ti[k][i], s->pdft[k][i]);
                 /*s->common_scalefac = FA_MAX(s->common_scalefac, sf);*/
                 gl = FA_MAX(gl, sf);
                 s->scalefactor_win[k][i] = sf; 
@@ -1272,7 +1272,7 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
         for (k = 0; k < 8; k++) {
             for (i = 0; i < swb_num; i++) {
                 s->scalefactor_win[k][i] = s->common_scalefac - s->scalefactor_win[k][i];
-                /*s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], 40);*/
+                s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], 0);
             }
         }
 
@@ -1281,8 +1281,8 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
                 for (win = 0; win < s->window_group_length[gr]; win++) {
                     scalefactor = s->scalefactor_win[win][i];
                     s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);
-                    /*s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], scalefactor);*/
-                    /*s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], 40);*/
+                    /*printf("sf=%d\n", s->scalefactor[gr][i]);*/
+                    s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], 25);
                 }
             }
         }
@@ -1701,7 +1701,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
         calculate_pow_miu(s);
     }
 
-    max_loop_cnt = 4;//7;
+    max_loop_cnt = 10; //4;//7;
     cur_cnt = 0;
     while (1) {
         cur_cnt++;
