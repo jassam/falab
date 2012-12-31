@@ -431,13 +431,17 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
         f->ctx[i].quant_ok = 0;
 
-        /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
-        /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
-        if (f->band_width < 20000)
-            fa_quantqdf_para_init(&(f->ctx[i].qp), 0.93);
-        else 
-            fa_quantqdf_para_init(&(f->ctx[i].qp), 1.0);
-        /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.8);*/
+        if (f->band_width < 20000) {
+            if (time_resolution_first)
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.85);
+            else 
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.93);
+        } else { 
+            if (time_resolution_first)
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
+            else 
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 1.0);
+        }
     }
 
     /*f->bitres_maxsize = get_aac_bitreservoir_maxsize(f->cfg.bit_rate, f->cfg.sample_rate);*/
@@ -593,15 +597,15 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
         s->window_group_length[7] = 0;
 #else 
         /*just for test different group length result*/
-        s->num_window_groups = 2;
-        s->window_group_length[0] = 4;
-        s->window_group_length[1] = 4;
-        s->window_group_length[2] = 0;
-        s->window_group_length[3] = 0;
-        s->window_group_length[4] = 0;
-        s->window_group_length[5] = 0;
-        s->window_group_length[6] = 0;
-        s->window_group_length[7] = 0;
+        s->num_window_groups = 8;
+        s->window_group_length[0] = 1;
+        s->window_group_length[1] = 1;
+        s->window_group_length[2] = 1;
+        s->window_group_length[3] = 1;
+        s->window_group_length[4] = 1;
+        s->window_group_length[5] = 1;
+        s->window_group_length[6] = 1;
+        s->window_group_length[7] = 1;
 #endif
         fa_mdctline_sfb_arrange(s->h_mdctq_short, s->mdct_line, 
                 s->num_window_groups, s->window_group_length);

@@ -156,6 +156,7 @@ void  fa_protect_db_rom_init()
 #endif
 
     /*44k short*/
+#if 0 
     for (i = 0; i < 14; i++) {
         if (i < 1)
             fa_protect_db_44k_short[i] = 8;
@@ -166,6 +167,19 @@ void  fa_protect_db_rom_init()
         else 
             fa_protect_db_44k_short[i] = 0;
     }
+#else 
+    for (i = 0; i < 14; i++) {
+        if (i < 1)
+            fa_protect_db_44k_short[i] = 8;
+        else if (i < 2)
+            fa_protect_db_44k_short[i] = 3;
+        else if (i < 11) 
+            fa_protect_db_44k_short[i] = 2;
+        else 
+            fa_protect_db_44k_short[i] = 0;
+    }
+
+#endif
 
     /*32k long*/
     for (i = 0; i < 51; i++) {
@@ -380,11 +394,13 @@ void fa_adjust_thr(int subband_num,
 
     mi = FA_MAX(mi, 0);
 
+#if  1 
+
     for (s = 0; s < subband_num; s++) {
         if (Px[s] <= Tm[s]) {                           //masked by thr
             Ti[s] = Px[s];
         } else {                                        //unmasked 
-            if ((Ti[s] - Tm[s]) < 4.0) {                //high SNR, use constant NMR adjust
+            if ((Ti[s] - Tm[s]) < 7.0) {                //high SNR, use constant NMR adjust
                 /*assert(Ti[s] >= Tm[s]);*/
                 Ti1_tmp = Ti[s] + r1;
                 Ti[s]   = FA_MIN(Ti1_tmp, G[s]);
@@ -400,6 +416,33 @@ void fa_adjust_thr(int subband_num,
             }
         }
     }
+#else 
+
+    for (s = 0; s < subband_num; s++) {
+        if (Px[s] <= Tm[s]) {                           //masked by thr
+            Ti[s] = Px[s];
+            /*printf("-----------ttx\n");*/
+        } else {                                        //unmasked 
+            if ((Ti[s] - Tm[s]) < 15.0) {                //high SNR, use constant NMR adjust
+                /*assert(Ti[s] >= Tm[s]);*/
+                Ti1_tmp = Ti[s] + r1;
+                /*Ti[s]   = Ti1_tmp;*/
+                Ti[s]   = FA_MIN(Ti1_tmp, G[s]);
+                Ti[s]   = FA_MAX(Ti[s], Tm[s]);
+                Ti1[s]  = Ti1_tmp;
+                /*printf("-----------tt0\n");*/
+            } else if (Ti[s] < G[s]) {                  //low SNR, use water-filling adjust
+                Ti1_tmp = mi+r1;//FA_MAX(Ti1[s], mi+r1);
+                Ti[s]   = Ti1_tmp; //FA_MIN(Ti1_tmp, G[s]);
+                /*printf("-----------tt1\n");*/
+            } else {                                    //very low SNR, small constant adjust
+                Ti[s] += r2;
+                /*printf("-----------tt2\n");*/
+            }
+        }
+    }
+
+#endif
 
 }
 

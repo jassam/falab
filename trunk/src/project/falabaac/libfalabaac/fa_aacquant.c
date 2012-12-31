@@ -1261,22 +1261,28 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
             for (i = 0; i < swb_num; i++) {
                 kmin = swb_low[i];
                 kmax = swb_high[i];
-                sf = fa_estimate_sf_fast(0.97*s->Ti[k][i], s->pdft[k][i]);
+                sf = fa_estimate_sf_fast(1.0*s->Ti[k][i], s->pdft[k][i]);
                 /*s->common_scalefac = FA_MAX(s->common_scalefac, sf);*/
                 gl = FA_MAX(gl, sf);
                 s->scalefactor_win[k][i] = sf; 
             }
-            for (i = 0; i < swb_num; i++)
-                s->scalefactor_win[k][i] = gl - s->scalefactor_win[k][i];
             s->common_scalefac = FA_MAX(s->common_scalefac, gl);
+        }
+
+        for (k = 0; k < 8; k++) {
+            for (i = 0; i < swb_num; i++) {
+                s->scalefactor_win[k][i] = s->common_scalefac - s->scalefactor_win[k][i];
+                /*s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], 40);*/
+            }
         }
 
         for (gr = 0; gr < s->num_window_groups; gr++) {
             for (i = 0; i < fs->sfb_num; i++) {
                 for (win = 0; win < s->window_group_length[gr]; win++) {
                     scalefactor = s->scalefactor_win[win][i];
-                    /*s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);*/
-                    s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], scalefactor);
+                    s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);
+                    /*s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], scalefactor);*/
+                    /*s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], 40);*/
                 }
             }
         }
@@ -1462,8 +1468,15 @@ static float choose_stepsize_db(int delta_bits, float cof)
 		step = 1;
 	else if (delta_bits < 1000*cof)
 		step = 3;
+#if 0 
 	else 
 		step = 4;
+#else 
+	else if (delta_bits < 1500*cof)
+        step = 4;
+	else 
+		step = 6;
+#endif
 
 	return step;
 
@@ -1738,6 +1751,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         for (i = 0; i < chn_num; i++) {
             s = &(f->ctx[i]);
+            /*printf("adj direction sup=%d\n", s->up);*/
             adjust_noise_thr(s);
         }
     }
