@@ -37,11 +37,12 @@
 void fa_quantize_loop(fa_aacenc_ctx_t *f);
 void fa_quantize_fast(fa_aacenc_ctx_t *f);
 void fa_quantize_best(fa_aacenc_ctx_t *f);
-void fa_quantize_best1(fa_aacenc_ctx_t *f);
 
 void fa_calculate_scalefactor_win(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX]);
 
 void fa_fastquant_calculate_sfb_avgenergy(aacenc_ctx_t *s);
 void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX]);
+
+void fa_adjust_scalefactor(fa_aacenc_ctx_t *f);
 
 #endif
