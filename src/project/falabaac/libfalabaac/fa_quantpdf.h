@@ -47,15 +47,19 @@ extern int fa_protect_db_32k_long[51];
 extern int fa_protect_db_32k_short[14];
 
 
+#ifdef __cplusplus 
+extern "C"
+{ 
+#endif  
 
 void  fa_protect_db_rom_init();
 float fa_get_subband_power(float *X, int kmin, int kmax);
 float fa_get_subband_abspower(float *X, int kmin, int kmax);
 float fa_get_subband_sqrtpower(float *X, int kmin, int kmax);
-void fa_get_subband_abssqrtpower(float *X, int kmin, int kmax, float *Px1, float *Px2);
+void  fa_get_subband_abssqrtpower(float *X, int kmin, int kmax, float *Px1, float *Px2);
 
 float fa_get_scaling_para(int scale_factor);
-int fa_mpeg_round(float x);
+int   fa_mpeg_round(float x);
 float fa_inverse_error_func(float alpha);
 float fa_get_pdf_beta(float alpha);
 int   fa_estimate_sf(float T, int K, float beta,
@@ -63,9 +67,15 @@ int   fa_estimate_sf(float T, int K, float beta,
 int   fa_estimate_sf_fast(float T, float t);
 float fa_pow2db(float power);
 float fa_db2pow(float db);
-void fa_adjust_thr(int subband_num, 
-                   float *Px, float *Tm, float *G, 
-                   float *Ti, float *Ti1);
-void fa_quantqdf_para_init(fa_qpdf_para_t *f, float alpha);
+void  fa_adjust_thr(int subband_num, 
+                    float *Px, float *Tm, float *G, 
+                    float *Ti, float *Ti1);
+void  fa_quantqdf_para_init(fa_qpdf_para_t *f, float alpha);
+
+#ifdef __cplusplus 
+}
+#endif  
+
+
 
 #endif
