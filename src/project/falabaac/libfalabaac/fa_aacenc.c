@@ -360,7 +360,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
             f->do_quantize = fa_quantize_fast;
             break;
         case QUANTIZE_BEST:
-            f->quantize_method = QUANTIZE_FAST;
+            f->quantize_method = QUANTIZE_BEST;
             f->do_quantize = fa_quantize_best;
             break;
         default:
