@@ -216,7 +216,8 @@ int fa_mpeg_round(float x)
     if (x > 0) {
         rx = (int)(x + 0.4054);
     } else {
-        rx = -1 * (int)(-x + 0.4054);
+        /*rx = -1 * (int)(-x + 0.4054);*/
+        rx = -1 * (int)(-x - 0.4054);
     }
 
     return rx;

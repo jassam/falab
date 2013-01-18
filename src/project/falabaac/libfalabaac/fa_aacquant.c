@@ -1220,20 +1220,35 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
                 kmin = swb_low[i];
                 kmax = swb_high[i];
                 /*sf = fa_estimate_sf_fast(1.1*s->Ti[k][i], s->pdft[k][i]);*/
-                sf = fa_estimate_sf_fast((1.1+adj)*s->Ti[0][i], s->pdft[0][i]);
+                /*sf = fa_estimate_sf_fast((0.9+adj)*s->Ti[k][i], s->pdft[k][i]);*/
+                sf = fa_estimate_sf_fast((1.0)*s->Ti[k][i], s->pdft[k][i]);
                 /*s->common_scalefac = FA_MAX(s->common_scalefac, sf);*/
                 gl = FA_MAX(gl, sf);
                 s->scalefactor_win[k][i] = sf; 
             }
+
+            for (i = 0; i < swb_num; i++) {
+                s->scalefactor_win[k][i] = gl - s->scalefactor_win[k][i];
+                /*printf("sf[%d][%d]=%d\t", k,i,s->scalefactor_win[k][i]);*/
+                s->scalefactor_win[k][i] = FA_MAX(s->scalefactor_win[k][i], 0);
+                /*s->scalefactor_win[k][i] = FA_MIN(s->scalefactor_win[k][i], 40);*/
+                /*s->scalefactor_win[k][i] = FA_MAX(s->scalefactor_win[k][i], s->start_common_scalefac);*/
+            }
+
             s->common_scalefac = FA_MAX(s->common_scalefac, gl);
         }
 
+        /*printf("gl=%d\n", s->common_scalefac);*/
+#if  0 
         for (k = 0; k < 8; k++) {
             for (i = 0; i < swb_num; i++) {
                 s->scalefactor_win[k][i] = s->common_scalefac - s->scalefactor_win[k][i];
-                s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], 0);
+                /*printf("sf[%d][%d]=%d\t", k,i,s->scalefactor_win[k][i]);*/
+                s->scalefactor_win[k][i] = FA_MAX(s->scalefactor_win[k][i], 0);
             }
         }
+        /*printf("\n");*/
+#endif
 
         for (gr = 0; gr < s->num_window_groups; gr++) {
             for (i = 0; i < fs->sfb_num; i++) {
@@ -1241,7 +1256,7 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
                     scalefactor = s->scalefactor_win[win][i];
                     s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);
                     /*printf("sf=%d\n", s->scalefactor[gr][i]);*/
-                    s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], 25);
+                    /*s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], 25);*/
                 }
             }
         }
@@ -1255,7 +1270,19 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
             kmin = swb_low[i];
             kmax = swb_high[i];
             /*sf = fa_estimate_sf_fast(0.97*s->Ti[0][i], s->pdft[0][i]);*/
-            sf = fa_estimate_sf_fast((0.97+adj)*s->Ti[0][i], s->pdft[0][i]);
+#if 0
+            //sf = fa_estimate_sf_fast((0.97+adj)*s->Ti[0][i], s->pdft[0][i]);
+#else 
+            if (i < 24)
+                sf = fa_estimate_sf_fast((0.6+adj)*s->Ti[0][i], s->pdft[0][i]);
+            else if (i < 31)
+                sf = fa_estimate_sf_fast((0.8+adj)*s->Ti[0][i], s->pdft[0][i]);
+            else if (i < 42)
+                sf = fa_estimate_sf_fast((1.2+adj)*s->Ti[0][i], s->pdft[0][i]);
+            else
+                sf = fa_estimate_sf_fast((1.3+adj)*s->Ti[0][i], s->pdft[0][i]);
+#endif
+            /*sf = fa_estimate_sf_fast((0.8+adj)*s->Ti[0][i], s->pdft[0][i]);*/
             s->common_scalefac = FA_MAX(s->common_scalefac, sf);
             s->scalefactor[0][i] = sf; 
         }
@@ -1297,7 +1324,7 @@ static void init_pdf_para(aacenc_ctx_t *s)
                 s->Px[k][i] = 10*FA_LOG10(tmp);
                 s->Tm[k][i] = 10*FA_LOG10(s->xmin[k][i]);
                 s->Tm[k][i] = FA_MAX(s->Tm[k][i], 0);
-                s->G[k][i]  = s->Px[k][i] - s->Pt_long[i];
+                s->G[k][i]  = s->Px[k][i] - s->Pt_short[i];
                 s->G[k][i]  = FA_MAX(s->G[k][i], 0);
 
                 s->Ti[k][i] = s->xmin[k][i];
