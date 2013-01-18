@@ -520,7 +520,8 @@ int  fa_fix_quant_noise_couple(uintptr_t handle1, uintptr_t handle2,
         else 
             energy_err_ok[gr] = 0;
 
-        if (sfb_scale_cnt[gr] >= sfb_num) {
+        /*if (sfb_scale_cnt[gr] >= sfb_num) {*/
+        if (sfb_scale_cnt[gr] >= sfb_num*window_group_length[gr]) {
             sfb_allscale[gr] = 1;
             /*recover the scalefactor*/
             for (sfb = 0; sfb < sfb_num; sfb++) {
@@ -750,6 +751,7 @@ void fa_mdctline_sfb_arrange(uintptr_t handle, float *mdct_line_swb,
     int sfb;
     int index;
 
+#if 0
     k = 0;
     group_offset = 0;
     /*order rearrage:  swb[gr][win][sfb][k] ---> sfb[gr][sfb][win][k]*/
@@ -765,6 +767,27 @@ void fa_mdctline_sfb_arrange(uintptr_t handle, float *mdct_line_swb,
         }
         group_offset += mdct_line_num * window_group_length[gr];
     }
+
+#else 
+    group_offset = 0;
+    /*order rearrage:  swb[gr][win][sfb][k] ---> sfb[gr][sfb][win][k]*/
+    for (gr = 0; gr < num_window_groups; gr++) {
+        k = 0;
+        for (swb = 0; swb < sfb_num; swb++) {
+            swb_width = swb_high[swb] - swb_low[swb] + 1;
+            for (win = 0; win < window_group_length[gr]; win++) {
+                for (i = 0; i < swb_width; i++) {
+                    index = group_offset + swb_low[swb] + win*mdct_line_num + i;
+                    mdct_line_sfb[group_offset+k] = mdct_line_swb[index];
+                    k++;
+                }
+            }
+        }
+        group_offset += mdct_line_num * window_group_length[gr];
+    }
+
+
+#endif
 
     /*calcualte sfb width and sfb_low and sfb_high*/
     group_offset = 0;

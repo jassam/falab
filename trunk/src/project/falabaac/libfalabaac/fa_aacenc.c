@@ -703,6 +703,8 @@ static void scalefactor_recalculate(fa_aacenc_ctx_t *f, int chn_num)
         for (gr = 0; gr < s->num_window_groups; gr++) {
             for (sfb = 0; sfb < sfb_num; sfb++) {
                 s->scalefactor[gr][sfb] = s->common_scalefac - s->scalefactor[gr][sfb] + GAIN_ADJUST + SF_OFFSET;
+                s->scalefactor[gr][sfb] = FA_MAX(s->scalefactor[gr][sfb], 0);
+                s->scalefactor[gr][sfb] = FA_MIN(s->scalefactor[gr][sfb], 255);
             }
         }
         s->common_scalefac = s->scalefactor[0][0];

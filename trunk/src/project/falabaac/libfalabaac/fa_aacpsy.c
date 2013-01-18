@@ -37,7 +37,7 @@ typedef struct _fa_aacpsy_t {
     int   sample_rate;
 
     uintptr_t h_psy2_long;
-    uintptr_t h_psy2_short;
+    uintptr_t h_psy2_short[8];
 
     float mag_prev1_long[AAC_BLOCK_LONG_LEN];
     float mag_prev2_long[AAC_BLOCK_LONG_LEN];
@@ -57,6 +57,7 @@ typedef struct _fa_aacpsy_t {
 
 uintptr_t fa_aacpsy_init(int sample_rate)
 {
+    int i;
     fa_aacpsy_t *f = (fa_aacpsy_t *)malloc(sizeof(fa_aacpsy_t));
 
     memset(f, 0, sizeof(fa_aacpsy_t));
@@ -70,7 +71,8 @@ uintptr_t fa_aacpsy_init(int sample_rate)
             f->h_psy2_long  = fa_psychomodel2_init(FA_PSY_32k_LONG_NUM,fa_psy_32k_long_wlow,fa_psy_32k_long_barkval,fa_psy_32k_long_qsthr,
                                                    FA_SWB_32k_LONG_NUM,fa_swb_32k_long_offset,
                                                    AAC_BLOCK_LONG_LEN); 
-            f->h_psy2_short = fa_psychomodel2_init(FA_PSY_32k_SHORT_NUM,fa_psy_32k_short_wlow,fa_psy_32k_short_barkval,fa_psy_32k_short_qsthr,
+            for (i = 0; i < 8; i++)
+            f->h_psy2_short[i] = fa_psychomodel2_init(FA_PSY_32k_SHORT_NUM,fa_psy_32k_short_wlow,fa_psy_32k_short_barkval,fa_psy_32k_short_qsthr,
                                                    FA_SWB_32k_SHORT_NUM,fa_swb_32k_short_offset,
                                                    AAC_BLOCK_SHORT_LEN); 
             break;
@@ -78,15 +80,17 @@ uintptr_t fa_aacpsy_init(int sample_rate)
             f->h_psy2_long  = fa_psychomodel2_init(FA_PSY_44k_LONG_NUM,fa_psy_44k_long_wlow,fa_psy_44k_long_barkval,fa_psy_44k_long_qsthr,
                                                    FA_SWB_44k_LONG_NUM,fa_swb_44k_long_offset,
                                                    AAC_BLOCK_LONG_LEN); 
-            f->h_psy2_short = fa_psychomodel2_init(FA_PSY_44k_SHORT_NUM,fa_psy_44k_short_wlow,fa_psy_44k_short_barkval,fa_psy_44k_short_qsthr,
-                                                   FA_SWB_44k_SHORT_NUM,fa_swb_44k_short_offset,
-                                                   AAC_BLOCK_SHORT_LEN); 
+            for (i = 0; i < 8; i++)
+                f->h_psy2_short[i] = fa_psychomodel2_init(FA_PSY_44k_SHORT_NUM,fa_psy_44k_short_wlow,fa_psy_44k_short_barkval,fa_psy_44k_short_qsthr,
+                                                       FA_SWB_44k_SHORT_NUM,fa_swb_44k_short_offset,
+                                                       AAC_BLOCK_SHORT_LEN); 
             break;
         case 48000:
             f->h_psy2_long  = fa_psychomodel2_init(FA_PSY_48k_LONG_NUM,fa_psy_48k_long_wlow,fa_psy_48k_long_barkval,fa_psy_48k_long_qsthr,
                                                    FA_SWB_48k_LONG_NUM,fa_swb_48k_long_offset,
                                                    AAC_BLOCK_LONG_LEN); 
-            f->h_psy2_short = fa_psychomodel2_init(FA_PSY_48k_SHORT_NUM,fa_psy_48k_short_wlow,fa_psy_48k_short_barkval,fa_psy_48k_short_qsthr,
+            for (i = 0; i < 8; i++)
+            f->h_psy2_short[i] = fa_psychomodel2_init(FA_PSY_48k_SHORT_NUM,fa_psy_48k_short_wlow,fa_psy_48k_short_barkval,fa_psy_48k_short_qsthr,
                                                    FA_SWB_48k_SHORT_NUM,fa_swb_48k_short_offset,
                                                    AAC_BLOCK_SHORT_LEN); 
             break;
@@ -229,7 +233,7 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
         pe_sum = 0;
         for (win = 0; win < 8; win++) {
             xp = x + AAC_BLOCK_TRANS_LEN + win*128;
-            fa_psychomodel2_calculate_pe(f->h_psy2_short, xp, &pe);
+            fa_psychomodel2_calculate_pe(f->h_psy2_short[win], xp, &pe);
             pe_sum += pe;
         }
     } else {
@@ -246,8 +250,14 @@ void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type
     fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
 
     if (block_type == ONLY_SHORT_BLOCK) {
+#if 1 
         for (k = 0; k < 8; k++) 
-            fa_psychomodel2_calculate_xmin(f->h_psy2_short, mdct_line+k*AAC_BLOCK_SHORT_LEN, &(xmin[k][0]));
+            fa_psychomodel2_calculate_xmin(f->h_psy2_short[k], mdct_line+k*AAC_BLOCK_SHORT_LEN, &(xmin[k][0]));
+#else 
+        for (k = 0; k < 8; k++) 
+            fa_psychomodel2_calculate_xmin(f->h_psy2_short, mdct_line+AAC_BLOCK_TRANS_LEN+k*AAC_BLOCK_SHORT_LEN, &(xmin[k][0]));
+
+#endif
     } else {
         fa_psychomodel2_calculate_xmin(f->h_psy2_long, mdct_line, &(xmin[0][0]));
     }
