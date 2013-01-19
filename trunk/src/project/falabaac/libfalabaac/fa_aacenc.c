@@ -362,6 +362,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         case QUANTIZE_BEST:
             f->quantize_method = QUANTIZE_BEST;
             f->do_quantize = fa_quantize_best;
+            /*f->do_quantize = fa_quantize_loop;*/
             break;
         default:
             f->quantize_method = QUANTIZE_BEST;
@@ -484,11 +485,13 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         if (f->band_width < BW_MAX) {
             if (time_resolution_first)
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.8);
+                /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);*/
             else 
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.93);
         } else { 
             if (time_resolution_first)
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.85);
+                /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
             else 
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 1.0);
         }
@@ -539,7 +542,7 @@ static int speed_level_tab[SPEED_LEVEL_MAX][6] =
 static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
                                 {1,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //1
-                                {1,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //2
+                                {1,       1,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //2
                                 {1,       0,        1,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //3
                                 {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //4
                                 {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //5
@@ -660,6 +663,7 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
         s->window_group_length[7] = 0;
 #else 
         /*just for test different group length result*/
+    #if  0 
         s->num_window_groups = 8;
         s->window_group_length[0] = 1;
         s->window_group_length[1] = 1;
@@ -669,6 +673,18 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
         s->window_group_length[5] = 1;
         s->window_group_length[6] = 1;
         s->window_group_length[7] = 1;
+    #else 
+        s->num_window_groups = 4;
+        s->window_group_length[0] = 2;
+        s->window_group_length[1] = 2;
+        s->window_group_length[2] = 2;
+        s->window_group_length[3] = 2;
+        s->window_group_length[4] = 0;
+        s->window_group_length[5] = 0;
+        s->window_group_length[6] = 0;
+        s->window_group_length[7] = 0;
+
+    #endif
 #endif
         fa_mdctline_sfb_arrange(s->h_mdctq_short, s->mdct_line, 
                 s->num_window_groups, s->window_group_length);

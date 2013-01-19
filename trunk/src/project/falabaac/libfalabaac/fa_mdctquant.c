@@ -602,6 +602,8 @@ int fa_mdctline_iquantize(uintptr_t handle,
     return 0;
 }
 
+#if  0 
+
 void fa_balance_energe(uintptr_t handle,
                        int num_window_groups, int *window_group_length,
                        int common_scalefac, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
@@ -709,6 +711,131 @@ void fa_balance_energe(uintptr_t handle,
     }
 
 }
+
+
+#else 
+
+void fa_balance_energe(uintptr_t handle,
+                       int num_window_groups, int *window_group_length,
+                       int common_scalefac, int scalefactor[NUM_WINDOW_GROUPS_MAX][NUM_SFB_MAX], 
+                       int *x_quant)
+{
+    fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
+    int i;
+
+    int gr, win;
+    int sfb;
+    int sfb_num;
+    int *swb_low, *swb_high;
+    int swb_width;
+
+    float *mdct_line;
+
+    float tmp;
+
+    /*const float ifqstep = pow(2.0, 0.25);*/
+    /*const float logstep_1 = 1.0 / log2(ifqstep);*/
+    const float qstep = 1./0.25;
+    float inv_x_quant;
+    float inv_cof;
+
+    float en0, enq;
+    float en0t, enqt;
+    int   shift;
+
+    int group_offset;
+    int index;
+    int k;
+
+    int mdct_line_num = f->mdct_line_num;
+
+    sfb_num  = f->sfb_num;
+    swb_low  = f->swb_low;
+    swb_high = f->swb_high;
+
+    mdct_line    = f->mdct_line;
+
+    /*calculate error_energy*/
+    group_offset = 0;
+    for (gr = 0; gr < num_window_groups; gr++) {
+        en0t = 0.0;
+        enqt = 0.0;
+        k = 0;
+        for (sfb = 0; sfb < sfb_num; sfb++) {
+            swb_width = swb_high[sfb] - swb_low[sfb] + 1;
+            en0 = 0.0;
+            enq = 0.0;
+            for (win = 0; win < window_group_length[gr]; win++) {
+                int tmp_xq;
+                for (i = 0; i < swb_width; i++) {
+                    index = group_offset + k; 
+                    /*inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));*/
+                    inv_cof = rom_inv_cof[common_scalefac - scalefactor[gr][sfb]+255];
+                    tmp_xq = FA_ABS(x_quant[index]);
+                    /*inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof;*/
+                    inv_x_quant = (float)(fa_iqtable[tmp_xq] * inv_cof);
+
+                    tmp = FA_ABS(mdct_line[index]) - inv_x_quant;
+                    en0 += mdct_line[index] * mdct_line[index];
+                    enq += inv_x_quant * inv_x_quant;
+                    k++;
+                }
+
+            }
+#if 1
+            if ((enq == 0.0) || (en0 == 0.0))
+                continue;
+            /*shift = (int)(log2(sqrt(enq / en0)) * logstep_1 + 1000.5);*/
+#if 1 
+            shift = (int)(FA_LOG2(FA_SQRTF(enq / en0)) * qstep + 1000.5);
+            shift -= 1000;
+#else 
+            shift = (int)(FA_LOG2(FA_SQRTF(enq / en0)) * qstep);
+#endif
+/*
+            if (shift > 4)
+                shift = 4;
+            if (shift < -2)
+                shift = -2;
+              */
+            /*printf("shift=%d\n", shift);*/
+
+            shift += scalefactor[gr][sfb];
+            scalefactor[gr][sfb] = shift;
+#else 
+            en0t += en0;
+            enqt += enq;
+#endif
+
+        }
+#if  0 
+        shift = (int)(log2(sqrt(enqt / en0t)) * qstep + 1000.5);
+        shift -= 1000;
+/*
+        if (shift > 1)
+            shift = 1;
+        if (shift < -1)
+            shift = -1;
+*/
+        /*printf("shift=%d\n", shift);*/
+
+        for (sfb = 0; sfb < sfb_num; sfb++) {
+            /*shift += scalefactor[gr][sfb];*/
+            /*scalefactor[gr][sfb] = shift;*/
+            scalefactor[gr][sfb] += shift;
+        }
+#endif
+
+        group_offset += mdct_line_num * window_group_length[gr];
+    }
+
+}
+
+
+
+
+
+#endif
 
 
 
