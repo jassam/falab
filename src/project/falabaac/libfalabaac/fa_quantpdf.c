@@ -109,13 +109,13 @@ void  fa_protect_db_rom_init()
     /*44k short*/
     for (i = 0; i < 14; i++) {
         if (i < 1)
-            fa_protect_db_44k_short[i] = 7;
+            fa_protect_db_44k_short[i] = 9;//7;
         else if (i < 2)
-            fa_protect_db_44k_short[i] = 3;
+            fa_protect_db_44k_short[i] = 8;//3;
         else if (i < 11) 
-            fa_protect_db_44k_short[i] = 2;
+            fa_protect_db_44k_short[i] = 7;//2;
         else 
-            fa_protect_db_44k_short[i] = 0;
+            fa_protect_db_44k_short[i] = 5;//0;
     }
 
     /*32k long*/
@@ -326,7 +326,7 @@ void fa_adjust_thr(int subband_num,
         if (Px[s] <= Tm[s]) {                           //masked by thr
             Ti[s] = Px[s];
         } else {                                        //unmasked 
-            if ((Ti[s] - Tm[s]) < 7.0) {                //high SNR, use constant NMR adjust
+            if ((Ti[s] - Tm[s]) < 6.0) {                //high SNR, use constant NMR adjust
                 /*assert(Ti[s] >= Tm[s]);*/
                 Ti1_tmp = Ti[s] + r1;
                 Ti[s]   = FA_MIN(Ti1_tmp, G[s]);

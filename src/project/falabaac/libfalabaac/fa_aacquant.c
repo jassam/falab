@@ -1219,14 +1219,11 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
             for (i = 0; i < swb_num; i++) {
                 kmin = swb_low[i];
                 kmax = swb_high[i];
-                /*sf = fa_estimate_sf_fast(1.1*s->Ti[k][i], s->pdft[k][i]);*/
-                /*sf = fa_estimate_sf_fast((0.9+adj)*s->Ti[k][i], s->pdft[k][i]);*/
-                sf = fa_estimate_sf_fast((1.0)*s->Ti[k][i], s->pdft[k][i]);
-                /*s->common_scalefac = FA_MAX(s->common_scalefac, sf);*/
+                sf = fa_estimate_sf_fast((1.0+adj)*s->Ti[k][i], s->pdft[k][i]);
                 gl = FA_MAX(gl, sf);
                 s->scalefactor_win[k][i] = sf; 
             }
-
+#if 0 
             for (i = 0; i < swb_num; i++) {
                 s->scalefactor_win[k][i] = gl - s->scalefactor_win[k][i];
                 /*printf("sf[%d][%d]=%d\t", k,i,s->scalefactor_win[k][i]);*/
@@ -1234,17 +1231,19 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
                 /*s->scalefactor_win[k][i] = FA_MIN(s->scalefactor_win[k][i], 40);*/
                 /*s->scalefactor_win[k][i] = FA_MAX(s->scalefactor_win[k][i], s->start_common_scalefac);*/
             }
+#endif
 
             s->common_scalefac = FA_MAX(s->common_scalefac, gl);
         }
 
-        /*printf("gl=%d\n", s->common_scalefac);*/
-#if  0 
+        printf("gl=%d\n", s->common_scalefac);
+#if  1 
         for (k = 0; k < 8; k++) {
             for (i = 0; i < swb_num; i++) {
                 s->scalefactor_win[k][i] = s->common_scalefac - s->scalefactor_win[k][i];
                 /*printf("sf[%d][%d]=%d\t", k,i,s->scalefactor_win[k][i]);*/
                 s->scalefactor_win[k][i] = FA_MAX(s->scalefactor_win[k][i], 0);
+                /*s->scalefactor_win[k][i] = FA_MIN(s->scalefactor_win[k][i], 40);*/
             }
         }
         /*printf("\n");*/
@@ -1270,8 +1269,8 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
             kmin = swb_low[i];
             kmax = swb_high[i];
             /*sf = fa_estimate_sf_fast(0.97*s->Ti[0][i], s->pdft[0][i]);*/
-#if 0
-            //sf = fa_estimate_sf_fast((0.97+adj)*s->Ti[0][i], s->pdft[0][i]);
+#if 1 
+            sf = fa_estimate_sf_fast((0.97+adj)*s->Ti[0][i], s->pdft[0][i]);
 #else 
             if (i < 24)
                 sf = fa_estimate_sf_fast((0.6+adj)*s->Ti[0][i], s->pdft[0][i]);
