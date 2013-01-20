@@ -181,7 +181,6 @@ int fa_get_start_common_scalefac(float max_mdct_line)
 }
 
 
-
 void fa_mdctline_pow34(uintptr_t handle)
 {
     fa_mdctquant_t *f = (fa_mdctquant_t *)handle;
