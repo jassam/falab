@@ -107,16 +107,32 @@ void  fa_protect_db_rom_init()
     }
 
     /*44k short*/
+#if 1 
     for (i = 0; i < 14; i++) {
         if (i < 1)
             fa_protect_db_44k_short[i] = 9;//7;
         else if (i < 2)
-            fa_protect_db_44k_short[i] = 8;//3;
+            fa_protect_db_44k_short[i] = 7;//3;
         else if (i < 11) 
-            fa_protect_db_44k_short[i] = 7;//2;
+            fa_protect_db_44k_short[i] = 6;//2;
         else 
-            fa_protect_db_44k_short[i] = 5;//0;
+            fa_protect_db_44k_short[i] = 3;//0;
     }
+
+#else 
+    for (i = 0; i < 14; i++) {
+        if (i < 1)
+            fa_protect_db_44k_short[i] = 7;
+        else if (i < 2)
+            fa_protect_db_44k_short[i] = 3;
+        else if (i < 11) 
+            fa_protect_db_44k_short[i] = 2;
+        else 
+            fa_protect_db_44k_short[i] = 0;
+    }
+
+
+#endif
 
     /*32k long*/
     for (i = 0; i < 51; i++) {
@@ -283,7 +299,10 @@ int   fa_estimate_sf_fast(float T, float t)
     } else {
         sf = 0;
     }
-
+/*
+    if (sf < 0)
+        sf = 0;
+*/
     return sf;
 }
 

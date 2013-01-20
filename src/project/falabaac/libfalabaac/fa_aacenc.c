@@ -92,12 +92,12 @@ static rate_cutoff_t rate_cutoff[] =
 {
     {15000, 5000},
     {23000, 8000},
-    {31000, 15000},
-    {39000, 17000},
-    {45000, 20000},
-    {63000, 22000},
-    /*{100000, 20000},*/
-    {100000, BW_MAX},
+    {31000, 10000},
+    {39000, 13000},
+    {45000, 15000},
+    {63000, 16000},
+    {100000, 20000},
+    {120000, BW_MAX},
     {0    , 0},
 };
 
@@ -541,7 +541,7 @@ static int speed_level_tab[SPEED_LEVEL_MAX][6] =
 #else 
 static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
-                                {1,       0,        1,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //1
+                                {1,       1,        1,                    1,           BLOCKSWITCH_PSY,          QUANTIZE_BEST},  //1
                                 {1,       1,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //2
                                 {1,       0,        1,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //3
                                 {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //4

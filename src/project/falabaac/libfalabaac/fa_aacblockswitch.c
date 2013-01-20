@@ -46,7 +46,7 @@
 
 
 /*---------------------------------- psy blockswitch --------------------------------------------------*/
-#define SWITCH_PE  1000 //1800//1800 //300// 1800
+#define SWITCH_PE  350 //1000 //1800//1800 //300// 1800
 
 static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type)
 {
@@ -67,6 +67,7 @@ static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type)
         cur_coding_block_type = LONG_CODING_BLOCK;
     
     /*use prev coding block type and current coding block type to decide current block type*/
+#if 1 
     if (cur_coding_block_type == SHORT_CODING_BLOCK) {
         if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
             *cur_block_type = LONG_START_BLOCK;
@@ -78,6 +79,23 @@ static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type)
         if (prev_block_type == LONG_START_BLOCK || prev_block_type == ONLY_SHORT_BLOCK)
             *cur_block_type = LONG_STOP_BLOCK;
     }
+#else 
+
+    if (cur_coding_block_type == SHORT_CODING_BLOCK) {
+        if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+            *cur_block_type = LONG_START_BLOCK;
+        if (prev_block_type == LONG_START_BLOCK || prev_block_type == ONLY_SHORT_BLOCK)
+            *cur_block_type = ONLY_SHORT_BLOCK;
+    } else {
+        if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+            *cur_block_type = ONLY_LONG_BLOCK;
+        if (prev_block_type == LONG_START_BLOCK) // || prev_block_type == ONLY_SHORT_BLOCK)
+            *cur_block_type = ONLY_SHORT_BLOCK; //LONG_STOP_BLOCK;
+        if (prev_block_type == ONLY_SHORT_BLOCK)
+            *cur_block_type = LONG_STOP_BLOCK;
+    }
+
+#endif
 
 }
 
@@ -99,11 +117,11 @@ int fa_blockswitch_psy(aacenc_ctx_t *s)
     if (s->psy_enable) {
         s->block_type = aac_blockswitch_psy(s->block_type, s->pe);
         s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
-        s->bits_more  = s->bits_alloc - 10;//100;
+        s->bits_more  = s->bits_alloc + 10;//100;
     } else {
         s->block_type = ONLY_LONG_BLOCK;
         s->bits_alloc = s->bits_average;
-        s->bits_more  = s->bits_alloc - 10;//100;
+        s->bits_more  = s->bits_alloc;// - 10;//100;
     }
 
     return s->block_type;
