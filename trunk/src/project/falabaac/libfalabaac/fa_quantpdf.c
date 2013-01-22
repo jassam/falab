@@ -114,9 +114,9 @@ void  fa_protect_db_rom_init()
         else if (i < 2)
             fa_protect_db_44k_short[i] = 7;//3;
         else if (i < 11) 
-            fa_protect_db_44k_short[i] = 6;//2;
+            fa_protect_db_44k_short[i] = 7;//2;
         else 
-            fa_protect_db_44k_short[i] = 3;//0;
+            fa_protect_db_44k_short[i] = 0;//0;
     }
 
 #else 
@@ -219,6 +219,28 @@ void fa_get_subband_abssqrtpower(float *X, int kmin, int kmax, float *Px1, float
     *Px2 = tPx2;
 }
 
+void fa_get_subband_abssqrtpower_improve(float *X, int kmin, int kmax, float *Px1, float *Px2, float *Px3)
+{
+    int k;
+    float tmp;
+    float tPx1, tPx2, tPx3;
+
+    tPx1 = 0.0;
+    tPx2 = 0.0;
+    tPx3 = 0.0;
+    for (k = kmin; k <= kmax; k++) {
+        tmp = FA_ABS(X[k]);
+        tPx1 += tmp;
+        tPx2 += FA_SQRTF(tmp);
+        tPx3 += tmp*tmp;
+    }
+
+    *Px1 = tPx1;
+    *Px2 = tPx2;
+    *Px3 = tPx3;
+}
+
+
 
 float fa_get_scaling_para(int scale_factor)
 {
@@ -305,6 +327,26 @@ int   fa_estimate_sf_fast(float T, float t)
 */
     return sf;
 }
+
+int   fa_estimate_sf_fast_improve(float T, float t, float miu2)
+{
+    float ratio;
+    int sf;
+
+    if (t > 0) {
+        ratio = T/(t*sqrt(miu2*sqrt(miu2)));
+        sf = fa_mpeg_round((8./3.) * FA_LOG2(ratio) + 2 * FA_LOG2(miu2));
+    } else {
+        sf = 0;
+    }
+/*
+    if (sf < 0)
+        sf = 0;
+*/
+    return sf;
+}
+
+
 
 
 
