@@ -98,6 +98,7 @@ typedef struct _aacenc_ctx_t{
     //para for new quant method probility density function quantize method (quant pdf)
     float miu[8][FA_SWB_NUM_MAX];
     float miuhalf[8][FA_SWB_NUM_MAX];
+    float miu2[8][FA_SWB_NUM_MAX];
     float pdft[8][FA_SWB_NUM_MAX];
     float Px[8][FA_SWB_NUM_MAX];
     float Tm[8][FA_SWB_NUM_MAX];

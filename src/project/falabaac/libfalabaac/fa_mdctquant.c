@@ -300,7 +300,8 @@ void fa_mdctline_quantdirect(uintptr_t handle,
                 tmp = FA_ABS(f->xr_pow[i]);
                 tmp = tmp * cof_scale;
                 x_quant[i] = (int)(tmp);
-                if (mdct_line[i] > 0)
+                /*if (mdct_line[i] > 0)*/
+                if (mdct_line[i] < 0)
                     x_quant[i] = -x_quant[i];
 
                 if (x_quant[i] > 8191) {
@@ -768,8 +769,8 @@ void fa_balance_energe(uintptr_t handle,
                 int tmp_xq;
                 for (i = 0; i < swb_width; i++) {
                     index = group_offset + k; 
-                    /*inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));*/
-                    inv_cof = rom_inv_cof[common_scalefac - scalefactor[gr][sfb]+255];
+                    inv_cof = powf(2, 0.25*(common_scalefac - scalefactor[gr][sfb]));
+                    /*inv_cof = rom_inv_cof[common_scalefac - scalefactor[gr][sfb]+255];*/
                     tmp_xq = FA_ABS(x_quant[index]);
                     /*inv_x_quant = powf(tmp_xq, 4./3.) * inv_cof;*/
                     inv_x_quant = (float)(fa_iqtable[tmp_xq] * inv_cof);
