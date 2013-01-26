@@ -491,7 +491,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.93);
         } else { 
             if (time_resolution_first)
-                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.8);
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
                 /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
             else 
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 1.0);
@@ -652,7 +652,7 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
 
     /*use mdct transform*/
     if (s->block_type == ONLY_SHORT_BLOCK) {
-#if  0 
+#if  1 
         s->num_window_groups = 1;
         s->window_group_length[0] = 8;
         s->window_group_length[1] = 0;
