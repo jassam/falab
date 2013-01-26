@@ -293,20 +293,27 @@ void fa_mdctline_quantdirect(uintptr_t handle,
 #else 
     for (gr = 0; gr < num_window_groups; gr++) {
         for (sfb = 0; sfb < sfb_num; sfb++) {
-            /*cof_scale = pow(2, (3./16.) * (scalefactor[gr][sfb]-common_scalefac));*/
-            cof_scale = 1./rom_cof_quant[(scalefactor[gr][sfb]-common_scalefac)+255];
+            cof_scale = pow(2, (3./16.) * (scalefactor[gr][sfb]-common_scalefac));
+            /*cof_scale = 1./pow(2, (3./16.) * (scalefactor[gr][sfb]-common_scalefac));*/
+            /*cof_scale = 1./rom_cof_quant[(scalefactor[gr][sfb]-common_scalefac)+255];*/
+            /*cof_scale = rom_cof_quant[(scalefactor[gr][sfb]-common_scalefac)+255];*/
+            /*cof_scale = rom_cof_quant[(scalefactor[gr][sfb])+255];*/
+            /*cof_scale = 1./pow(2, (3./16.) * (scalefactor[gr][sfb]));*/
 
             for (i = f->sfb_low[gr][sfb]; i <= f->sfb_high[gr][sfb]; i++) {
                 tmp = FA_ABS(f->xr_pow[i]);
                 tmp = tmp * cof_scale;
                 x_quant[i] = (int)(tmp);
+                /*printf("xrpow=%f, sf=%d, tmp=%f,xq=%d\n", f->xr_pow[i], scalefactor[gr][sfb], tmp, x_quant[i]);*/
                 /*if (mdct_line[i] > 0)*/
                 if (mdct_line[i] < 0)
                     x_quant[i] = -x_quant[i];
 
                 if (x_quant[i] > 8191) {
+                    printf(">>>>\n");
                     x_quant[i] = 8191;
                 } else if(x_quant[i] < -8191) {
+                    printf("<<<<\n");
                     x_quant[i] = -8191;
                 }
 
