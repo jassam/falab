@@ -16,22 +16,17 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-  filename: fa_aacpsy.h 
+  filename: fa_psychomodel1.h 
   version : v1.0.0
-  time    : 2012/08/22 - 2012/10/05 
+  time    : 2012/07/16 - 2012/07/18  
   author  : luolongzhi ( falab2012@gmail.com luolongzhi@gmail.com )
   code URL: http://code.google.com/p/falab/
 
 */
 
 
-#ifndef _FA_AACPSY_H
-#define _FA_AACPSY_H 
-
-#include "fa_inttypes.h"
-#include "fa_swbtab.h"
-#include "fa_psychomodel1.h"
-#include "fa_psychomodel2.h"
+#ifndef _FA_PSYCHOMODEL_H
+#define _FA_PSYCHOMODEL_H
 
 #ifdef __cplusplus 
 extern "C"
@@ -39,23 +34,19 @@ extern "C"
 #endif  
 
 
-uintptr_t fa_aacpsy_init(int sample_rate);
+typedef unsigned uintptr_t;
 
-void update_psy_short_previnfo(uintptr_t handle, int index);
+#define CBANDS_NUM        25
 
-//reset previnfo
-void reset_psy_previnfo(uintptr_t handle);
+uintptr_t fa_psychomodel1_init(int fs, int fft_len);
+void fa_psychomodel1_uninit(uintptr_t handle);
+void fa_psy_global_threshold(uintptr_t handle, float *fft_buf, float *gth);
+void fa_psy_global_threshold_usemdct(uintptr_t handle, float *mdct_buf, float *gth);
 
-//the x must be 16bits sample quantize
-void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *pe_block);
-void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type, float xmin[8][FA_SWB_NUM_MAX]);
-
-void fa_aacpsy_calculate_xmin_usepsych1(uintptr_t handle, float *mdct_line, int block_type, float xmin[8][FA_SWB_NUM_MAX]);
 
 #ifdef __cplusplus 
 }
 #endif  
-
 
 
 #endif

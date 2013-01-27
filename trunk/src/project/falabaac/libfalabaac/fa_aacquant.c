@@ -1356,13 +1356,13 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
 #endif
         group_offset = 0;
         for (gr = 0; gr < s->num_window_groups; gr++) {
-            scalefactor = 0;//255;
             for (i = 0; i < fs->sfb_num; i++) {
+                /*s->scalefactor[gr][i] = 255;*/
                 for (win = 0; win < s->window_group_length[gr]; win++) {
                     scalefactor = s->scalefactor_win[group_offset+win][i];
                     s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);
                     /*printf("sf=%d\n", s->scalefactor[gr][i]);*/
-                    /*s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], scalefactor);*/
+                    s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], 0);
                 }
             }
             group_offset += s->window_group_length[gr];
@@ -1675,6 +1675,7 @@ static void mdctline_enc(fa_aacenc_ctx_t *f)
 
                         if (sl->block_type == ONLY_SHORT_BLOCK)
                             sl->step_down_db = sr->step_down_db = 0.5;
+                            /*sl->step_down_db = sr->step_down_db = choose_stepsize_db(delta_bits, s->bit_thr_cof);*/
                         else
                             sl->step_down_db = sr->step_down_db = choose_stepsize_db(delta_bits, s->bit_thr_cof);
                     }
@@ -1808,7 +1809,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
     calculate_start_common_scalefac(f);
 
-    max_loop_cnt = 15; //10; //4;//7;
+    max_loop_cnt = 40;//10; //4;//7;
     cur_cnt = 0;
     while (1) {
         cur_cnt++;
@@ -1842,7 +1843,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
             }
         }
 
-        /*fa_adjust_scalefactor(f);*/
+        fa_adjust_scalefactor(f);
         mdctline_enc(f);
         break;
 

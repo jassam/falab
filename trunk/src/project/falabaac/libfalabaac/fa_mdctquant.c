@@ -293,8 +293,8 @@ void fa_mdctline_quantdirect(uintptr_t handle,
 #else 
     for (gr = 0; gr < num_window_groups; gr++) {
         for (sfb = 0; sfb < sfb_num; sfb++) {
-            cof_scale = pow(2, (3./16.) * (scalefactor[gr][sfb]-common_scalefac));
-            /*cof_scale = 1./pow(2, (3./16.) * (scalefactor[gr][sfb]-common_scalefac));*/
+            /*cof_scale = pow(2, (3./16.) * (scalefactor[gr][sfb]-common_scalefac));*/
+            cof_scale = 1./pow(2, (3./16.) * (common_scalefac - scalefactor[gr][sfb]));
             /*cof_scale = 1./rom_cof_quant[(scalefactor[gr][sfb]-common_scalefac)+255];*/
             /*cof_scale = rom_cof_quant[(scalefactor[gr][sfb]-common_scalefac)+255];*/
             /*cof_scale = rom_cof_quant[(scalefactor[gr][sfb])+255];*/

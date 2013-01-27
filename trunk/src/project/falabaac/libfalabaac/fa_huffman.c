@@ -61,7 +61,7 @@ void fa_huffman_rom_init()
 */
 static int calculate_esc_sequence(int input, int *len_esc_sequence)
 {
-#if 1 
+#if 0//1 
     float x, y;
     int   output;
     int   N;

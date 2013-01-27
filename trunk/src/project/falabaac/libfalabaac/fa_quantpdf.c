@@ -107,7 +107,7 @@ void  fa_protect_db_rom_init()
     }
 
     /*44k short*/
-#if 1 
+#if 0 
     for (i = 0; i < 14; i++) {
         if (i < 1)
             fa_protect_db_44k_short[i] = 9;//7;
@@ -122,9 +122,9 @@ void  fa_protect_db_rom_init()
 #else 
     for (i = 0; i < 14; i++) {
         if (i < 1)
-            fa_protect_db_44k_short[i] = 7;
+            fa_protect_db_44k_short[i] = 8;
         else if (i < 2)
-            fa_protect_db_44k_short[i] = 3;
+            fa_protect_db_44k_short[i] = 5;
         else if (i < 11) 
             fa_protect_db_44k_short[i] = 2;
         else 
