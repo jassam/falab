@@ -97,12 +97,12 @@ static float psd_estimate(float re, float im)
 }
 
 
-static float psd_estimate_usemdct(float mdct_line)
+static float psd_estimate_usemdct(float mdct_line, float cof)
 {
     float power;
     float psd;
 
-    power = (mdct_line * mdct_line)/64.; 
+    power = (mdct_line * mdct_line)/cof;
     /*use PSD_NORMALIZER to transform is to SPL estimation in dB*/
     psd = PSD_NORMALIZER + db_pos(power);
 
@@ -711,11 +711,13 @@ void fa_psy_global_threshold_usemdct(uintptr_t handle, float *mdct_buf, float *g
     int   frame_len;
     float re;
     fa_psychomodel1_t *f = (fa_psychomodel1_t *)handle;
+    float cof;
 
+    cof = (4. *  (float)f->psd_len)/1024.;
     /*step1: psd estimate and normalize to SPL*/
     for(k = 0; k < f->psd_len; k++) {
         re = mdct_buf[k];
-        f->psd[k] = psd_estimate_usemdct(re);
+        f->psd[k] = psd_estimate_usemdct(re, cof);
     }
     
     /*step2: tone and noise masker estimate*/

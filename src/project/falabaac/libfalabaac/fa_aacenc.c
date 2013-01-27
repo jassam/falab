@@ -132,8 +132,8 @@ static adj_cof_t adj_cof[] =
     {16000, 0.4},
     {24000, 0.4},
     {32000, 0.35},
-    {40000, 0.3},
-    {48000, 0.2},
+    {40000, 0.32},
+    {48000, 0.3},
     {64000, 0},
     {80000, -0.2},
     {100000, -0.25},
@@ -271,7 +271,7 @@ static void fa_aacenc_rom_init()
 
 uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                       int mpeg_version, int aac_objtype, int band_width, int speed_level,
-                      int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable, int psy_enable,
+                      int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable, int psy_enable, int psy_model,
                       int blockswitch_method, int quantize_method, int time_resolution_first)
 {
     int i;
@@ -309,6 +309,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
     f->block_switch_en = block_switch_enable;
     f->psy_enable      = psy_enable;
+    f->psy_model       = psy_model;
 
     f->band_width = get_bandwidth(chn_num, sample_rate, bit_rate);
     bits_thr_cof  = get_bit_thr_cof(chn_num, sample_rate, bit_rate);
@@ -565,6 +566,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     int blockswitch_method;
     int quantize_method;
     int psy_enable;
+    int psy_model;
 
     uintptr_t handle;
 
@@ -583,6 +585,8 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     tns_enable           = speed_level_tab[speed_index][1];
     block_switch_enable  = speed_level_tab[speed_index][2];
     psy_enable           = speed_level_tab[speed_index][3];
+    /*psy_model            = PSYCH1;*/
+    psy_model            = PSYCH2;
     blockswitch_method   = speed_level_tab[speed_index][4];
     quantize_method      = speed_level_tab[speed_index][5];
 
@@ -601,7 +605,7 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
     handle = aacenc_init(sample_rate, bit_rate*1000, chn_num,
                          mpeg_version, aac_objtype, band_width*1000, speed_level,
-                         ms_enable, lfe_enable, tns_enable, block_switch_enable, psy_enable,
+                         ms_enable, lfe_enable, tns_enable, block_switch_enable, psy_enable, psy_model,
                          blockswitch_method, quantize_method, time_resolution_first);
 
     return handle;
@@ -742,6 +746,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     int tns_enable;
     int block_switch_en;
     int psy_enable;
+    int psy_model;
     int speed_level;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)handle;
     aacenc_ctx_t *s;
@@ -762,6 +767,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
     block_switch_en = f->block_switch_en;
     psy_enable      = f->psy_enable;
+    psy_model       = f->psy_model;
 
     /*block switch and use filterbank to generate mdctline*/
     for (i = 0; i < chn_num; i++) {
@@ -809,9 +815,12 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         */
         if (psy_enable) {
             fa_aacfilterbank_get_xbuf(s->h_aac_analysis, sample_psy_buf);
-            /*fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);*/
-            /*fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);*/
-            fa_aacpsy_calculate_xmin_usepsych1(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);
+            if (psy_model == PSYCH1) {
+                fa_aacpsy_calculate_xmin_usepsych1(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);
+            } else {
+                fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);
+                fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);
+            }
             /*if (speed_level == 2 || speed_level == 3) */
                 /*fa_calculate_scalefactor_win(s, xmin);*/
         } else {

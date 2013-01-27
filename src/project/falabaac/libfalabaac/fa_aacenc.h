@@ -140,6 +140,11 @@ enum {
     QUANTIZE_BEST,
 };
 
+enum {
+    PSYCH1 = 0,
+    PSYCH2,
+};
+
 typedef struct _fa_aacenc_ctx_t{
 
     int speed_level;
@@ -148,6 +153,7 @@ typedef struct _fa_aacenc_ctx_t{
 
     int block_switch_en;
     int psy_enable;
+    int psy_model;
 
     aaccfg_t cfg;
 

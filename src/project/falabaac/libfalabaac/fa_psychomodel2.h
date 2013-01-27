@@ -42,6 +42,9 @@ uintptr_t fa_psychomodel2_init(int cbands_num, int *w_low, float *barkval, float
 void fa_psychomodel2_uninit(uintptr_t handle);
 void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe);
 void fa_psychomodel2_calculate_xmin(uintptr_t handle, float *mdct_line, float *xmin);
+void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
+                                          float tmn, float nmt, float nb_cof);
+void fa_psychomodel2_calculate_xmin_short(uintptr_t handle, float xmin[8][51]);
  
 
 void fa_psychomodel2_get_mag_prev1(uintptr_t handle, float *mag, int *len);
