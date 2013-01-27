@@ -530,7 +530,10 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
 #if 0
         tb = -0.299 - 0.43*log(cb[i]);
 #else 
-        tb = -0.299 - 0.43*FA_LOG(cb[i]);
+        if (cb[i] > 0)
+            tb = -0.299 - 0.43*FA_LOG(cb[i]);
+        else 
+            tb = 1;
 #endif
         if (tb < 0)
             tb = 0;
@@ -542,7 +545,9 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
         bc  = pow(10, -snr/10);
         nb[i] = en[i] * bc;
         /*nb[i] = FA_MAX(qsthr[i], FA_MIN(nb[i], nb_prev[i]));*/
-        nb[i] = FA_MAX(qsthr[i], nb[i]);
+        /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], nb_prev[i]));*/
+        nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), nb[i]);
+        /*nb[i] = FA_MAX(qsthr[i], nb[i]);*/
 
         nb_prev[i] = nb[i];
     }

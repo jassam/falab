@@ -33,8 +33,24 @@
 #include "fa_aacpsy.h"
 #include "fa_psytab.h"
 
+#ifndef FA_MIN
+#define FA_MIN(a,b)  ( (a) < (b) ? (a) : (b) )
+#endif 
+
+#ifndef FA_MAX
+#define FA_MAX(a,b)  ( (a) > (b) ? (a) : (b) )
+#endif
+
+#ifndef FA_ABS
+#define FA_ABS(a) ( (a) > 0 ? (a) : (-(a)))
+#endif
+
+
 typedef struct _fa_aacpsy_t {
     int   sample_rate;
+
+    uintptr_t h_psy1_long;
+    uintptr_t h_psy1_short[8];
 
     uintptr_t h_psy2_long;
     uintptr_t h_psy2_short[8];
@@ -65,6 +81,10 @@ uintptr_t fa_aacpsy_init(int sample_rate)
     f->sample_rate = sample_rate;
     /*f->bit_alloc   = 0;*/
     /*f->block_type  = LONG_CODING_BLOCK;*/
+
+    f->h_psy1_long = fa_psychomodel1_init(sample_rate, 2048);
+    for (i = 0; i < 8; i++)
+        f->h_psy1_short[i] = fa_psychomodel1_init(sample_rate, 256);
 
     switch (sample_rate) {
         case 32000:
@@ -193,5 +213,33 @@ void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type
     } else {
         fa_psychomodel2_calculate_xmin(f->h_psy2_long, mdct_line, &(xmin[0][0]));
     }
+}
+
+void fa_aacpsy_calculate_xmin_usepsych1(uintptr_t handle, float *mdct_line, int block_type, float xmin[8][FA_SWB_NUM_MAX])
+{
+    int k;
+    int i,j;
+    fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
+    float gthr[1024];
+    int   swb_num    = FA_PSY_44k_LONG_NUM;
+    int   *swb_offset= fa_swb_44k_long_offset;
+
+    memset(gthr, 0, sizeof(float)*1024);
+    if (block_type == ONLY_SHORT_BLOCK) {
+        for (k = 0; k < 8; k++) {
+            fa_psy_global_threshold_usemdct(f->h_psy1_short[k], mdct_line+k*AAC_BLOCK_SHORT_LEN, gthr+k*AAC_BLOCK_SHORT_LEN);
+        }
+    } else {
+        fa_psy_global_threshold_usemdct(f->h_psy1_long, mdct_line, gthr);
+    }
+
+    for (i = 0; i < swb_num; i++) {
+        xmin[0][i] = 10000000000;
+        for (j = swb_offset[i]; j < swb_offset[i+1]; j++) {
+            xmin[0][i] = FA_MIN(xmin[0][i], gthr[j]);
+            /*printf("xmin[%d]=%f\n", j, xmin[0][i]);*/
+        }
+    }
+
 }
 

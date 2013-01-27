@@ -485,13 +485,13 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         /*if (f->band_width < 20000) {*/
         if (f->band_width < BW_MAX) {
             if (time_resolution_first)
-                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.7);
                 /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);*/
             else 
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.93);
         } else { 
             if (time_resolution_first)
-                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.8);
                 /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
             else 
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 1.0);
@@ -542,7 +542,7 @@ static int speed_level_tab[SPEED_LEVEL_MAX][6] =
 #else 
 static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
-                                {0,       1,        1,                    1,           BLOCKSWITCH_PSY,          QUANTIZE_BEST},  //1
+                                {1,       1,        1,                    1,           BLOCKSWITCH_PSY,          QUANTIZE_BEST},  //1
                                 {1,       1,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //2
                                 {1,       0,        1,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //3
                                 {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //4
@@ -809,8 +809,9 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         */
         if (psy_enable) {
             fa_aacfilterbank_get_xbuf(s->h_aac_analysis, sample_psy_buf);
-            fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);
-            fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);
+            /*fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);*/
+            /*fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);*/
+            fa_aacpsy_calculate_xmin_usepsych1(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);
             /*if (speed_level == 2 || speed_level == 3) */
                 /*fa_calculate_scalefactor_win(s, xmin);*/
         } else {
