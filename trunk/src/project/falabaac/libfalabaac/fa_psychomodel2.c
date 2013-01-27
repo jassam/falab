@@ -435,6 +435,7 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
     /*calculate fft frequence line*/
     for (i = 0; i < fft_len; i++) {
         fft_buf[i+i]   = x[i] * hanning_win[i];
+        /*fft_buf[i+i]   = (1./32767) *x[i] * hanning_win[i];*/
         fft_buf[i+i+1] = 0;
     }
 
@@ -541,11 +542,13 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
         if (tb > 1)
             tb = 1;
 
-        snr = tb*18 + (1-tb)*6;
+        /*snr = tb*18 + (1-tb)*6;*/
+        snr = tb*20 + (1-tb)*7;
         bc  = pow(10, -snr/10);
         nb[i] = en[i] * bc;
         /*nb[i] = FA_MAX(qsthr[i], FA_MIN(nb[i], nb_prev[i]));*/
         /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], nb_prev[i]));*/
+        /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), nb[i]);*/
         nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), nb[i]);
         /*nb[i] = FA_MAX(qsthr[i], nb[i]);*/
 
@@ -609,6 +612,229 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
     /*printf("\n\n");*/
 }
 
+void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
+                                          float tmn, float nmt, float nb_cof)
+{
+    int i,j;
+    fa_psychomodel2_t *f = (fa_psychomodel2_t *)handle;
+
+    float *hanning_win = f->hanning_win;
+    int   fft_len    = f->fft_len;
+    float *fft_buf   = f->fft_buf;
+    float *re        = f->re;
+    float *im        = f->im;
+    float *mag       = f->mag;
+    float *phi       = f->phi;
+    float *mag_pred  = f->mag_pred;
+    float *phi_pred  = f->phi_pred;
+    float *mag_prev1 = f->mag_prev1;
+    float *mag_prev2 = f->mag_prev2;
+    float *phi_prev1 = f->phi_prev1;
+    float *phi_prev2 = f->phi_prev2;
+    float *c         = f->c;
+
+    int   cbands_num = f->cbands_num;
+    float *group_e   = f->group_e;
+    float *group_c   = f->group_c;
+    int   *w_low     = f->w_low;
+
+    float *en        = f->en;
+    float *cb        = f->cb;
+
+    float *nb        = f->nb;
+    float *nb_prev   = f->nb_prev;
+    float *qsthr     = f->qsthr;
+
+    int   swb_num    = f->swb_num;
+    int   *swb_offset= f->swb_offset;
+    float *epart     = f->epart;
+    float *npart     = f->npart;
+    float *thrbin    = f->thrbin;
+    float *smr       = f->smr;
+
+    /*calculate fft frequence line*/
+    for (i = 0; i < fft_len; i++) {
+        fft_buf[i+i]   = x[i] * hanning_win[i];
+        /*fft_buf[i+i]   = (1./32767) * x[i] * hanning_win[i];*/
+        fft_buf[i+i+1] = 0;
+    }
+
+    fa_fft(f->h_fft, fft_buf);
+
+    /*calculate prediction mag and phi*/
+    for (i = 0; i < (fft_len>>1); i++) {
+        float tmp, tmp1, tmp2;
+#if 1 
+        re[i]  = fft_buf[i+i];
+        im[i]  = fft_buf[i+i+1];
+#else 
+        //2012-12-01
+        re[i]  = fft_buf[i+i]/fft_len;
+        im[i]  = fft_buf[i+i+1]/fft_len;
+#endif 
+
+#if 1 
+        mag[i] = sqrt(re[i]*re[i] + im[i]*im[i]);
+        phi[i] = atan2(im[i], re[i]);
+#else 
+        mag[i] = FA_SQRTF(re[i]*re[i] + im[i]*im[i]);
+        phi[i] = FA_ATAN2(im[i], re[i]);
+#endif
+
+        mag_pred[i] = 2*mag_prev1[i] - mag_prev2[i];
+        phi_pred[i] = 2*phi_prev1[i] - phi_prev2[i];
+#if 1 
+        tmp1   = re[i] - mag_pred[i] * cos(phi_pred[i]);
+        tmp2   = im[i] - mag_pred[i] * sin(phi_pred[i]);
+        tmp    = sqrt(tmp1*tmp1+tmp2*tmp2);
+        c[i]   = tmp/(mag[i] + fabs(mag_pred[i]));
+#else 
+        tmp1   = re[i] - mag_pred[i] * FA_COS(phi_pred[i]);
+        tmp2   = im[i] - mag_pred[i] * FA_SIN(phi_pred[i]);
+        tmp    = FA_SQRTF(tmp1*tmp1+tmp2*tmp2);
+        c[i]   = tmp/(mag[i] + FA_ABS(mag_pred[i]));
+#endif
+
+        mag_prev2[i] = mag_prev1[i];
+        mag_prev1[i] = mag[i];
+        phi_prev2[i] = phi_prev1[i];
+        phi_prev1[i] = phi[i];
+    }
+
+    /*calculate critical band grouped energy and unpreditable coffients*/
+    for (i = 0; i < cbands_num; i++) {
+        group_e[i] = 0;
+        group_c[i] = 0;
+        for (j = w_low[i]; j < w_low[i+1]; j++) {
+            float etmp;
+
+            etmp       = mag[j]*mag[j];
+            group_e[i] = group_e[i] + etmp;
+            group_c[i] = group_c[i] + etmp*c[j]; 
+        }
+    }
+
+    /*calculate each critical bands conv with spread function value*/
+    for (i = 0; i < cbands_num; i++) {
+        float ecb, ct;
+        float tmp;
+        float rnorm;
+
+        ecb   = 0;
+        ct    = 0;
+        tmp   = 0;
+        rnorm = 1;
+         
+        for (j = 0; j < cbands_num; j++) {
+            ecb = ecb + group_e[j]*f->spread_val[j][i];
+            ct  = ct  + group_c[j]*f->spread_val[j][i];
+            tmp = tmp + f->spread_val[j][i];
+        }
+
+        if (0 != tmp) 
+            rnorm = 1./tmp;
+        else 
+            rnorm = 1;
+
+        en[i] = ecb * rnorm;
+
+        if (0 != ecb)
+            cb[i] = ct/ecb;
+        else 
+            cb[i] = 0;
+    }
+
+    /*calculate tone index*/
+    for (i = 0; i < cbands_num; i++) {
+        float tb, snr, bc;
+
+#if 0
+        tb = -0.299 - 0.43*log(cb[i]);
+#else 
+        if (cb[i] > 0)
+            tb = -0.299 - 0.43*FA_LOG(cb[i]);
+        else 
+            tb = 1;
+#endif
+        if (tb < 0)
+            tb = 0;
+
+        if (tb > 1)
+            tb = 1;
+
+        /*snr = tb*18 + (1-tb)*6;*/
+        snr = tb*tmn + (1-tb)*nmt;
+        bc  = pow(10, -snr/10);
+        nb[i] = en[i] * bc;
+        /*nb[i] = FA_MAX(qsthr[i], FA_MIN(nb[i], nb_prev[i]));*/
+        /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], nb_prev[i]));*/
+        /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.))*nb_cof, nb[i]);*/
+        nb[i] = FA_MAX(pow(10., qsthr[i]/10.), nb[i]);
+        /*nb[i] = FA_MAX(qsthr[i], nb[i]);*/
+
+        nb_prev[i] = nb[i];
+    }
+
+    /*calculate pe*/
+    *pe = 0.;
+    for (i = 0; i < cbands_num; i++) {
+        float tmp;
+
+#if 0
+        tmp = FA_MIN(0, log10(nb[i]/(group_e[i]+1)));
+#else 
+/*
+        if (nb[i] > (group_e[i] + 1)) {
+            printf("nb=%f, group_e=%f, ratio=%f\n", nb[i], group_e[i], log10(nb[i]/(group_e[i]+1)));
+        }
+*/
+        tmp = FA_MIN(0, FA_LOG10(nb[i]/(group_e[i]+1)));
+        /*tmp = FA_LOG10(nb[i]/(group_e[i]+1));*/
+#endif
+        *pe  = *pe - (w_low[i+1]-1-w_low[i])*tmp;
+    }
+/*
+    if (*pe < 0.) {
+        printf("pe < 0, = %f\n", *pe);
+        *pe = 0.;
+    }
+*/
+    /*calculate epart*/
+    for (i = 0; i < swb_num; i++) {
+        epart[i] = 0;
+        for (j = swb_offset[i]; j < swb_offset[i+1]; j++)
+            epart[i] = epart[i] + mag[j]*mag[j];
+    }
+
+    /*calculate threshold of each frequence line and npart*/
+    for (i = 0; i < cbands_num; i++) {
+        for (j = w_low[i]; j < w_low[i+1]; j++)
+            thrbin[j] = nb[i]/(w_low[i+1]-w_low[i]);
+    }
+
+    for (i = 0; i < swb_num; i++) {
+        float tmp, tmpmin;
+        tmpmin = FA_MAG_MAX;
+        for (j = swb_offset[i]; j < swb_offset[i+1]; j++) {
+            tmp = FA_MIN(tmpmin, thrbin[j]);
+            if (tmp > 0)
+                tmpmin = tmp;
+        }
+        npart[i] = tmpmin*(swb_offset[i+1]-swb_offset[i]);
+    }
+
+    /*calculate smr*/
+    for (i = 0; i < swb_num; i++) {
+        smr[i] = epart[i]/npart[i];
+        /*printf("smr%d=%f", i, smr[i]);*/
+    }
+
+    /*printf("\n\n");*/
+}
+
+
+
+
 void fa_psychomodel2_calculate_xmin(uintptr_t handle, float *mdct_line, float *xmin)
 {
     int i,j;
@@ -634,6 +860,25 @@ void fa_psychomodel2_calculate_xmin(uintptr_t handle, float *mdct_line, float *x
         }
     }
 }
+
+void fa_psychomodel2_calculate_xmin_short(uintptr_t handle, float xmin[8][51])
+{
+    int i,j;
+    fa_psychomodel2_t *f = (fa_psychomodel2_t *)handle;
+
+    int   swb_num    = f->swb_num;
+    int   *swb_offset= f->swb_offset;
+
+    float xmin_tmp;
+    for (i = 0; i < swb_num; i++) {
+        xmin_tmp = 1000000000000.;
+        for (j = 0; j < 8; j++) {
+            xmin_tmp = FA_MIN(xmin_tmp, xmin[j][i]);
+        }
+        xmin[j][i] = xmin_tmp;
+    }
+}
+
 
 
 void fa_psychomodel2_get_mag_prev1(uintptr_t handle, float *mag, int *len)

@@ -151,11 +151,13 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
         pe_sum = 0;
         for (win = 0; win < 8; win++) {
             xp = x + AAC_BLOCK_TRANS_LEN + win*128;
-            fa_psychomodel2_calculate_pe(f->h_psy2_short[win], xp, &pe);
+            /*fa_psychomodel2_calculate_pe(f->h_psy2_short[win], xp, &pe);*/
+            fa_psychomodel2_calculate_pe_improve(f->h_psy2_short[win], xp, &pe, 22, 11, 1);
             pe_sum += pe;
         }
     } else {
-        fa_psychomodel2_calculate_pe(f->h_psy2_long , x, &pe);
+        /*fa_psychomodel2_calculate_pe(f->h_psy2_long , x, &pe);*/
+        fa_psychomodel2_calculate_pe_improve(f->h_psy2_long , x, &pe, 18, 6, 1);
         pe_sum = pe;
     }
 
@@ -205,6 +207,7 @@ void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type
             update_psy_short_previnfo(f, k);
             fa_psychomodel2_calculate_xmin(f->h_psy2_short[k], mdct_line+k*AAC_BLOCK_SHORT_LEN, &(xmin[k][0]));
         }
+        /*fa_psychomodel2_calculate_xmin_short(f->h_psy2_short[0], xmin);*/
 #else 
         for (k = 0; k < 8; k++) 
             fa_psychomodel2_calculate_xmin(f->h_psy2_short, mdct_line+AAC_BLOCK_TRANS_LEN+k*AAC_BLOCK_SHORT_LEN, &(xmin[k][0]));
@@ -221,25 +224,36 @@ void fa_aacpsy_calculate_xmin_usepsych1(uintptr_t handle, float *mdct_line, int 
     int i,j;
     fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
     float gthr[1024];
-    int   swb_num    = FA_PSY_44k_LONG_NUM;
-    int   *swb_offset= fa_swb_44k_long_offset;
+    int   swb_num;
+    int   *swb_offset;
 
     memset(gthr, 0, sizeof(float)*1024);
     if (block_type == ONLY_SHORT_BLOCK) {
+        swb_num    = FA_PSY_44k_SHORT_NUM;
+        swb_offset= fa_swb_44k_short_offset;
         for (k = 0; k < 8; k++) {
-            fa_psy_global_threshold_usemdct(f->h_psy1_short[k], mdct_line+k*AAC_BLOCK_SHORT_LEN, gthr+k*AAC_BLOCK_SHORT_LEN);
+            fa_psy_global_threshold_usemdct(f->h_psy1_short[k], mdct_line+k*AAC_BLOCK_SHORT_LEN, gthr);
+            for (i = 0; i < swb_num; i++) {
+                xmin[k][i] = 10000000000;
+                for (j = swb_offset[i]; j < swb_offset[i+1]; j++) {
+                    xmin[k][i] = FA_MIN(xmin[k][i], gthr[j]);
+                    /*printf("xmin[%d]=%f\n", j, xmin[0][i]);*/
+                }
+            }
         }
     } else {
         fa_psy_global_threshold_usemdct(f->h_psy1_long, mdct_line, gthr);
-    }
-
-    for (i = 0; i < swb_num; i++) {
-        xmin[0][i] = 10000000000;
-        for (j = swb_offset[i]; j < swb_offset[i+1]; j++) {
-            xmin[0][i] = FA_MIN(xmin[0][i], gthr[j]);
-            /*printf("xmin[%d]=%f\n", j, xmin[0][i]);*/
+        swb_num    = FA_PSY_44k_LONG_NUM;
+        swb_offset= fa_swb_44k_long_offset;
+        for (i = 0; i < swb_num; i++) {
+            xmin[0][i] = 10000000000;
+            for (j = swb_offset[i]; j < swb_offset[i+1]; j++) {
+                xmin[0][i] = FA_MIN(xmin[0][i], gthr[j]);
+                /*printf("xmin[%d]=%f\n", j, xmin[0][i]);*/
+            }
         }
-    }
 
+
+    }
 }
 

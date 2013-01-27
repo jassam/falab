@@ -1159,8 +1159,18 @@ static void calculate_pow_miu(aacenc_ctx_t *s)
                 width = kmax-kmin+1;
                 miu = s->miu[k][i] = tmp1/width;
                 miuhalf = s->miuhalf[k][i] = tmp2/width;
+#if  1 
                 a2 = s->qp.a2;
                 a4 = s->qp.a4;
+#else 
+                if (i <= 5) {
+                    a2 = 3*s->qp.a2;
+                    a4 = 9*s->qp.a4;
+                } else {
+                    a2 = s->qp.a2;
+                    a4 = s->qp.a4;
+                }
+#endif
                 diff = a4*miu - a2*a2*miuhalf*miuhalf; 
                 /*assert(diff>=0);*/
                 s->pdft[k][i] = width*a2*miuhalf+s->qp.beta*FA_SQRTF(2*width*diff);
@@ -1296,8 +1306,8 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
 #ifdef USE_PDF_IMPROVE
                 sf = fa_estimate_sf_fast_improve((2.0+adj*3)*s->Ti[k][i], s->pdft[k][i], s->miu2[k][i]);
 #else 
-                /*sf = fa_estimate_sf_fast((2.0+adj*3)*s->Ti[k][i], s->pdft[k][i]);*/
-                sf = fa_estimate_sf_fast((1.0)*s->Ti[k][i], s->pdft[k][i]);
+                sf = fa_estimate_sf_fast((2.0+adj*3)*s->Ti[k][i], s->pdft[k][i]);
+                /*sf = fa_estimate_sf_fast((1.0)*s->Ti[k][i], s->pdft[k][i]);*/
 #endif
                 /*assert(sf>=0);*/
                 gl = FA_MAX(gl, sf);
@@ -1333,12 +1343,12 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
                 /*printf("sgl=%d, gl=%d, sf[%d][%d]=%d\n", s->start_common_scalefac, s->common_scalefac, k,i,s->scalefactor_win[k][i]);*/
                 /*if (s->scalefactor_win[k][i] > 255)*/
                     /*assert(0);*/
-/*
+
                 tmp = s->common_scalefac-s->scalefactor_win[k][i];
                 if (tmp <= s->start_common_scalefac) {
                     s->scalefactor_win[k][i] = s->common_scalefac - s->start_common_scalefac;
                 }
-*/
+
 
                 /*s->scalefactor_win[k][i] = FA_MAX(s->scalefactor_win[k][i], 0);*/
 /*
@@ -1362,7 +1372,7 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
                     scalefactor = s->scalefactor_win[group_offset+win][i];
                     s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);
                     /*printf("sf=%d\n", s->scalefactor[gr][i]);*/
-                    s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], 0);
+                    /*s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], 40);*/
                 }
             }
             group_offset += s->window_group_length[gr];
@@ -1381,7 +1391,7 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
 #ifdef USE_PDF_IMPROVE
             sf = fa_estimate_sf_fast_improve((1.2+adj)*s->Ti[0][i], s->pdft[0][i], s->miu2[0][i]);
 #else 
-            sf = fa_estimate_sf_fast((1.2+adj)*s->Ti[0][i], s->pdft[0][i]);
+            sf = fa_estimate_sf_fast((1.0+adj)*s->Ti[0][i], s->pdft[0][i]);
 #endif
             s->common_scalefac = FA_MAX(s->common_scalefac, sf);
             s->scalefactor[0][i] = sf; 
@@ -1674,7 +1684,7 @@ static void mdctline_enc(fa_aacenc_ctx_t *f)
                         /*printf("delta bits=%d\n", delta_bits);*/
 
                         if (sl->block_type == ONLY_SHORT_BLOCK)
-                            sl->step_down_db = sr->step_down_db = 0.5;
+                            sl->step_down_db = sr->step_down_db = 0.3;
                             /*sl->step_down_db = sr->step_down_db = choose_stepsize_db(delta_bits, s->bit_thr_cof);*/
                         else
                             sl->step_down_db = sr->step_down_db = choose_stepsize_db(delta_bits, s->bit_thr_cof);
@@ -1809,7 +1819,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
     calculate_start_common_scalefac(f);
 
-    max_loop_cnt = 40;//10; //4;//7;
+    max_loop_cnt = 10; //4;//7;
     cur_cnt = 0;
     while (1) {
         cur_cnt++;
@@ -1845,7 +1855,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         fa_adjust_scalefactor(f);
         mdctline_enc(f);
-        break;
+        /*break;*/
 
         quant_ok_cnt = 0;
         for (i = 0; i < chn_num; i++) {
@@ -1863,7 +1873,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
             adjust_noise_thr(s);
         }
     }
-    /*printf("loop cnt = %d\n", cur_cnt);*/
+    printf("loop cnt = %d\n", cur_cnt);
 
 
 #if  0 
