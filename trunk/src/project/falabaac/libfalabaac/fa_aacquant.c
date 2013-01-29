@@ -1306,7 +1306,7 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
 #ifdef USE_PDF_IMPROVE
                 sf = fa_estimate_sf_fast_improve((2.0+adj*3)*s->Ti[k][i], s->pdft[k][i], s->miu2[k][i]);
 #else 
-                sf = fa_estimate_sf_fast((2.0+adj*3)*s->Ti[k][i], s->pdft[k][i]);
+                sf = fa_estimate_sf_fast((2.5+adj*3)*s->Ti[k][i], s->pdft[k][i]);
                 /*sf = fa_estimate_sf_fast((1.0)*s->Ti[k][i], s->pdft[k][i]);*/
 #endif
                 /*assert(sf>=0);*/
@@ -1391,14 +1391,26 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s)
 #ifdef USE_PDF_IMPROVE
             sf = fa_estimate_sf_fast_improve((1.2+adj)*s->Ti[0][i], s->pdft[0][i], s->miu2[0][i]);
 #else 
-            sf = fa_estimate_sf_fast((1.0+adj)*s->Ti[0][i], s->pdft[0][i]);
+            sf = fa_estimate_sf_fast((1.2+adj)*s->Ti[0][i], s->pdft[0][i]);
 #endif
             s->common_scalefac = FA_MAX(s->common_scalefac, sf);
             s->scalefactor[0][i] = sf; 
         }
 
-        for (i = 0; i < swb_num; i++)
+        for (i = 0; i < swb_num; i++) {
+            int tmp;
             s->scalefactor[0][i] = s->common_scalefac - s->scalefactor[0][i];
+
+            tmp = s->common_scalefac-s->scalefactor[0][i];
+            if (tmp <= s->start_common_scalefac) {
+                s->scalefactor[0][i] = s->common_scalefac - s->start_common_scalefac;
+                s->scalefactor[0][i] = FA_MIN(s->scalefactor[0][i], 20);
+                /*s->common_scalefac = s->scalefactor[0][i] + s->start_common_scalefac;*/
+            }
+
+
+
+        }
 
     }
 
@@ -1579,7 +1591,7 @@ static float choose_stepsize_db(int delta_bits, float cof)
 
 }
 
-static void mdctline_enc(fa_aacenc_ctx_t *f)
+static int mdctline_enc(fa_aacenc_ctx_t *f)
 {
     int i, chn;
     int chn_num;
@@ -1593,6 +1605,8 @@ static void mdctline_enc(fa_aacenc_ctx_t *f)
     int delta_bits;
     int delta_bits_total;
 
+    int total_bits;
+
     int bit_thr;
 
     chn_num = f->cfg.chn_num;
@@ -1601,6 +1615,8 @@ static void mdctline_enc(fa_aacenc_ctx_t *f)
     i = 0;
     chn = 1;
     delta_bits_total = 0;
+    total_bits = 0;
+
     while (i < chn_num) {
         s = &(f->ctx[i]);
         bit_thr = 160.0*s->bit_thr_cof;
@@ -1756,8 +1772,10 @@ static void mdctline_enc(fa_aacenc_ctx_t *f)
 
 
         i += chn;
+        total_bits += counted_bits;
     } 
 
+    return total_bits;
 
 }
 
@@ -1797,6 +1815,9 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
     int quant_ok_cnt;
     int max_loop_cnt;
     int cur_cnt;
+    int gl_adj;
+    int res_maxsize;
+    int cur_bits;
 
     chn_num = f->cfg.chn_num;
 
@@ -1816,16 +1837,25 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
         calculate_pow_miu(s);
 #endif
     }
+    res_maxsize = s->bits_res_maxsize;
 
     calculate_start_common_scalefac(f);
 
     max_loop_cnt = 10; //4;//7;
     cur_cnt = 0;
+    gl_adj = 0;
+    cur_bits = 0;
     while (1) {
         cur_cnt++;
 
-        if (cur_cnt > max_loop_cnt)
-            break;
+        if (cur_cnt > max_loop_cnt) {
+            if (cur_bits > res_maxsize) {
+                gl_adj++;
+                if (cur_cnt > 5)
+                    gl_adj += 2;
+            } else 
+                break;
+        }
 
         for (i = 0; i < chn_num; i++) {
             s = &(f->ctx[i]);
@@ -1835,6 +1865,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
                 memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
                 calculate_scalefactor_usepdf(s);
 
+                s->common_scalefac += gl_adj;
                 fa_mdctline_quantdirect(s->h_mdctq_short, 
                         s->common_scalefac,
                         s->num_window_groups, s->scalefactor,
@@ -1845,6 +1876,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
                 calculate_scalefactor_usepdf(s);
                 /*calculate_scalefactor_usespecific(s);*/
 
+                s->common_scalefac += gl_adj;
                 fa_mdctline_quantdirect(s->h_mdctq_long, 
                         s->common_scalefac,
                         s->num_window_groups, s->scalefactor,
@@ -1854,7 +1886,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
         }
 
         fa_adjust_scalefactor(f);
-        mdctline_enc(f);
+        cur_bits = mdctline_enc(f);
         /*break;*/
 
         quant_ok_cnt = 0;
@@ -1873,7 +1905,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
             adjust_noise_thr(s);
         }
     }
-    printf("loop cnt = %d\n", cur_cnt);
+    /*printf("loop cnt = %d\n", cur_cnt);*/
 
 
 #if  0 
