@@ -46,26 +46,35 @@
 
 
 /*---------------------------------- psy blockswitch --------------------------------------------------*/
-#define SWITCH_PE  350 //1000 //1800//1800 //300// 1800
+#define SWITCH_PE  1200 //2500 //1000 //1800//1800 //300// 1800
 
-static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type)
+static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type, uintptr_t h_aacpsy)
 {
-    /*int prev_coding_block_type;*/
+    int prev_coding_block_type;
     int cur_coding_block_type;
 
     /*get prev coding block type*/
-/*
+
     if (prev_block_type == ONLY_SHORT_BLOCK)
         prev_coding_block_type = SHORT_CODING_BLOCK;
     else 
         prev_coding_block_type = LONG_CODING_BLOCK;
-*/
+
     /*use pe to decide current coding block type*/
     if (pe > SWITCH_PE) 
         cur_coding_block_type = SHORT_CODING_BLOCK;
     else 
         cur_coding_block_type = LONG_CODING_BLOCK;
-    
+/*
+    if (cur_coding_block_type != prev_coding_block_type)
+        reset_psy_previnfo(h_aacpsy);
+*/
+/*
+    if (cur_coding_block_type == LONG_CODING_BLOCK && prev_coding_block_type == SHORT_CODING_BLOCK)
+        update_psy_short2long_previnfo(h_aacpsy);
+    if (cur_coding_block_type == SHORT_CODING_BLOCK && prev_coding_block_type == LONG_CODING_BLOCK)
+        update_psy_long2short_previnfo(h_aacpsy);
+*/
     /*use prev coding block type and current coding block type to decide current block type*/
 #if 1 
     if (cur_coding_block_type == SHORT_CODING_BLOCK) {
@@ -101,13 +110,13 @@ static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type)
 
 
 /*this function used in aac encode*/
-static int aac_blockswitch_psy(int block_type, float pe)
+static int aac_blockswitch_psy(int block_type, float pe, uintptr_t h_aacpsy)
 {
     int prev_block_type;
     int cur_block_type;
 
     prev_block_type = block_type;
-    blockswitch_pe(pe, prev_block_type, &cur_block_type);
+    blockswitch_pe(pe, prev_block_type, &cur_block_type, h_aacpsy);
 
     return cur_block_type;
 }
@@ -115,7 +124,7 @@ static int aac_blockswitch_psy(int block_type, float pe)
 int fa_blockswitch_psy(aacenc_ctx_t *s)
 {
     if (s->psy_enable) {
-        s->block_type = aac_blockswitch_psy(s->block_type, s->pe);
+        s->block_type = aac_blockswitch_psy(s->block_type, s->pe, s->h_aacpsy);
         s->bits_alloc = calculate_bit_allocation(s->pe, s->block_type);
         s->bits_more  = s->bits_alloc + 10;//100;
     } else {
@@ -419,3 +428,6 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 
 
 #endif
+
+
+

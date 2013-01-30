@@ -148,6 +148,8 @@ int main(int argc, char *argv[])
 
         frame_index++;
         fprintf(stderr,"\rthe frame = [%d]", frame_index);
+        /*if (frame_index == 423)*/
+            /*exit(0);*/
     }
 
     /*stop time count*/

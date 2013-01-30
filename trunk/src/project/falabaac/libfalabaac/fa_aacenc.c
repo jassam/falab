@@ -786,9 +786,9 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             if (block_switch_en) {
             /*if (0) { //(block_switch_en) {*/
                 f->do_blockswitch(s);
-#if 0 
-                /*if (s->block_type == 2)*/
-                if (s->block_type != 0)
+#if 1 
+                if (s->block_type == 2)
+                /*if (s->block_type != 0)*/
                     printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
 #endif
             } else {
@@ -831,7 +831,9 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             }
         }
 
-        if (tns_enable && (!s->chn_info.lfe))
+        if (tns_enable && (!s->chn_info.lfe) && (s->block_type == ONLY_SHORT_BLOCK))
+        /*if (tns_enable && (!s->chn_info.lfe) && (s->block_type != ONLY_LONG_BLOCK))*/
+        /*if (tns_enable && (!s->chn_info.lfe))*/
             fa_tns_encode_frame(s);
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/

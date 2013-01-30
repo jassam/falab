@@ -388,7 +388,7 @@ void fa_adjust_thr(int subband_num,
             Ti[s] = Px[s];
         } else {                                        //unmasked 
             /*if ((Ti[s] - Tm[s]) < 6.0) {                //high SNR, use constant NMR adjust*/
-            if ((Ti[s] - Tm[s]) < 7.0) {                //high SNR, use constant NMR adjust
+            if ((Ti[s] - Tm[s]) < 15.0) {                //high SNR, use constant NMR adjust
                 /*assert(Ti[s] >= Tm[s]);*/
                 Ti1_tmp = Ti[s] + r1;
                 Ti[s]   = FA_MIN(Ti1_tmp, G[s]);
