@@ -750,6 +750,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     int speed_level;
     fa_aacenc_ctx_t *f = (fa_aacenc_ctx_t *)handle;
     aacenc_ctx_t *s;
+    int block_type;
 
     speed_level = f->speed_level;
 
@@ -770,14 +771,11 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     psy_model       = f->psy_model;
 
     /*block switch and use filterbank to generate mdctline*/
+    block_type = ONLY_LONG_BLOCK;
+
+    /*should use cpe or sce to decide in the future*/
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
-
-        memset(s->xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
-
-        /*get the input sample*/
-        sample_buf = f->sample+i*AAC_FRAME_LEN;
-
 
         /*block switch */
         if (s->time_resolution_first) {
@@ -796,6 +794,27 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
                 /*s->block_type = ONLY_SHORT_BLOCK;*/
             }
         }
+
+        if (s->block_type == ONLY_SHORT_BLOCK) {
+            block_type = ONLY_SHORT_BLOCK;
+            break;
+        } else {
+            block_type = s->block_type;
+        }
+    }
+
+    for (i = 0; i < chn_num; i++) {
+        s = &(f->ctx[i]);
+        s->block_type = block_type;
+    }
+
+    for (i = 0; i < chn_num; i++) {
+        s = &(f->ctx[i]);
+
+        memset(s->xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
+
+        /*get the input sample*/
+        sample_buf = f->sample+i*AAC_FRAME_LEN;
 
         /*analysis*/
         fa_aacfilterbank_analysis(s->h_aac_analysis, s->block_type, &(s->window_shape),
@@ -821,8 +840,8 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
                 fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);
                 fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);
             }
-            /*if (speed_level == 2 || speed_level == 3) */
-                /*fa_calculate_scalefactor_win(s, xmin);*/
+            /*if (speed_level == 2 || speed_level == 3)*/
+                /*fa_calculate_scalefactor_win(s, s->xmin);*/
         } else {
             if (speed_level < 5) {
                 fa_fastquant_calculate_sfb_avgenergy(s);
@@ -831,9 +850,9 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             }
         }
 
-        if (tns_enable && (!s->chn_info.lfe) && (s->block_type == ONLY_SHORT_BLOCK))
+        /*if (tns_enable && (!s->chn_info.lfe) && (s->block_type == ONLY_SHORT_BLOCK))*/
         /*if (tns_enable && (!s->chn_info.lfe) && (s->block_type != ONLY_LONG_BLOCK))*/
-        /*if (tns_enable && (!s->chn_info.lfe))*/
+        if (tns_enable && (!s->chn_info.lfe))
             fa_tns_encode_frame(s);
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/
@@ -849,6 +868,10 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
     /*quantize*/
     f->do_quantize(f);
+    /*if (block_type == ONLY_SHORT_BLOCK)*/
+        /*fa_quantize_fast(f);*/
+    /*else */
+        /*fa_quantize_best(f);*/
 
     /* offset the difference of common_scalefac and scalefactors by SF_OFFSET  */
     scalefactor_recalculate(f, chn_num);

@@ -46,7 +46,7 @@
 
 
 /*---------------------------------- psy blockswitch --------------------------------------------------*/
-#define SWITCH_PE  1200 //2500 //1000 //1800//1800 //300// 1800
+#define SWITCH_PE  2500 //1000 //1800//1800 //300// 1800
 
 static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type, uintptr_t h_aacpsy)
 {

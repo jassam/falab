@@ -131,6 +131,7 @@ static int truncate_cof(int order, float threshold, float * kcof)
     int i;
 
     for (i = order; i >= 0; i--) {
+        /*printf("kcof[%d]=%f\n", i, kcof[i]);*/
         kcof[i] = (fabs(kcof[i])>threshold) ? kcof[i] : 0.0;
         if (kcof[i]!=0.0) return i;
     }
@@ -341,6 +342,7 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
             printf("tns error happen\n");
 */
         gain = fa_lpc(h_lpc, &(mdct_line[mdct_line_index]), mdct_line_len, acof, kcof, &err);
+        /*printf("w=%d, tns gain=%f\n", w, gain);*/
 
         if (gain > DEF_TNS_GAIN_THRESH) {
             int real_order;

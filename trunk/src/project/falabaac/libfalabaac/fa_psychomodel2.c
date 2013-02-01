@@ -767,7 +767,7 @@ void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
         bc  = pow(10, -snr/10);
         nb[i] = en[i] * bc;
         /*nb[i] = FA_MAX(qsthr[i], FA_MIN(nb[i], nb_prev[i]));*/
-#if 1 
+#if 0 
         if (fft_len < 1024) {
             if (i < 4)
                 nb[i] = FA_MAX((pow(10., qsthr[i]/10.))*1, FA_MIN(nb[i], nb_prev[i]));
@@ -792,7 +792,13 @@ void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
                 /*nb[i] = FA_MAX(pow(10., qsthr[i]/10.), nb[i]);*/
         }
 #else 
-        nb[i] = FA_MAX(pow(10., qsthr[i]/10.), nb[i]);
+        /*nb[i] = FA_MAX(pow(10., qsthr[i]/10.), nb[i]);*/
+        if (fft_len < 1024)
+            /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], 2*nb_prev[i]));*/
+            nb[i] = FA_MAX(qsthr[i], FA_MIN(nb[i], 1.4*nb_prev[i]));
+        else
+            /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], 1.4*nb_prev[i]));*/
+            nb[i] = FA_MAX(qsthr[i], FA_MIN(nb[i], 1.6*nb_prev[i]));
 #endif
         /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.))*nb_cof, nb[i]);*/
         /*nb[i] = FA_MAX(pow(10., qsthr[i]/10.), nb[i]);*/
