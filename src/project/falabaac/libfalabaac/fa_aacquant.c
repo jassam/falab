@@ -976,18 +976,17 @@ static void calculate_scalefactor(aacenc_ctx_t *s)
     } else {
         for (i = 0; i < fl->sfb_num; i++) {
             /*do not change the paremeters below, I tested, I think it is good, if change, maybe wores quality*/
-#if  1 
-            if (i < 40)
-                s->scalefactor[0][i] = FA_MIN(40, 15+s->scalefactor_win[0][i]);
-                /*s->scalefactor[0][i] = FA_MIN(70, 30+s->scalefactor_win[0][i]);*/
-            else 
-                s->scalefactor[0][i] = FA_MIN(45, 10+s->scalefactor_win[0][i]);
-                /*s->scalefactor[0][i] = FA_MIN(70, 35+s->scalefactor_win[0][i]);*/
-#else 
-            s->scalefactor[0][i] = FA_MIN(20, s->scalefactor_win[0][i]);
-            /*s->scalefactor[0][i] = s->scalefactor_win[0][i];*/
+/*#if  1 */
+            /*if (i < 40)*/
+                /*s->scalefactor[0][i] = FA_MIN(40, 15+s->scalefactor_win[0][i]);*/
+            /*else */
+                /*s->scalefactor[0][i] = FA_MIN(45, 10+s->scalefactor_win[0][i]);*/
+/*#else */
+            /*s->scalefactor[0][i] = FA_MIN(20, s->scalefactor_win[0][i]);*/
 
-#endif
+/*#endif*/
+
+            s->scalefactor[0][i] = s->scalefactor_win[0][i];
         }
         /*printf("\n\n");*/
     }
@@ -1306,8 +1305,8 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
 #ifdef USE_PDF_IMPROVE
                 sf = fa_estimate_sf_fast_improve((2.0+adj*3)*s->Ti[k][i], s->pdft[k][i], s->miu2[k][i]);
 #else 
-                sf = fa_estimate_sf_fast((2.5+adj*3+ti_adj)*s->Ti[k][i], s->pdft[k][i]);
-                /*sf = fa_estimate_sf_fast((1.0)*s->Ti[k][i], s->pdft[k][i]);*/
+                /*sf = fa_estimate_sf_fast((2.5+adj*3+ti_adj)*s->Ti[k][i], s->pdft[k][i]);*/
+                sf = fa_estimate_sf_fast((1.0+ti_adj)*s->Ti[k][i], s->pdft[k][i]);
 #endif
                 /*assert(sf>=0);*/
                 gl = FA_MAX(gl, sf);
@@ -1391,7 +1390,8 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
 #ifdef USE_PDF_IMPROVE
             sf = fa_estimate_sf_fast_improve((1.2+adj)*s->Ti[0][i], s->pdft[0][i], s->miu2[0][i]);
 #else 
-            sf = fa_estimate_sf_fast((1.2+adj+ti_adj)*s->Ti[0][i], s->pdft[0][i]);
+            /*sf = fa_estimate_sf_fast((1.2+adj+ti_adj)*s->Ti[0][i], s->pdft[0][i]);*/
+            sf = fa_estimate_sf_fast((1.0+ti_adj)*s->Ti[0][i], s->pdft[0][i]);
 #endif
             s->common_scalefac = FA_MAX(s->common_scalefac, sf);
             s->scalefactor[0][i] = sf; 
@@ -1850,7 +1850,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
     calculate_start_common_scalefac(f);
 
-    max_loop_cnt = 10; //4;//7;
+    max_loop_cnt = 20; //4;//7;
     cur_cnt = 0;
     gl_adj = 0;
     ti_adj = 0.0;
@@ -1858,19 +1858,16 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
     while (1) {
         cur_cnt++;
+        /*ti_adj += 0.2;*/
 
         if (cur_cnt > max_loop_cnt) {
             if (cur_bits > res_maxsize) {
-#if 0 
                 gl_adj++;
-                if (cur_cnt > 5)
-                    gl_adj += 2;
-#else
-                ti_adj = 2.0+cur_cnt-max_loop_cnt;
-#endif 
-
+                ti_adj += 0.2;
             } else 
                 break;
+        } else  {
+            ti_adj += 0.1;
         }
 
         for (i = 0; i < chn_num; i++) {
@@ -1881,7 +1878,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
                 memset(s->scalefactor, 0, 8*FA_SWB_NUM_MAX*sizeof(int));
                 calculate_scalefactor_usepdf(s, ti_adj);
 
-                /*s->common_scalefac += gl_adj;*/
+                s->common_scalefac += gl_adj;
                 fa_mdctline_quantdirect(s->h_mdctq_short, 
                         s->common_scalefac,
                         s->num_window_groups, s->scalefactor,
@@ -1892,7 +1889,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
                 calculate_scalefactor_usepdf(s, ti_adj);
                 /*calculate_scalefactor_usespecific(s);*/
 
-                /*s->common_scalefac += gl_adj;*/
+                s->common_scalefac += gl_adj;
                 fa_mdctline_quantdirect(s->h_mdctq_long, 
                         s->common_scalefac,
                         s->num_window_groups, s->scalefactor,
@@ -1903,7 +1900,8 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         fa_adjust_scalefactor(f);
         cur_bits = mdctline_enc(f);
-        /*break;*/
+        if (cur_bits < res_maxsize)
+            break;
 
         quant_ok_cnt = 0;
         for (i = 0; i < chn_num; i++) {
