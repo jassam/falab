@@ -264,6 +264,7 @@ static int get_cutoff_sfb(int sfb_offset_max, int *sfb_offset, int cutoff_line)
 
 static void fa_aacenc_rom_init()
 {
+    fa_psychomodel1_rom_init();
     fa_mdctquant_rom_init();
     fa_huffman_rom_init();
     fa_protect_db_rom_init();
@@ -585,8 +586,8 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     tns_enable           = speed_level_tab[speed_index][1];
     block_switch_enable  = speed_level_tab[speed_index][2];
     psy_enable           = speed_level_tab[speed_index][3];
-    psy_model            = PSYCH1;
-    /*psy_model            = PSYCH2;*/
+    /*psy_model            = PSYCH1;*/
+    psy_model            = PSYCH2;
     blockswitch_method   = speed_level_tab[speed_index][4];
     quantize_method      = speed_level_tab[speed_index][5];
 
