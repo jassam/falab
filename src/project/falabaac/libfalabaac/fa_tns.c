@@ -229,12 +229,14 @@ static void tns_ma_filter(float *spec, int length, tns_flt_t *flt)
             tmp[i] = spec[i];
             for (j = 1; j <= i; j++)
                 spec[i] += tmp[i-j] * acof[j];
+                /*spec[i] += tmp[i-j] * acof[j] * 0.3;*/
         }
 
         for (i = order; i < length; i++) {
             tmp[i] = spec[i];
             for (j = 1; j < order; j++)
                 spec[i] += tmp[i-j] * acof[j];
+                /*spec[i] += tmp[i-j] * acof[j] * 0.3;*/
         }
     }
 

@@ -544,7 +544,7 @@ static int speed_level_tab[SPEED_LEVEL_MAX][6] =
 static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
                                 {1,       1,        1,                    1,           BLOCKSWITCH_PSY,          QUANTIZE_BEST},  //1
-                                {1,       1,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //2
+                                {1,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //2
                                 {1,       0,        1,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //3
                                 {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //4
                                 {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //5
@@ -585,8 +585,8 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
     tns_enable           = speed_level_tab[speed_index][1];
     block_switch_enable  = speed_level_tab[speed_index][2];
     psy_enable           = speed_level_tab[speed_index][3];
-    /*psy_model            = PSYCH1;*/
-    psy_model            = PSYCH2;
+    psy_model            = PSYCH1;
+    /*psy_model            = PSYCH2;*/
     blockswitch_method   = speed_level_tab[speed_index][4];
     quantize_method      = speed_level_tab[speed_index][5];
 
