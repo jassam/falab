@@ -38,6 +38,8 @@ typedef unsigned uintptr_t;
 
 #define CBANDS_NUM        25
 
+void fa_psychomodel1_rom_init();
+
 uintptr_t fa_psychomodel1_init(int fs, int fft_len);
 void fa_psychomodel1_uninit(uintptr_t handle);
 void fa_psy_global_threshold(uintptr_t handle, float *fft_buf, float *gth);

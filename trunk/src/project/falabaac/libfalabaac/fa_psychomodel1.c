@@ -39,6 +39,7 @@
 #define FA_PRINT_DBG   FA_PRINT
 #endif
 
+static int nm_pos_geomean(int l, int u);
 
 /*this psd normalizer is for the SPL estimation */
 #define SAMPLE16
@@ -67,20 +68,73 @@ typedef struct _fa_psychomodel1_t {
     float *global_thres;
 
     int   cb_hopbin[CBANDS_NUM];
+    float geomean_table[CBANDS_NUM];
     int   splnum1;
     int   splnum2;
 
 }fa_psychomodel1_t;
 
+#define DB_FAST
+
+#define MAXDB  (300)
+#define MINDB  (-300)
+#define DBCNT  (MAXDB-MINDB+1)
+static float db_table[DBCNT];
+
+static void psy_dbtable_init()
+{
+    int i;
+    float db;
+
+    for (i = 0; i < DBCNT; i++) {
+        db = (float)(i + MINDB);
+        db_table[i] = pow(10, 0.1*db);
+    }
+}
 
 static float db_pos(float power)
 {
+#if 0 //def DB_FAST
+    int i;
+
+    for (i = 0; i < DBCNT; i++) {
+        if (power < db_table[i]) 
+            return (i+MINDB);
+    }
+
+    return (DBCNT-1);
+
+#else 
     return 10*log10(power);
+#endif
 }
+
+/*#define TEST_MAXMINDB*/
+
+#ifdef TEST_MAXMINDB
+static float dbmax=-300.;
+static float dbmin= 1000;
+#endif
 
 static float db_inv(float db)
 {
+#ifdef TEST_MAXMINDB
+    /*printf("db=%f\n", db);*/
+    if (db > dbmax)
+        dbmax = db;
+    if (db < dbmin)
+        dbmin = db;
+#endif
+
+#ifdef DB_FAST
+    int i;
+
+    i = (int)db;
+
+    return db_table[i-MINDB];
+#else 
     return pow(10, 0.1*db);
+#endif
 }
 
 /*input fft product(re,im)*/
@@ -102,7 +156,7 @@ static float psd_estimate_usemdct(float mdct_line, float cof)
     float power;
     float psd;
 
-    power = (mdct_line * mdct_line)/cof;
+    power = (mdct_line * mdct_line+1)/cof;
     /*use PSD_NORMALIZER to transform is to SPL estimation in dB*/
     psd = PSD_NORMALIZER + db_pos(power);
 
@@ -130,7 +184,12 @@ static float ath(float f)
 
     f /= 1000.;
 
-    ath = 3.64 * pow(f, -0.8) - 6.5 * exp(-0.6 * pow(f-3.3, 2)) + 0.001 * pow(f,4);
+    if (f > 0.0)
+        ath = 3.64 * pow(f, -0.8) - 6.5 * exp(-0.6 * pow(f-3.3, 2)) + 0.001 * pow(f,4);
+    else  {
+        f = 0.01;
+        ath = 3.64 * pow(f, -0.8) - 6.5 * exp(-0.6 * pow(f-3.3, 2)) + 0.001 * pow(f,4);
+    }
 
     return ath;
 }
@@ -162,14 +221,18 @@ static int freq2freqbin(float fs, int fft_len, float f)
 }
 
 static int caculate_cb_info(float fs, int psd_len, 
-                            float *psd_ath, int cb_hopbin[CBANDS_NUM], float *psd_bark)
+                            float *psd_ath, int cb_hopbin[CBANDS_NUM], float geomean_table[CBANDS_NUM],
+                            float *psd_bark)
 {
+    int   i;
     int   k;
     float f;
     int   band;
 
     band = 0;
     memset(cb_hopbin, 0, sizeof(int)*CBANDS_NUM);
+    for (i = 0; i < CBANDS_NUM; i++)
+        geomean_table[i] = 1;
 
     for(k = 0; k < psd_len; k++) {
         f = freqbin2freq(fs, psd_len*2, k);
@@ -180,6 +243,10 @@ static int caculate_cb_info(float fs, int psd_len,
            (band < CBANDS_NUM)){
             cb_hopbin[band] = k;
             /*FA_PRINT("the hopbin of band[%d] = %d\n", band, k);*/
+            if (band == 0)
+                geomean_table[band] = nm_pos_geomean(1, cb_hopbin[band])-1;
+            else 
+                geomean_table[band] = nm_pos_geomean(cb_hopbin[band-1], cb_hopbin[band])-1;
             band++;
         }
 
@@ -343,8 +410,35 @@ static int noisemasker_band(float *psd, int *tone_flag,
     return 0;
 }
 
+
+static int noisemasker_band_fast(float *psd, int *tone_flag, 
+                                 int lowbin, int highbin,
+                                 int band, float *geomean_table,
+                                 float *nm , int *nm_pos)
+{
+    int k;
+    float tmp;
+
+    *nm  = 0;
+    tmp = 0;
+    for(k = lowbin; k <= highbin; k++) {
+        if(!tone_flag[k]) {
+            tmp += db_inv(psd[k]);
+        }
+    }
+
+    *nm     = db_pos(tmp);
+    /**nm_pos = nm_pos_geomean(lowbin+1, highbin+1)-1;*/
+    *nm_pos = geomean_table[band]; //nm_pos_geomean(lowbin+1, highbin+1)-1;
+
+    return 0;
+}
+
+
+
 static int psd_noisemasker(float *psd, int psd_len,
                     int *tone_flag, int *cb_hopbin, 
+                    float *geomean_table,
                     float *pnm)
 {
     int band;
@@ -359,7 +453,8 @@ static int psd_noisemasker(float *psd, int psd_len,
             break;
 
         highbin = cb_hopbin[band] - 1; 
-        noisemasker_band(psd, tone_flag, lowbin, highbin, &nm, &nm_pos);
+        /*noisemasker_band(psd, tone_flag, lowbin, highbin, &nm, &nm_pos);*/
+        noisemasker_band_fast(psd, tone_flag, lowbin, highbin, band, geomean_table, &nm, &nm_pos);
         lowbin  = highbin + 1;
         pnm[nm_pos] = nm;
     }
@@ -590,6 +685,10 @@ static int global_threshold_mag(float *tone_thres, float *noise_thres, float *ps
     return 0;
 }
 
+void fa_psychomodel1_rom_init()
+{
+    psy_dbtable_init();
+}
 
 uintptr_t fa_psychomodel1_init(int fs, int fft_len)
 {
@@ -618,7 +717,8 @@ uintptr_t fa_psychomodel1_init(int fs, int fft_len)
 
     deltak_splitenum(fs, fft_len, &f->splnum1, &f->splnum2);
 
-    caculate_cb_info(fs, psd_len, f->psd_ath, f->cb_hopbin, f->psd_bark);
+    caculate_cb_info(fs, psd_len, f->psd_ath, f->cb_hopbin, f->geomean_table, f->psd_bark);
+
 
     return (uintptr_t)f;
 }
@@ -690,7 +790,8 @@ void fa_psy_global_threshold(uintptr_t handle, float *fft_buf, float *gth)
     
     /*step2: tone and noise masker estimate*/
     psd_tonemasker(f->psd, f->psd_len, f->splnum1, f->splnum2, f->ptm, f->tone_flag);
-    psd_noisemasker(f->psd, f->psd_len, f->tone_flag, f->cb_hopbin, f->pnm);
+    /*psd_noisemasker(f->psd, f->psd_len, f->tone_flag, f->cb_hopbin, f->pnm);*/
+    psd_noisemasker(f->psd, f->psd_len, f->tone_flag, f->cb_hopbin, f->geomean_table, f->pnm);
 
     /*step3: check near masker, merge it if near*/
     check_near_masker(f->ptm, f->pnm, f->psd_ath, f->psd_bark, f->psd_len);
@@ -713,7 +814,13 @@ void fa_psy_global_threshold_usemdct(uintptr_t handle, float *mdct_buf, float *g
     fa_psychomodel1_t *f = (fa_psychomodel1_t *)handle;
     float cof;
 
-    cof = (80. *  (float)f->psd_len)/1024.;
+#ifdef TEST_MAXMINDB
+    dbmax = -300.;
+    dbmin = 1000;
+#endif
+
+    /*cof = (80. *  (float)f->psd_len)/1024.;*/
+    cof = (4. *  (float)f->psd_len)/1024.;
     /*step1: psd estimate and normalize to SPL*/
     for(k = 0; k < f->psd_len; k++) {
         re = mdct_buf[k];
@@ -722,7 +829,7 @@ void fa_psy_global_threshold_usemdct(uintptr_t handle, float *mdct_buf, float *g
     
     /*step2: tone and noise masker estimate*/
     psd_tonemasker(f->psd, f->psd_len, f->splnum1, f->splnum2, f->ptm, f->tone_flag);
-    psd_noisemasker(f->psd, f->psd_len, f->tone_flag, f->cb_hopbin, f->pnm);
+    psd_noisemasker(f->psd, f->psd_len, f->tone_flag, f->cb_hopbin, f->geomean_table, f->pnm);
 
     /*step3: check near masker, merge it if near*/
     check_near_masker(f->ptm, f->pnm, f->psd_ath, f->psd_bark, f->psd_len);
@@ -735,5 +842,8 @@ void fa_psy_global_threshold_usemdct(uintptr_t handle, float *mdct_buf, float *g
     global_threshold_mag(f->tone_thres, f->noise_thres, f->psd_ath, f->global_thres, f->psd_len);
     memcpy(gth, f->global_thres, sizeof(float)*f->psd_len);
 
+#ifdef TEST_MAXMINDB
+    printf("dbmax=%f, dbmin=%f\n", dbmax, dbmin);
+#endif
 }
 
