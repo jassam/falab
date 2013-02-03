@@ -183,7 +183,7 @@ static float ath(float f)
     float ath;
 
     f /= 1000.;
-
+ 
     if (f > 0.0)
         ath = 3.64 * pow(f, -0.8) - 6.5 * exp(-0.6 * pow(f-3.3, 2)) + 0.001 * pow(f,4);
     else  {
@@ -237,6 +237,7 @@ static int caculate_cb_info(float fs, int psd_len,
     for(k = 0; k < psd_len; k++) {
         f = freqbin2freq(fs, psd_len*2, k);
         psd_ath[k]  = ath(f);
+        /*printf("psd_ath[%d]=%f\n", k, psd_ath[k]);*/
         psd_bark[k] = freq2bark(f);
 
         if((floor(psd_bark[k]) > band) &&
@@ -253,6 +254,7 @@ static int caculate_cb_info(float fs, int psd_len,
         /*FA_PRINT("the %d freqbin's bark value psd_bark[%d] = %f\n", k, k, psd_bark[k]);*/
     }
 
+    /*exit(0);*/
     return band;
 
 }
@@ -364,6 +366,7 @@ static int psd_tonemasker(float *psd , int psd_len,
     for(k = 0; k < psd_len; k++) {
         if(istone(psd, psd_len, k, splnum1, splnum2, tone_flag)) {
             ptm[k] = db_pos(db_inv(psd[k-1]) + db_inv(psd[k]) + db_inv(psd[k+1]));
+            /*printf("ptm[%d]=%f\n", k, ptm[k]);*/
         }
     }
 
@@ -427,7 +430,15 @@ static int noisemasker_band_fast(float *psd, int *tone_flag,
         }
     }
 
-    *nm     = db_pos(tmp);
+#if 1 
+    *nm = db_pos(tmp);
+#else 
+    if (tmp > 0)
+        *nm = db_pos(tmp);
+    else 
+        *nm = 0;
+#endif
+
     /**nm_pos = nm_pos_geomean(lowbin+1, highbin+1)-1;*/
     *nm_pos = geomean_table[band]; //nm_pos_geomean(lowbin+1, highbin+1)-1;
 
@@ -449,6 +460,7 @@ static int psd_noisemasker(float *psd, int psd_len,
     lowbin = 0;
     memset(pnm, 0, sizeof(float)*psd_len);
     for(band = 0; band < CBANDS_NUM; band++) {
+        nm_pos = 0;
         if(cb_hopbin[band] == 0)
             break;
 
@@ -457,6 +469,7 @@ static int psd_noisemasker(float *psd, int psd_len,
         noisemasker_band_fast(psd, tone_flag, lowbin, highbin, band, geomean_table, &nm, &nm_pos);
         lowbin  = highbin + 1;
         pnm[nm_pos] = nm;
+        /*printf("pnm[%d]=%f\n", nm_pos, pnm[nm_pos]);*/
     }
 
     return 0;
@@ -820,7 +833,7 @@ void fa_psy_global_threshold_usemdct(uintptr_t handle, float *mdct_buf, float *g
 #endif
 
     /*cof = (80. *  (float)f->psd_len)/1024.;*/
-    cof = (4. *  (float)f->psd_len)/1024.;
+    cof = (1. *  (float)f->psd_len)/1024.;
     /*step1: psd estimate and normalize to SPL*/
     for(k = 0; k < f->psd_len; k++) {
         re = mdct_buf[k];

@@ -1390,8 +1390,8 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
 #ifdef USE_PDF_IMPROVE
             sf = fa_estimate_sf_fast_improve((1.2+adj)*s->Ti[0][i], s->pdft[0][i], s->miu2[0][i]);
 #else 
-            /*sf = fa_estimate_sf_fast((1.2+adj+ti_adj)*s->Ti[0][i], s->pdft[0][i]);*/
-            sf = fa_estimate_sf_fast((1.0+ti_adj)*s->Ti[0][i], s->pdft[0][i]);
+            sf = fa_estimate_sf_fast((1.0+adj+ti_adj)*s->Ti[0][i], s->pdft[0][i]);
+            /*sf = fa_estimate_sf_fast((1.0+ti_adj)*s->Ti[0][i], s->pdft[0][i]);*/
 #endif
             s->common_scalefac = FA_MAX(s->common_scalefac, sf);
             s->scalefactor[0][i] = sf; 
@@ -1850,7 +1850,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
     calculate_start_common_scalefac(f);
 
-    max_loop_cnt = 20; //4;//7;
+    max_loop_cnt = 10; //4;//7;
     cur_cnt = 0;
     gl_adj = 0;
     ti_adj = 0.0;
@@ -1858,7 +1858,6 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
     while (1) {
         cur_cnt++;
-        /*ti_adj += 0.2;*/
 
         if (cur_cnt > max_loop_cnt) {
             if (cur_bits > res_maxsize) {
@@ -1866,9 +1865,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
                 ti_adj += 0.2;
             } else 
                 break;
-        } else  {
-            /*ti_adj += 0.1;*/
-        }
+        } 
 
         for (i = 0; i < chn_num; i++) {
             s = &(f->ctx[i]);
@@ -1900,8 +1897,8 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         fa_adjust_scalefactor(f);
         cur_bits = mdctline_enc(f);
-        if (cur_bits < res_maxsize)
-            break;
+        /*if (cur_bits < res_maxsize)*/
+            /*break;*/
 
         quant_ok_cnt = 0;
         for (i = 0; i < chn_num; i++) {
