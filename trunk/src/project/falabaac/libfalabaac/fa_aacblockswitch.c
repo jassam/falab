@@ -31,6 +31,7 @@
 #include "fa_aacblockswitch.h"
 #include "fa_aacfilterbank.h"
 #include "fa_aacstream.h"
+#include "fa_fir.h"
 
 #ifndef FA_MIN
 #define FA_MIN(a,b)  ( (a) < (b) ? (a) : (b) )
@@ -46,7 +47,7 @@
 
 
 /*---------------------------------- psy blockswitch --------------------------------------------------*/
-#define SWITCH_PE  2500 //1000 //1800//1800 //300// 1800
+#define SWITCH_PE  400 //2500 //1000 //1800//1800 //300// 1800
 
 static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type, uintptr_t h_aacpsy)
 {
@@ -69,12 +70,12 @@ static void blockswitch_pe(float pe, int prev_block_type, int *cur_block_type, u
     if (cur_coding_block_type != prev_coding_block_type)
         reset_psy_previnfo(h_aacpsy);
 */
-/*
+
     if (cur_coding_block_type == LONG_CODING_BLOCK && prev_coding_block_type == SHORT_CODING_BLOCK)
         update_psy_short2long_previnfo(h_aacpsy);
     if (cur_coding_block_type == SHORT_CODING_BLOCK && prev_coding_block_type == LONG_CODING_BLOCK)
         update_psy_long2short_previnfo(h_aacpsy);
-*/
+
     /*use prev coding block type and current coding block type to decide current block type*/
 #if 1 
     if (cur_coding_block_type == SHORT_CODING_BLOCK) {
@@ -429,5 +430,198 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 
 #endif
 
+#define WINCNT 8
 
+typedef struct _fa_blockctrl_t {
+    uintptr_t  h_flt_fir;
+
+    int block_len;
+    float *x;
+    float *x_flt;
+
+    // 1 means attack, 0 means no attack
+    int attack_flag;           
+    int lastattack_flag;
+    int attack_index;
+    int lastattack_index;
+
+    float max_win_enrg;         // max energy for attack when detected, and used in sync short block group info
+
+    float win_enrg[2][WINCNT];
+    float win_hfenrg[2][WINCNT];
+    float win_accenrg;
+
+} fa_blockctrl_t;
+
+uintptr_t fa_blockswitch_init(int block_len)
+{
+    fa_blockctrl_t *f = (fa_blockctrl_t *)malloc(sizeof(fa_blockctrl_t));
+    memset(f, 0, sizeof(fa_blockctrl_t));
+
+    f->h_flt_fir = fa_fir_filter_hpf_init(block_len, 17, 0.6, KAISER);
+    f->block_len = block_len;
+
+    f->x = (float *)malloc(block_len * sizeof(float));
+    memset(f->x, 0, block_len * sizeof(float));
+    f->x_flt = (float *)malloc(block_len * sizeof(float));
+    memset(f->x_flt, 0, block_len * sizeof(float));
+
+    return (uintptr_t)f;
+}
+
+static void calculate_win_enrg(fa_blockctrl_t *f)
+{
+    int win;
+    int i;
+    int win_len;
+
+    float win_enrg_tmp;
+    float win_hfenrg_tmp;
+    float x_tmp, x_flt_tmp;
+
+    win_len = f->block_len / WINCNT;
+
+    fa_fir_filter(f->h_flt_fir, f->x, f->x_flt, f->block_len);
+
+    for (win = 0; win < WINCNT; win++) {
+        win_enrg_tmp   = 0.0;
+        win_hfenrg_tmp = 0.0;
+
+        for (i = 0; i < win_len; i++) {
+            x_tmp     = f->x    [win*win_len + i];
+            x_flt_tmp = f->x_flt[win*win_len + i];
+
+            win_enrg_tmp   += x_tmp     * x_tmp;
+            win_hfenrg_tmp += x_flt_tmp * x_flt_tmp;
+        }
+
+        f->win_enrg[1][win]   = win_enrg_tmp;
+        f->win_hfenrg[1][win] = win_hfenrg_tmp;
+    }
+
+}
+
+static int select_block(int prev_block_type, int attack_flag)
+{
+    int prev_coding_block_type;
+    int cur_coding_block_type;
+    int cur_block_type;
+
+    if (attack_flag)
+        cur_coding_block_type = SHORT_CODING_BLOCK;
+    else 
+        cur_coding_block_type = LONG_CODING_BLOCK;
+
+    /*get prev coding block type*/
+    if (prev_block_type == ONLY_SHORT_BLOCK)
+        prev_coding_block_type = SHORT_CODING_BLOCK;
+    else 
+        prev_coding_block_type = LONG_CODING_BLOCK;
+
+#if 1 
+    if (cur_coding_block_type == SHORT_CODING_BLOCK) {
+        if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+            cur_block_type = LONG_START_BLOCK;
+        if (prev_block_type == LONG_START_BLOCK || prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = ONLY_SHORT_BLOCK;
+    } else {
+        if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+            cur_block_type = ONLY_LONG_BLOCK;
+        if (prev_block_type == LONG_START_BLOCK || prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = LONG_STOP_BLOCK;
+    }
+
+#else 
+
+    if (cur_coding_block_type == SHORT_CODING_BLOCK) {
+        if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+            cur_block_type = LONG_START_BLOCK;
+        if (prev_block_type == LONG_START_BLOCK || prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = ONLY_SHORT_BLOCK;
+    } else {
+        if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
+            cur_block_type = ONLY_LONG_BLOCK;
+        if (prev_block_type == LONG_START_BLOCK) // || prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = ONLY_SHORT_BLOCK; //LONG_STOP_BLOCK;
+        if (prev_block_type == ONLY_SHORT_BLOCK)
+            cur_block_type = LONG_STOP_BLOCK;
+    }
+
+#endif
+
+
+
+    return cur_block_type;
+}
+
+
+#define ATTACK_ENRG_MIN  (32768*2) //(32768. * 32768 * 20)
+
+int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
+{
+    int i;
+    fa_blockctrl_t *f = (fa_blockctrl_t *)(s->h_blockctrl);
+    float win_enrg_max;
+    float win_enrg_prev;
+
+    /*save current attack info to last attack info*/
+    f->lastattack_flag  = f->attack_flag;
+    f->lastattack_index = f->attack_index;
+    if (f->attack_flag)
+        f->max_win_enrg = f->win_enrg[0][f->lastattack_index];
+    else 
+        f->max_win_enrg = 0.0;
+
+    /*save current analysis win energy to last analysis win energy*/
+    for (i = 0; i < WINCNT; i++) {
+        f->win_enrg[0][i]   = f->win_enrg[1][i];
+        f->win_hfenrg[0][i] = f->win_hfenrg[1][i];
+    }
+
+    /*get current time signals*/
+    fa_aacfilterbank_get_xbuf(s->h_aac_analysis, f->x);
+    for (i = 0; i < 1024; i++) {
+        f->x[i]      = f->x[i+1024];
+        f->x[i+1024] = sample_buf[i];
+    }
+
+    calculate_win_enrg(f);
+
+    f->attack_flag = 0;
+
+    win_enrg_max = 0.0;
+    win_enrg_prev = f->win_hfenrg[0][WINCNT-1];
+
+    for (i = 0; i < WINCNT; i++) {
+        float frac  = 0.3;
+        float ratio = 0.2;
+
+        /*the accenrg is the smooth energy threshold*/
+        f->win_accenrg = (1-frac)*f->win_accenrg + frac*win_enrg_prev;
+
+        if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {
+            f->attack_flag  = 1;
+            f->attack_index = i;
+        }
+
+        win_enrg_prev = f->win_hfenrg[1][i];
+        win_enrg_max  = FA_MAX(win_enrg_max, win_enrg_prev);
+    }
+
+    if (win_enrg_max < ATTACK_ENRG_MIN)
+        f->attack_flag = 0;
+
+    /*check if last prev attack spread to this frame*/
+    if (f->lastattack_flag && !f->attack_flag) {
+        if  ((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
+             (f->lastattack_index == WINCNT-1)) {
+            f->attack_flag  = 1;
+            f->attack_index = 0;
+        }
+    }
+
+    s->block_type = select_block(s->block_type, f->attack_flag);
+
+    return s->block_type;
+}
 

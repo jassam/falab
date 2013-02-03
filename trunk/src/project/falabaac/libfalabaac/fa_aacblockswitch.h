@@ -34,9 +34,12 @@
 extern "C"
 { 
 #endif  
-
 int fa_blockswitch_psy(aacenc_ctx_t *s);
 int fa_blockswitch_var(aacenc_ctx_t *s);
+
+uintptr_t fa_blockswitch_init(int block_len);
+int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf);
+
 
 
 #ifdef __cplusplus 

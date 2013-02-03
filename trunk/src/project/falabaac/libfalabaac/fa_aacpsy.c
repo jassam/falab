@@ -252,7 +252,7 @@ void reset_psy_previnfo(uintptr_t handle)
 
 }
 
-#if 0 
+#if  1 
 
 void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *pe_block)
 {
@@ -268,12 +268,15 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
             xp = x + AAC_BLOCK_TRANS_LEN + win*128;
             update_psy_short_previnfo(f, win);
             /*fa_psychomodel2_calculate_pe(f->h_psy2_short[win], xp, &pe);*/
-            fa_psychomodel2_calculate_pe_improve(f->h_psy2_short[win], xp, &pe, 18, 9, 1);
+            fa_psychomodel2_calculate_pe_improve(f->h_psy2_short[win], xp, &pe, 18, 6, 1, 1);
             pe_sum += pe;
         }
     } else {
         /*fa_psychomodel2_calculate_pe(f->h_psy2_long , x, &pe);*/
-        fa_psychomodel2_calculate_pe_improve(f->h_psy2_long , x, &pe, 18, 10, 1);
+        if (block_type == ONLY_LONG_BLOCK)
+            fa_psychomodel2_calculate_pe_improve(f->h_psy2_long , x, &pe, 18, 6, 1, 1);
+        else 
+            fa_psychomodel2_calculate_pe_improve(f->h_psy2_long , x, &pe, 18, 6, 1, 0);
         pe_sum = pe;
     }
 
@@ -295,11 +298,11 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
         xp = x + AAC_BLOCK_TRANS_LEN + win*128;
         update_psy_short_previnfo(f, win);
         /*fa_psychomodel2_calculate_pe(f->h_psy2_short[win], xp, &pe);*/
-        fa_psychomodel2_calculate_pe_improve(f->h_psy2_short[win], xp, &pe, 18, 9, 10);
+        fa_psychomodel2_calculate_pe_improve(f->h_psy2_short[win], xp, &pe, 18, 6, 1, 1);
         pe_sum_short += pe;
     }
     /*fa_psychomodel2_calculate_pe(f->h_psy2_long , x, &pe);*/
-    fa_psychomodel2_calculate_pe_improve(f->h_psy2_long , x, &pe, 18, 6, 1);
+    fa_psychomodel2_calculate_pe_improve(f->h_psy2_long , x, &pe, 18, 6, 1, 1);
     pe_sum_long = pe;
 
     if (block_type == ONLY_SHORT_BLOCK) 

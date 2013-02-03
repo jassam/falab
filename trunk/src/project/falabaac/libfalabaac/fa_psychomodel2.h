@@ -43,7 +43,7 @@ void fa_psychomodel2_uninit(uintptr_t handle);
 void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe);
 void fa_psychomodel2_calculate_xmin(uintptr_t handle, float *mdct_line, float *xmin);
 void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
-                                          float tmn, float nmt, float nb_cof);
+                                          float tmn, float nmt, float nb_cof, int do_precho_ctrl);
 void fa_psychomodel2_calculate_xmin_short(uintptr_t handle, float xmin[8][51]);
  
 

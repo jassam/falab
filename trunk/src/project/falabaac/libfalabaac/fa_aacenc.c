@@ -364,7 +364,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         case QUANTIZE_BEST:
             f->quantize_method = QUANTIZE_BEST;
             f->do_quantize = fa_quantize_best;
-            /*f->do_quantize = fa_quantize_loop;*/
+            /*f->do_quantize = fa_quantize_fast;*/
             break;
         default:
             f->quantize_method = QUANTIZE_BEST;
@@ -374,6 +374,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
     /*init psy and mdct quant */
     for (i = 0; i < chn_num; i++) {
+        f->ctx[i].h_blockctrl = fa_blockswitch_init(2048);
+
         f->ctx[i].time_resolution_first = time_resolution_first;
 
         f->ctx[i].pe                = 0.0;
@@ -669,7 +671,7 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
         s->window_group_length[7] = 0;
 #else 
         /*just for test different group length result*/
-    #if  1 
+    #if  0 
         s->num_window_groups = 8;
         s->window_group_length[0] = 1;
         s->window_group_length[1] = 1;
@@ -681,10 +683,10 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
         s->window_group_length[7] = 1;
     #else 
         s->num_window_groups = 4;
-        s->window_group_length[0] = 2;
-        s->window_group_length[1] = 2;
-        s->window_group_length[2] = 2;
-        s->window_group_length[3] = 2;
+        s->window_group_length[0] = 1;
+        s->window_group_length[1] = 3;
+        s->window_group_length[2] = 3;
+        s->window_group_length[3] = 1;
         s->window_group_length[4] = 0;
         s->window_group_length[5] = 0;
         s->window_group_length[6] = 0;
@@ -783,8 +785,12 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             s->block_type = ONLY_SHORT_BLOCK;
         } else {
             if (block_switch_en) {
-            /*if (0) { //(block_switch_en) {*/
+#if 0 
                 f->do_blockswitch(s);
+#else 
+                fa_blockswitch_robust(s, f->sample+i*AAC_FRAME_LEN);
+#endif 
+
 #if 1 
                 if (s->block_type == 2)
                 /*if (s->block_type != 0)*/
@@ -853,7 +859,9 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
         /*if (tns_enable && (!s->chn_info.lfe) && (s->block_type == ONLY_SHORT_BLOCK))*/
         /*if (tns_enable && (!s->chn_info.lfe) && (s->block_type != ONLY_LONG_BLOCK))*/
-        if (tns_enable && (!s->chn_info.lfe))
+        /*if (tns_enable && (!s->chn_info.lfe))*/
+        if (tns_enable && (!s->chn_info.lfe) &&
+            ((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == LONG_START_BLOCK) || (s->block_type == LONG_STOP_BLOCK)))
             fa_tns_encode_frame(s);
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/

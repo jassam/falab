@@ -46,6 +46,8 @@ typedef struct _aacenc_ctx_t{
     //chn map
     chn_info_t  chn_info;
 
+    uintptr_t h_blockctrl;
+
     //psy and block type var
     uintptr_t h_aacpsy;
     float pe;
