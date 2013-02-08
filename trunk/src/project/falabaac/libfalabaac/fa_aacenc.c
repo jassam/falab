@@ -547,7 +547,7 @@ static int speed_level_tab[SPEED_LEVEL_MAX][6] =
 static int speed_level_tab[SPEED_LEVEL_MAX][6] = 
                             { //ms,      tns,     block_switch_en,       psy_en,       blockswitch_method,       quant_method
                                 {1,       1,        1,                    1,           BLOCKSWITCH_PSY,          QUANTIZE_BEST},  //1
-                                {1,       0,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //2
+                                {1,       1,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //2
                                 {1,       0,        1,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //3
                                 {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //4
                                 {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //5
@@ -788,13 +788,15 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 #if 0 
                 f->do_blockswitch(s);
 #else 
-                fa_blockswitch_robust(s, f->sample+i*AAC_FRAME_LEN);
+                /*fa_blockswitch_robust(s, f->sample+i*AAC_FRAME_LEN);*/
+                fa_blockswitch_robust_test(s, f->sample+i*AAC_FRAME_LEN);
 #endif 
 
 #if 1 
-                if (s->block_type == 2)
+                /*if (s->block_type == 2)*/
                 /*if (s->block_type != 0)*/
-                    printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
+                    /*printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);*/
+                printf("i=%d, block_type=%d\n", i+1, s->block_type);
 #endif
             } else {
                 s->block_type = ONLY_LONG_BLOCK;
@@ -862,6 +864,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         /*if (tns_enable && (!s->chn_info.lfe))*/
         if (tns_enable && (!s->chn_info.lfe) &&
             ((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == LONG_START_BLOCK) || (s->block_type == LONG_STOP_BLOCK)))
+            /*((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == ONLY_LONG_BLOCK)))*/
             fa_tns_encode_frame(s);
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/

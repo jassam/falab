@@ -145,10 +145,14 @@ int main(int argc, char *argv[])
         fwrite(aac_buf, 1, aac_out_len, destfile);
 
         /*printf("the frame[%d]out length = %d\n", frame_index, aac_out_len);*/
+        /*printf("-------------------------------the frame  [%d]\n", frame_index);*/
+        /*usleep(100*1000);*/
 
         frame_index++;
         fprintf(stderr,"\rthe frame = [%d]", frame_index);
-        /*if (frame_index == 423)*/
+        /*if (frame_index == 62)*/
+            /*usleep(10*1000);*/
+            
             /*exit(0);*/
     }
 

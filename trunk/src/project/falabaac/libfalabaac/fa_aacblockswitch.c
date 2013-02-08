@@ -451,6 +451,9 @@ typedef struct _fa_blockctrl_t {
     float win_hfenrg[2][WINCNT];
     float win_accenrg;
 
+    float diff_enrg;
+    float diff_accenrg;
+
 } fa_blockctrl_t;
 
 uintptr_t fa_blockswitch_init(int block_len)
@@ -458,13 +461,17 @@ uintptr_t fa_blockswitch_init(int block_len)
     fa_blockctrl_t *f = (fa_blockctrl_t *)malloc(sizeof(fa_blockctrl_t));
     memset(f, 0, sizeof(fa_blockctrl_t));
 
-    f->h_flt_fir = fa_fir_filter_hpf_init(block_len, 17, 0.6, KAISER);
+    f->h_flt_fir = fa_fir_filter_hpf_init(block_len, 7, 0.5, KAISER);
+    /*f->h_flt_fir = fa_fir_filter_hpf_init(block_len, 7, 0.5, BLACKMAN);*/
     f->block_len = block_len;
 
     f->x = (float *)malloc(block_len * sizeof(float));
     memset(f->x, 0, block_len * sizeof(float));
     f->x_flt = (float *)malloc(block_len * sizeof(float));
     memset(f->x_flt, 0, block_len * sizeof(float));
+
+    f->diff_enrg = 0.0;
+    f->diff_accenrg = 0.0;
 
     return (uintptr_t)f;
 }
@@ -495,11 +502,37 @@ static void calculate_win_enrg(fa_blockctrl_t *f)
             win_hfenrg_tmp += x_flt_tmp * x_flt_tmp;
         }
 
+#if 1 
         f->win_enrg[1][win]   = win_enrg_tmp;
         f->win_hfenrg[1][win] = win_hfenrg_tmp;
+#else 
+        f->win_enrg[1][win]   = log10(win_enrg_tmp);
+        f->win_hfenrg[1][win] = log10(win_hfenrg_tmp);
+#endif
     }
 
 }
+
+                            //lastattack-attack-blocktype
+static const int win_sequence[2][2][4] =
+{
+   /*  ONLY_LONG_BLOCK    LONG_START_BLOCK   ONLY_SHORT_BLOCK   LONG_STOP_BLOCK   */  
+   /*last no attack*/
+   { 
+       /*no attack*/
+       {ONLY_LONG_BLOCK,   ONLY_SHORT_BLOCK,  LONG_STOP_BLOCK,   ONLY_LONG_BLOCK,  },   
+       /*attack*/
+       {LONG_START_BLOCK,  ONLY_SHORT_BLOCK,  ONLY_SHORT_BLOCK,  LONG_START_BLOCK, } 
+   }, 
+   /*last attack*/
+   { 
+       /*no attack*/
+       {ONLY_LONG_BLOCK,   ONLY_SHORT_BLOCK,  ONLY_SHORT_BLOCK,  ONLY_LONG_BLOCK,  },  
+       /*attack*/
+       {LONG_START_BLOCK,  ONLY_SHORT_BLOCK,  ONLY_SHORT_BLOCK,  LONG_START_BLOCK, } 
+   }  
+};
+
 
 static int select_block(int prev_block_type, int attack_flag)
 {
@@ -518,7 +551,7 @@ static int select_block(int prev_block_type, int attack_flag)
     else 
         prev_coding_block_type = LONG_CODING_BLOCK;
 
-#if 1 
+#if 0 
     if (cur_coding_block_type == SHORT_CODING_BLOCK) {
         if (prev_block_type == ONLY_LONG_BLOCK || prev_block_type == LONG_STOP_BLOCK)
             cur_block_type = LONG_START_BLOCK;
@@ -555,7 +588,7 @@ static int select_block(int prev_block_type, int attack_flag)
 }
 
 
-#define ATTACK_ENRG_MIN  (32768*2) //(32768. * 32768 * 20)
+#define ATTACK_ENRG_MIN  (2000) 
 
 int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
 {
@@ -594,7 +627,7 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
 
     for (i = 0; i < WINCNT; i++) {
         float frac  = 0.3;
-        float ratio = 0.2;
+        float ratio = 0.1;
 
         /*the accenrg is the smooth energy threshold*/
         f->win_accenrg = (1-frac)*f->win_accenrg + frac*win_enrg_prev;
@@ -608,10 +641,12 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
         win_enrg_max  = FA_MAX(win_enrg_max, win_enrg_prev);
     }
 
-    if (win_enrg_max < ATTACK_ENRG_MIN)
-        f->attack_flag = 0;
+    /*printf("win_enrg_max = %f\n", win_enrg_max);*/
+    /*if (win_enrg_max < ATTACK_ENRG_MIN)*/
+        /*f->attack_flag = 0;*/
 
     /*check if last prev attack spread to this frame*/
+#if 1 
     if (f->lastattack_flag && !f->attack_flag) {
         if  ((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
              (f->lastattack_index == WINCNT-1)) {
@@ -619,9 +654,278 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
             f->attack_index = 0;
         }
     }
+#else 
+    if (f->lastattack_flag && !f->attack_flag) {
+        /*if  ((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&*/
+        if  ((f->lastattack_index >= 5)) {
+            f->attack_flag  = 1;
+            f->attack_index = 0;
+        }
+    }
 
-    s->block_type = select_block(s->block_type, f->attack_flag);
+#endif
+
+    /*s->block_type = select_block(s->block_type, f->attack_flag);*/
+    s->block_type = win_sequence[f->lastattack_flag][f->attack_flag][s->block_type];
 
     return s->block_type;
 }
+
+
+int fa_blockswitch_robust_test(aacenc_ctx_t *s, float *sample_buf)
+{
+    int i;
+    fa_blockctrl_t *f = (fa_blockctrl_t *)(s->h_blockctrl);
+    float win_enrg_max;
+    float win_enrg_prev;
+
+    /*save current attack info to last attack info*/
+    f->lastattack_flag  = f->attack_flag;
+    f->lastattack_index = f->attack_index;
+    if (f->attack_flag)
+        f->max_win_enrg = f->win_enrg[0][f->lastattack_index];
+    else 
+        f->max_win_enrg = 0.0;
+
+    /*save current analysis win energy to last analysis win energy*/
+    for (i = 0; i < WINCNT; i++) {
+        f->win_enrg[0][i]   = f->win_enrg[1][i];
+        f->win_hfenrg[0][i] = f->win_hfenrg[1][i];
+    }
+
+    /*get current time signals*/
+    fa_aacfilterbank_get_xbuf(s->h_aac_analysis, f->x);
+    for (i = 0; i < 1024; i++) {
+        f->x[i]      = f->x[i+1024];
+        f->x[i+1024] = sample_buf[i];
+    }
+
+    calculate_win_enrg(f);
+
+    f->attack_flag = 0;
+
+    win_enrg_max = 0.0;
+    win_enrg_prev = f->win_hfenrg[0][WINCNT-1];
+
+    for (i = 0; i < WINCNT; i++) {
+        float frac  = 0.3;
+        float ratio = 0.2;
+        float diff;
+
+        /*the accenrg is the smooth energy threshold*/
+        f->win_accenrg = (1-frac)*f->win_accenrg + frac*win_enrg_prev;
+        /*diff = FA_ABS(f->win_enrg[1][i] - f->win_hfenrg[1][i]);*/
+
+        if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {
+        /*if ((diff*ratio) > f->win_accenrg) {*/
+            f->attack_flag  = 1;
+            f->attack_index = i;
+        }
+
+        win_enrg_prev = f->win_hfenrg[1][i];
+        win_enrg_max  = FA_MAX(win_enrg_max, win_enrg_prev);
+    }
+
+    /*printf("win_enrg_max = %f\n", win_enrg_max);*/
+    /*if (win_enrg_max < ATTACK_ENRG_MIN)*/
+        /*f->attack_flag = 0;*/
+
+    /*check if last prev attack spread to this frame*/
+#if 1 
+    if (f->lastattack_flag && !f->attack_flag) {
+        if  ((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
+             (f->lastattack_index == WINCNT-1)) {
+            f->attack_flag  = 1;
+            f->attack_index = 0;
+        }
+    }
+#else 
+    if (f->lastattack_flag && !f->attack_flag) {
+        /*if  ((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&*/
+        if  ((f->lastattack_index >= 4)) {
+            f->attack_flag  = 1;
+            f->attack_index = 0;
+        }
+    }
+
+#endif
+
+    /*s->block_type = select_block(s->block_type, f->attack_flag);*/
+    s->block_type = win_sequence[f->lastattack_flag][f->attack_flag][s->block_type];
+/*
+    if (s->block_type != ONLY_SHORT_BLOCK)
+        f->win_accenrg *= 0.3;
+*/
+    return s->block_type;
+}
+
+#if 0
+
+static void signal_shaping(fa_blockctrl_t *f)
+{
+    int i;
+    int win_len;
+
+    float win_enrg_tmp;
+    float win_hfenrg_tmp;
+    /*float diff_enrg;*/
+    float x_tmp, x_flt_tmp;
+    float irt;
+
+    const float boost_thr = 10000;
+    float offset, weight;
+
+    win_len = f->block_len;
+
+    fa_fir_filter(f->h_flt_fir, f->x, f->x_flt, f->block_len);
+
+    win_enrg_tmp   = 0.0;
+    win_hfenrg_tmp = 0.0;
+
+    for (i = 0; i < win_len; i++) {
+        x_tmp     = f->x    [i];
+        x_flt_tmp = f->x_flt[i];
+
+        win_enrg_tmp   += x_tmp     * x_tmp;
+        win_hfenrg_tmp += x_flt_tmp * x_flt_tmp;
+    }
+
+    win_enrg_tmp   += 1.;
+    win_hfenrg_tmp += 1.;
+
+    f->diff_enrg = win_enrg_tmp - win_hfenrg_tmp;
+    f->diff_accenrg = 0.7 * f->diff_accenrg + 0.3 * f->diff_enrg;
+
+#if 0
+    if (f->diff_enrg < f->diff_accenrg) {
+        offset = 1000; //f->diff_accenrg * 0.1;
+        weight = 5; //0.8;
+    } else {
+        offset = 200; //f->diff_enrg * 0.1;
+        weight = 1; //0.3;
+    }
+#else 
+    if (f->diff_enrg < f->diff_accenrg) {
+        offset = f->diff_accenrg * 0.1;
+        weight = 0.8;
+    } else {
+        offset = f->diff_enrg * 0.1;
+        weight = 0.3;
+    }
+
+#endif
+
+    irt = offset + log(win_hfenrg_tmp) * weight;
+
+    for (i = 0; i < f->block_len; i++) {
+        float tmp;
+        float sign;
+
+        tmp = FA_ABS(f->x_flt[i]);
+        tmp = tmp - irt;
+        tmp = FA_MAX(tmp, 0);
+
+        sign = (f->x_flt[i] > 0.) ? 1. : (-1.);
+        f->x_flt[i] = sign * f->x_flt[i];
+    }
+
+}
+
+static int cmpab(const void *a, const void *b) 
+{
+    return *(float *)a - *(float *)b;
+}
+
+void fa_blockswitch_robust_test1(aacenc_ctx_t *s, float *sample_buf)
+{
+    int win;
+    int i;
+    int win_len;
+
+    /*float win_enrg_tmp;*/
+    float win_hfenrg_tmp;
+    float x_tmp, x_flt_tmp;
+
+    float win_max_hfenrg;
+    float win_hfenrg_sort[8];
+    float ratio;
+    float offset, weight;
+    float cct;
+
+    fa_blockctrl_t *f = (fa_blockctrl_t *)(s->h_blockctrl);
+
+    /*get current time signals*/
+    fa_aacfilterbank_get_xbuf(s->h_aac_analysis, f->x);
+    for (i = 0; i < 1024; i++) {
+        f->x[i]      = f->x[i+1024];
+        f->x[i+1024] = sample_buf[i];
+    }
+
+    f->lastattack_flag  = f->attack_flag;
+
+    signal_shaping(f);
+
+    win_len = f->block_len / WINCNT;
+
+    win_max_hfenrg = 0.;
+    memset(win_hfenrg_sort, 0, sizeof(float)*8);
+    for (win = 0; win < WINCNT; win++) {
+        /*win_enrg_tmp   = 0.0;*/
+        win_hfenrg_tmp = 0.0;
+
+        for (i = 0; i < win_len; i++) {
+            /*x_tmp     = f->x    [win*win_len + i];*/
+            x_flt_tmp = f->x_flt[win*win_len + i];
+
+            /*win_enrg_tmp   += x_tmp     * x_tmp;*/
+            win_hfenrg_tmp += x_flt_tmp * x_flt_tmp;
+        }
+
+        /*f->win_enrg[1][win]   = win_enrg_tmp;*/
+        /*f->win_hfenrg[1][win] = win_hfenrg_tmp;*/
+        win_hfenrg_sort[win]  = win_hfenrg_tmp;
+        /*printf("before sort: %d=%f\n", win, win_hfenrg_tmp);*/
+        win_max_hfenrg = FA_MAX(win_hfenrg_tmp, win_max_hfenrg);
+    }
+
+    qsort(win_hfenrg_sort, WINCNT, sizeof(float), cmpab);
+/*
+    for (win = 0; win < WINCNT; win++)
+        printf("after sort: %d=%f\n", win, win_hfenrg_sort[win]);
+*/
+    for (win = 0; win < WINCNT; win++) {
+        if (win_hfenrg_sort[win] > 0) {
+            float tmp;
+            if (win < WINCNT-3)
+                tmp = (win_hfenrg_sort[win]+win_hfenrg_sort[win+1]+win_hfenrg_sort[win+2])/3;
+            else if (win < WINCNT-2)
+                tmp = (win_hfenrg_sort[win]+win_hfenrg_sort[win+1])/2;
+            else 
+                tmp = win_hfenrg_sort[win];
+            ratio = win_max_hfenrg / tmp; 
+            break;
+        }
+    }
+
+    offset = 30; //log(f->diff_accenrg);
+    weight = 0.4;
+    cct = (offset - log(f->diff_enrg)) * weight;
+    /*printf("##### ratio=%f, cct=%f, offset=%f, diff=%f\n", ratio, cct, offset, log(f->diff_enrg));*/
+
+    if (ratio > cct) {
+        f->attack_flag = 1;
+    } else {
+        f->attack_flag = 0;
+    }
+
+    s->block_type = win_sequence[f->lastattack_flag][f->attack_flag][s->block_type];
+    /*s->block_type = select_block(s->block_type, f->attack_flag);*/
+
+    /*printf("\n\n");*/
+
+}
+
+#endif
+
+
 
