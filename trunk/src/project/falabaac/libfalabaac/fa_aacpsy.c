@@ -268,7 +268,7 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
             xp = x + AAC_BLOCK_TRANS_LEN + win*128;
             update_psy_short_previnfo(f, win);
             /*fa_psychomodel2_calculate_pe(f->h_psy2_short[win], xp, &pe);*/
-            fa_psychomodel2_calculate_pe_improve(f->h_psy2_short[win], xp, &pe, 18, 6, 1, 1);
+            fa_psychomodel2_calculate_pe_improve(f->h_psy2_short[win], xp, &pe, 18, 9, 1, 1);
             pe_sum += pe;
         }
     } else {

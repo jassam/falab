@@ -1708,7 +1708,7 @@ static int mdctline_enc(fa_aacenc_ctx_t *f)
                         /*printf("delta bits=%d\n", delta_bits);*/
 
                         if (sl->block_type == ONLY_SHORT_BLOCK)
-                            sl->step_down_db = sr->step_down_db = 0.3;
+                            sl->step_down_db = sr->step_down_db = 0.2;
                             /*sl->step_down_db = sr->step_down_db = choose_stepsize_db(delta_bits, s->bit_thr_cof);*/
                         else
                             sl->step_down_db = sr->step_down_db = choose_stepsize_db(delta_bits, s->bit_thr_cof);

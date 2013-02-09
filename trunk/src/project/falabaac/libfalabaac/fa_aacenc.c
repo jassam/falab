@@ -374,7 +374,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
     /*init psy and mdct quant */
     for (i = 0; i < chn_num; i++) {
-        f->ctx[i].h_blockctrl = fa_blockswitch_init(2048);
+        f->ctx[i].h_blockctrl = fa_blockswitch_init(1024);
 
         f->ctx[i].time_resolution_first = time_resolution_first;
 
