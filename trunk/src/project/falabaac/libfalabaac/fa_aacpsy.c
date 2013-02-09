@@ -302,8 +302,11 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
         fa_psychomodel2_calculate_pe_improve(f->h_psy2_short[win], xp, &pe, 18, 6, 1, 1);
         pe_sum_short += pe;
     }
-    /*fa_psychomodel2_calculate_pe(f->h_psy2_long , x, &pe);*/
-    fa_psychomodel2_calculate_pe_improve(f->h_psy2_long , x, &pe, 18, 6, 1, 1);
+    /*fa_psychomodel2_calculate_pe_improve(f->h_psy2_long , x, &pe, 18, 6, 1, 1);*/
+    if (block_type == ONLY_LONG_BLOCK)
+        fa_psychomodel2_calculate_pe_improve(f->h_psy2_long , x, &pe, 18, 6, 1, 1);
+    else 
+        fa_psychomodel2_calculate_pe_improve(f->h_psy2_long , x, &pe, 18, 6, 1, 0);
     pe_sum_long = pe;
 
     if (block_type == ONLY_SHORT_BLOCK) 

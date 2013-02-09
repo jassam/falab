@@ -97,11 +97,11 @@ uintptr_t fa_tns_init(int mpeg_version, int objtype, int sr_index)
             f->tns_maxorder_long = TNS_MAX_ORDER_LONG_LC;
         } else { /* MPEG4 */
             if (sr_index <= 5) /* fs > 32000Hz */
-                f->tns_maxorder_long = 10; //12;
+                f->tns_maxorder_long = 12; //12; //12;
             else
-                f->tns_maxorder_long = 10;//12; //20;
+                f->tns_maxorder_long = 20;//12; //20;
         }
-        f->tns_maxorder_short = 5; //TNS_MAX_ORDER_SHORT;
+        f->tns_maxorder_short = 7; //TNS_MAX_ORDER_SHORT;
         break;
     }
     f->tns_minband_long = tns_minband_long[sr_index];
@@ -260,6 +260,7 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
 
     uintptr_t h_lpc;
     int order;
+    float cof_res;
 
     int w;
 
@@ -289,6 +290,7 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
         start = FA_MIN(start, s->tns_maxband_short);
         end   = FA_MAX(end  , s->tns_maxband_short);
         h_lpc = s->h_lpc_short;
+        cof_res = 3;
     } else {
         num_windows = 1;
         window_len  = 1024;
@@ -305,6 +307,7 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
         start = FA_MIN(start, s->tns_maxband_long);
         end   = FA_MAX(end  , s->tns_maxband_long);
         h_lpc = s->h_lpc_long;
+        cof_res = 4;
     }
 
     start = FA_MIN(start, max_sfb);
@@ -336,7 +339,7 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
 #endif
 
         tns_win->num_flt = 0;
-        tns_win->coef_resolution = DEF_TNS_COEFF_RES;
+        tns_win->coef_resolution = cof_res; //DEF_TNS_COEFF_RES;
         mdct_line_index = w*window_len + swb_low[start];
         mdct_line_len   = swb_low[end] - swb_low[start];
 /*
@@ -362,7 +365,8 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
             memset(atmp, 0, sizeof(float)*15);
             kcof2acof(ordertmp, kcof, atmp);
 #endif
-            quant_reflection_cof(order, DEF_TNS_COEFF_RES, kcof, tns_flt->index);
+            /*quant_reflection_cof(order, DEF_TNS_COEFF_RES, kcof, tns_flt->index);*/
+            quant_reflection_cof(order, cof_res, kcof, tns_flt->index);
             real_order = truncate_cof(order, DEF_TNS_COEFF_THRESH, kcof);
             tns_flt->order = real_order;
             kcof2acof(real_order, kcof, acof);
