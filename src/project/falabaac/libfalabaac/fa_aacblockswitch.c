@@ -430,7 +430,7 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 
 #endif
 
-#define WINCNT 8
+#define WINCNT  4 //8
 
 typedef struct _fa_blockctrl_t {
     uintptr_t  h_flt_fir;
@@ -461,7 +461,7 @@ uintptr_t fa_blockswitch_init(int block_len)
     fa_blockctrl_t *f = (fa_blockctrl_t *)malloc(sizeof(fa_blockctrl_t));
     memset(f, 0, sizeof(fa_blockctrl_t));
 
-    f->h_flt_fir = fa_fir_filter_hpf_init(block_len, 7, 0.48, KAISER);
+    f->h_flt_fir = fa_fir_filter_hpf_init(block_len, 7, 0.4, KAISER);
     /*f->h_flt_fir = fa_fir_filter_hpf_init(block_len, 7, 0.5, BLACKMAN);*/
     f->block_len = block_len;
 
@@ -721,19 +721,19 @@ int fa_blockswitch_robust_test(aacenc_ctx_t *s, float *sample_buf)
 
 #if 1 
     if (f->lastattack_flag) {
-        frac  = 0.6;
-        ratio = 0.3;
-        if (f->lastattack_index > 4) {
-            frac  += (f->lastattack_index - 3) * 0.1;
-            ratio += (f->lastattack_index - 3) * 0.1;
+        frac  = 0.8;
+        ratio = 0.76;
+        if (f->lastattack_index > 1) {
+            /*frac  += (f->lastattack_index - 1) * 0.1;*/
+            ratio += (f->lastattack_index - 1) * 0.2;
         }
     } else  {
-        frac  = 0.3;
-        ratio = 0.1;
+        frac  = 0.4;
+        ratio = 0.3;
     }
 #else 
-    frac  = 0.3;
-    ratio = 0.2;
+    frac  = 0.4;
+    ratio = 0.3;
 #endif
 
     for (i = 0; i < WINCNT; i++) {

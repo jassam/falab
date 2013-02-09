@@ -863,8 +863,11 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         /*if (tns_enable && (!s->chn_info.lfe) && (s->block_type != ONLY_LONG_BLOCK))*/
         /*if (tns_enable && (!s->chn_info.lfe))*/
         if (tns_enable && (!s->chn_info.lfe) &&
+            /*((s->block_type == LONG_START_BLOCK) || (s->block_type == LONG_STOP_BLOCK)))*/
             ((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == LONG_START_BLOCK) || (s->block_type == LONG_STOP_BLOCK)))
+            /*((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == LONG_START_BLOCK)))*/
             /*((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == ONLY_LONG_BLOCK)))*/
+            /*((s->block_type == ONLY_SHORT_BLOCK) ))*/
             fa_tns_encode_frame(s);
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/
