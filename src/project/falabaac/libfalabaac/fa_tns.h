@@ -36,7 +36,7 @@ extern "C"
 
 
 #define TNS_MAX_ORDER        20
-#define DEF_TNS_GAIN_THRESH  20 //2.5 //1.4 //1.4 //18 //4 //1.8 //1.4 //10 //15 //1.4
+#define DEF_TNS_GAIN_THRESH  20 //1.4 //1.4 //18 //4 //1.8 //1.4 //10 //15 //1.4
 #define DEF_TNS_COEFF_THRESH 0.1 //0.4 //0.1
 #define DEF_TNS_COEFF_RES    4
 #define DEF_TNS_RES_OFFSET   3

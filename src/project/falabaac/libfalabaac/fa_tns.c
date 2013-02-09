@@ -97,11 +97,11 @@ uintptr_t fa_tns_init(int mpeg_version, int objtype, int sr_index)
             f->tns_maxorder_long = TNS_MAX_ORDER_LONG_LC;
         } else { /* MPEG4 */
             if (sr_index <= 5) /* fs > 32000Hz */
-                f->tns_maxorder_long = 12;
+                f->tns_maxorder_long = 10; //12;
             else
-                f->tns_maxorder_long = 20;
+                f->tns_maxorder_long = 10;//12; //20;
         }
-        f->tns_maxorder_short = TNS_MAX_ORDER_SHORT;
+        f->tns_maxorder_short = 5; //TNS_MAX_ORDER_SHORT;
         break;
     }
     f->tns_minband_long = tns_minband_long[sr_index];
