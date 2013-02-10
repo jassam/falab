@@ -434,10 +434,12 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 
 typedef struct _fa_blockctrl_t {
     uintptr_t  h_flt_fir;
+    uintptr_t  h_flt_fir_hp;
 
     int block_len;
     float *x;
     float *x_flt;
+    float *x_flt_hp;
 
     // 1 means attack, 0 means no attack
     int attack_flag;           
@@ -451,6 +453,8 @@ typedef struct _fa_blockctrl_t {
     float win_hfenrg[2][WINCNT];
     float win_accenrg;
 
+    float diff_enrg_ratio;
+    int   low_hf_flag;
     float diff_enrg;
     float diff_accenrg;
 
@@ -461,17 +465,21 @@ uintptr_t fa_blockswitch_init(int block_len)
     fa_blockctrl_t *f = (fa_blockctrl_t *)malloc(sizeof(fa_blockctrl_t));
     memset(f, 0, sizeof(fa_blockctrl_t));
 
-    f->h_flt_fir = fa_fir_filter_hpf_init(block_len, 7, 0.4, KAISER);
-    /*f->h_flt_fir = fa_fir_filter_hpf_init(block_len, 7, 0.5, BLACKMAN);*/
-    f->block_len = block_len;
+    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 7, 0.4, KAISER);
+    f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 31, 0.6, KAISER);
+    f->block_len    = block_len;
 
     f->x = (float *)malloc(block_len * sizeof(float));
     memset(f->x, 0, block_len * sizeof(float));
     f->x_flt = (float *)malloc(block_len * sizeof(float));
     memset(f->x_flt, 0, block_len * sizeof(float));
+    f->x_flt_hp = (float *)malloc(block_len * sizeof(float));
+    memset(f->x_flt_hp, 0, block_len * sizeof(float));
 
+    f->diff_enrg_ratio = 0.0;
     f->diff_enrg = 0.0;
     f->diff_accenrg = 0.0;
+    f->low_hf_flag = 0;
 
     return (uintptr_t)f;
 }
@@ -486,10 +494,18 @@ static void calculate_win_enrg(fa_blockctrl_t *f)
     float win_hfenrg_tmp;
     float x_tmp, x_flt_tmp;
 
+    float enrg_tmp;
+    float hfenrg_hp_tmp;
+    float x_flt_hp_tmp;
+
     win_len = f->block_len / WINCNT;
+    f->diff_enrg_ratio = 0.0;
 
     fa_fir_filter(f->h_flt_fir, f->x, f->x_flt, f->block_len);
+    fa_fir_filter(f->h_flt_fir_hp, f->x, f->x_flt_hp, f->block_len);
 
+    enrg_tmp    = 0.0;
+    hfenrg_hp_tmp = 0.0;
     for (win = 0; win < WINCNT; win++) {
         win_enrg_tmp   = 0.0;
         win_hfenrg_tmp = 0.0;
@@ -497,9 +513,12 @@ static void calculate_win_enrg(fa_blockctrl_t *f)
         for (i = 0; i < win_len; i++) {
             x_tmp     = f->x    [win*win_len + i];
             x_flt_tmp = f->x_flt[win*win_len + i];
+            x_flt_hp_tmp = f->x_flt_hp[win*win_len + i];
 
             win_enrg_tmp   += x_tmp     * x_tmp;
             win_hfenrg_tmp += x_flt_tmp * x_flt_tmp;
+            hfenrg_hp_tmp  += x_flt_hp_tmp * x_flt_hp_tmp;
+
         }
 
 #if 1 
@@ -509,7 +528,21 @@ static void calculate_win_enrg(fa_blockctrl_t *f)
         f->win_enrg[1][win]   = log10(win_enrg_tmp);
         f->win_hfenrg[1][win] = log10(win_hfenrg_tmp);
 #endif
+
+        enrg_tmp      += win_enrg_tmp;
     }
+
+    hfenrg_hp_tmp += 1.1;
+    enrg_tmp      += 1.1;
+
+    /*printf("hf enrg=%f, enrg=%f\n", hfenrg_hp_tmp, enrg_tmp);*/
+    /*if (hfenrg_hp_tmp < 200000)*/
+    if (hfenrg_hp_tmp < 10000)
+        f->low_hf_flag = 1;
+    
+    /*f->diff_enrg_ratio = log10(hfenrg_hp_tmp)/log10(enrg_tmp);*/
+    f->diff_enrg_ratio = log10(hfenrg_hp_tmp)/log10(enrg_tmp);
+    /*f->diff_enrg_ratio = hfenrg_hp_tmp/enrg_tmp;*/
 
 }
 
@@ -671,6 +704,8 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     return s->block_type;
 }
 
+/*TODO :sync flag, use the short block to sync all attack flag*/
+
 
 int fa_blockswitch_robust_test(aacenc_ctx_t *s, float *sample_buf)
 {
@@ -721,15 +756,33 @@ int fa_blockswitch_robust_test(aacenc_ctx_t *s, float *sample_buf)
 
 #if 1 
     if (f->lastattack_flag) {
-        frac  = 0.8;
-        ratio = 0.76;
-        if (f->lastattack_index > 1) {
-            /*frac  += (f->lastattack_index - 1) * 0.1;*/
-            ratio += (f->lastattack_index - 1) * 0.2;
+        /*frac  = 0.8;*/
+        /*ratio = 0.8;*/
+        if (f->diff_enrg_ratio > 0.35) {
+            frac  = 0.8;
+            ratio = 0.8;
+
+            if (f->lastattack_index > 1) {
+                /*frac  += (f->lastattack_index - 1) * 0.1;*/
+                ratio += (f->lastattack_index - 1) * 0.2;
+            }
+        } else {
+            frac  = 0.3;
+            ratio = 0.3;
         }
     } else  {
-        frac  = 0.4;
-        ratio = 0.3;
+        if (f->diff_enrg_ratio > 0.4) {
+            frac  = 0.4;
+            ratio = 0.3;
+        } else {
+            frac  = 0.3;
+            ratio = 0.1;
+        }
+
+        if (f->low_hf_flag) {
+            frac  = 0.2;
+            ratio = 0.05;
+        }
     }
 #else 
     frac  = 0.4;
@@ -757,6 +810,10 @@ int fa_blockswitch_robust_test(aacenc_ctx_t *s, float *sample_buf)
     /*if (win_enrg_max < ATTACK_ENRG_MIN)*/
         /*f->attack_flag = 0;*/
 
+    /*printf("diff ratio=%f\n", f->diff_enrg_ratio);*/
+    /*if (f->low_hf_flag)*/
+        /*f->attack_flag = 0;*/
+
     /*check if last prev attack spread to this frame*/
 #if 1 
     if (f->lastattack_flag && !f->attack_flag) {
@@ -778,13 +835,10 @@ int fa_blockswitch_robust_test(aacenc_ctx_t *s, float *sample_buf)
     }
 
 #endif
-
+    
     /*s->block_type = select_block(s->block_type, f->attack_flag);*/
     s->block_type = win_sequence[f->lastattack_flag][f->attack_flag][s->block_type];
-/*
-    if (s->block_type != ONLY_SHORT_BLOCK)
-        f->win_accenrg *= 0.3;
-*/
+    /*printf("diff ratio=%f\n", f->diff_enrg_ratio);*/
 
     return s->block_type;
 }

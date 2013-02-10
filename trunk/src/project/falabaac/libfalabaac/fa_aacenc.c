@@ -804,12 +804,21 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             }
         }
 
+#if 1 
         if (s->block_type == ONLY_SHORT_BLOCK) {
             block_type = ONLY_SHORT_BLOCK;
             break;
         } else {
             block_type = s->block_type;
         }
+#else 
+        if (block_type != ONLY_LONG_BLOCK && s->block_type == ONLY_SHORT_BLOCK) {
+            continue;
+        } else 
+            block_type = s->block_type;
+
+#endif
+
     }
 
     for (i = 0; i < chn_num; i++) {
