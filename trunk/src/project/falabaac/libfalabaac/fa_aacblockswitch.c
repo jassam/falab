@@ -536,8 +536,8 @@ static void calculate_win_enrg(fa_blockctrl_t *f)
     enrg_tmp      += 1.1;
 
     /*printf("hf enrg=%f, enrg=%f\n", hfenrg_hp_tmp, enrg_tmp);*/
-    /*if (hfenrg_hp_tmp < 200000)*/
-    if (hfenrg_hp_tmp < 10000)
+    if (hfenrg_hp_tmp < 200000)
+    /*if (hfenrg_hp_tmp < 10000)*/
         f->low_hf_flag = 1;
     
     /*f->diff_enrg_ratio = log10(hfenrg_hp_tmp)/log10(enrg_tmp);*/
@@ -754,10 +754,8 @@ int fa_blockswitch_robust_test(aacenc_ctx_t *s, float *sample_buf)
     win_enrg_max = 0.0;
     win_enrg_prev = f->win_hfenrg[0][WINCNT-1];
 
-#if 1 
+#if  1 
     if (f->lastattack_flag) {
-        /*frac  = 0.8;*/
-        /*ratio = 0.8;*/
         if (f->diff_enrg_ratio > 0.35) {
             frac  = 0.8;
             ratio = 0.8;
@@ -771,6 +769,7 @@ int fa_blockswitch_robust_test(aacenc_ctx_t *s, float *sample_buf)
             ratio = 0.3;
         }
     } else  {
+
         if (f->diff_enrg_ratio > 0.4) {
             frac  = 0.4;
             ratio = 0.3;
@@ -820,7 +819,10 @@ int fa_blockswitch_robust_test(aacenc_ctx_t *s, float *sample_buf)
         if  (((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
              (f->lastattack_index == WINCNT-1)) ||
              ((f->win_hfenrg[0][WINCNT-2] > f->win_hfenrg[1][0]) &&
-             (f->lastattack_index == WINCNT-2)))  {
+             (f->lastattack_index == WINCNT-2)) //||
+             /*((f->win_hfenrg[0][WINCNT-3] > f->win_hfenrg[1][0]) &&*/
+             /*(f->lastattack_index == WINCNT-3))*/
+             )  {
             f->attack_flag  = 1;
             f->attack_index = 0;
         }
