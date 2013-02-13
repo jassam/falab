@@ -794,9 +794,9 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
 #if 1 
                 /*if (s->block_type == 2)*/
-                /*if (s->block_type != 0)*/
-                    /*printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);*/
-                printf("i=%d, block_type=%d\n", i+1, s->block_type);
+                if (s->block_type != 0)
+                    printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
+                /*printf("i=%d, block_type=%d\n", i+1, s->block_type);*/
 #endif
             } else {
                 s->block_type = ONLY_LONG_BLOCK;
