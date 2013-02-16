@@ -709,8 +709,8 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
 
             /*if (tt)*/
                 /*printf("--------------------->>final block_type=%d\n\n", block_type);*/
-            /*if (block_type != 0)*/
-                /*printf("i=%d, block_type=%d\n", i+1, s->block_type);*/
+            if (block_type != 0)
+                printf("i=%d, block_type=%d\n", i+1, s->block_type);
             
         } else {
             chn = 1;
