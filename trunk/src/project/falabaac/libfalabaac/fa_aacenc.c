@@ -671,7 +671,7 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
         s->window_group_length[7] = 0;
 #else 
         /*just for test different group length result*/
-    #if  0 
+    #if  1 
         s->num_window_groups = 8;
         s->window_group_length[0] = 1;
         s->window_group_length[1] = 1;
@@ -791,7 +791,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
                 fa_blockswitch_robust(s, f->sample+i*AAC_FRAME_LEN);
 #endif 
 
-#if  1 
+#if  0 
                 /*if (s->block_type == 2)*/
                 if (s->block_type != 0)
                     printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
@@ -803,27 +803,24 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             }
         }
 
-#if 1 
+#if 0 
         if (s->block_type == ONLY_SHORT_BLOCK) {
             block_type = ONLY_SHORT_BLOCK;
             break;
         } else {
             block_type = s->block_type;
         }
-#else 
-        if (block_type != ONLY_LONG_BLOCK && s->block_type == ONLY_SHORT_BLOCK) {
-            continue;
-        } else 
-            block_type = s->block_type;
-
 #endif
 
     }
 
+    fa_blocksync(f);
+/*
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
         s->block_type = block_type;
     }
+*/
 
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
@@ -868,9 +865,9 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             }
         }
 
-        if (tns_enable && (!s->chn_info.lfe))
-        /*if (tns_enable && (!s->chn_info.lfe) &&*/
-            /*((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == LONG_START_BLOCK) || (s->block_type == LONG_STOP_BLOCK)))*/
+        /*if (tns_enable && (!s->chn_info.lfe))*/
+        if (tns_enable && (!s->chn_info.lfe) &&
+            ((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == LONG_START_BLOCK) || (s->block_type == LONG_STOP_BLOCK)))
             fa_tns_encode_frame(s);
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/

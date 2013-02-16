@@ -553,7 +553,7 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     win_enrg_max = 0.0;
     win_enrg_prev = f->win_hfenrg[0][WINCNT-1];
 
-#if 1 
+#if 0 
     if (f->lastattack_flag) {
         if (f->diff_enrg_ratio > 0.35) {
             frac  = 0.8;
@@ -585,7 +585,7 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     }
 #else 
     frac = 0.3;
-    ratio = 0.2;
+    ratio = 0.1;
 
 #endif
     /*printf("############################## last attack flag=%d\n", f->lastattack_flag);*/
@@ -598,7 +598,7 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
         f->win_accenrg = (1-frac)*f->win_accenrg + frac*win_enrg_prev;
         ratio1 = f->win_hfenrg[1][i]*ratio/f->win_accenrg;
 
-#if  1 
+#if  0 
         if (f->diff_enrg_ratio > 0.8) {
             /*if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {*/
             /*if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg &&*/
@@ -608,8 +608,8 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
                ) {
                 f->attack_flag  = 1;
                 f->attack_index = i;
-                printf("hfenrg=%f, ratio=%f, mult=%f, i=%d, winacc=%f\n",
-                        f->win_hfenrg[1][i], ratio, f->win_hfenrg[1][i]*ratio, i, f->win_accenrg);
+                /*printf("hfenrg=%f, ratio=%f, mult=%f, i=%d, winacc=%f\n",*/
+                        /*f->win_hfenrg[1][i], ratio, f->win_hfenrg[1][i]*ratio, i, f->win_accenrg);*/
             }
         } else {
             /*if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg &&*/
@@ -619,8 +619,8 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
                ) {
                 f->attack_flag  = 1;
                 f->attack_index = i;
-                printf("hfenrg=%f, ratio=%f, mult=%f, i=%d, winacc=%f\n",
-                        f->win_hfenrg[1][i], ratio, f->win_hfenrg[1][i]*ratio, i, f->win_accenrg);
+                /*printf("hfenrg=%f, ratio=%f, mult=%f, i=%d, winacc=%f\n",*/
+                        /*f->win_hfenrg[1][i], ratio, f->win_hfenrg[1][i]*ratio, i, f->win_accenrg);*/
             }
         }
 /*
@@ -662,3 +662,64 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     return s->block_type;
 }
 
+
+static const int block_sync_tab[4][4] =
+{
+  /*                      ONLY_LONG_BLOCK   LONG_START_BLOCK  ONLY_SHORT_BLOCK  LONG_STOP_BLOCK   */
+  /* ONLY_LONG_BLOCK  */ {ONLY_LONG_BLOCK,  LONG_START_BLOCK, ONLY_SHORT_BLOCK, LONG_STOP_BLOCK  },
+  /* LONG_START_BLOCK */ {LONG_START_BLOCK, LONG_START_BLOCK, ONLY_SHORT_BLOCK, ONLY_SHORT_BLOCK },
+  /* ONLY_SHORT_BLOCK */ {ONLY_SHORT_BLOCK, ONLY_SHORT_BLOCK, ONLY_SHORT_BLOCK, ONLY_SHORT_BLOCK },
+  /* LONG_STOP_BLOCK  */ {LONG_STOP_BLOCK,  ONLY_SHORT_BLOCK, ONLY_SHORT_BLOCK, LONG_STOP_BLOCK  },
+};
+
+
+int fa_blocksync(fa_aacenc_ctx_t *f)
+{
+    int i, chn;
+    int chn_num;
+    aacenc_ctx_t *s, *sl, *sr;
+    int block_type;
+    /*int tt;*/
+
+    chn_num = f->cfg.chn_num;
+
+    i = 0;
+    chn = 1;
+
+    while (i < chn_num) {
+        block_type = ONLY_LONG_BLOCK;
+        s = &(f->ctx[i]);
+        /*tt = 0;*/
+
+        if (s->chn_info.cpe == 1) {
+            chn = 2;
+            sl = s;
+            sr = &(f->ctx[i+1]);
+/*
+            if (sl->block_type != sr->block_type) {
+                tt = 1;
+                printf("----------------->> slbt=%d, srbt=%d\n", sl->block_type, sr->block_type);
+            }
+*/
+            block_type = block_sync_tab[block_type][sl->block_type];
+            block_type = block_sync_tab[block_type][sr->block_type];
+
+            sl->block_type = block_type;
+            sr->block_type = block_type;
+
+            /*if (tt)*/
+                /*printf("--------------------->>final block_type=%d\n\n", block_type);*/
+            /*if (block_type != 0)*/
+                /*printf("i=%d, block_type=%d\n", i+1, s->block_type);*/
+            
+        } else {
+            chn = 1;
+        }
+
+        i += chn;
+    } 
+
+
+    return 0;
+
+}
