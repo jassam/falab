@@ -489,13 +489,13 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         /*if (f->band_width < 20000) {*/
         if (f->band_width < BW_MAX) {
             if (time_resolution_first)
-                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.7);
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
                 /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);*/
             else 
-                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.93);
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);
         } else { 
             if (time_resolution_first)
-                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.8);
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
                 /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
             else 
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 1.0);
@@ -788,11 +788,10 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 #if 0 
                 f->do_blockswitch(s);
 #else 
-                /*fa_blockswitch_robust(s, f->sample+i*AAC_FRAME_LEN);*/
-                fa_blockswitch_robust_test(s, f->sample+i*AAC_FRAME_LEN);
+                fa_blockswitch_robust(s, f->sample+i*AAC_FRAME_LEN);
 #endif 
 
-#if 1 
+#if  1 
                 /*if (s->block_type == 2)*/
                 if (s->block_type != 0)
                     printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
@@ -856,6 +855,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
                 fa_aacpsy_calculate_xmin_usepsych1(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);
             } else {
                 fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);
+                /*fa_aacpsy_calculate_pe_hp(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);*/
                 fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);
             }
             /*if (speed_level == 2 || speed_level == 3)*/
@@ -868,15 +868,9 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             }
         }
 
-        /*if (tns_enable && (!s->chn_info.lfe) && (s->block_type == ONLY_SHORT_BLOCK))*/
-        /*if (tns_enable && (!s->chn_info.lfe) && (s->block_type != ONLY_LONG_BLOCK))*/
-        /*if (tns_enable && (!s->chn_info.lfe))*/
-        if (tns_enable && (!s->chn_info.lfe) &&
-            /*((s->block_type == LONG_START_BLOCK) || (s->block_type == LONG_STOP_BLOCK)))*/
-            ((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == LONG_START_BLOCK) || (s->block_type == LONG_STOP_BLOCK)))
-            /*((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == LONG_START_BLOCK)))*/
-            /*((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == ONLY_LONG_BLOCK)))*/
-            /*((s->block_type == ONLY_SHORT_BLOCK) ))*/
+        if (tns_enable && (!s->chn_info.lfe))
+        /*if (tns_enable && (!s->chn_info.lfe) &&*/
+            /*((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == LONG_START_BLOCK) || (s->block_type == LONG_STOP_BLOCK)))*/
             fa_tns_encode_frame(s);
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/
@@ -892,25 +886,12 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 
     /*quantize*/
     f->do_quantize(f);
-    /*if (block_type == ONLY_SHORT_BLOCK)*/
-        /*fa_quantize_fast(f);*/
-    /*else */
-        /*fa_quantize_best(f);*/
 
     /* offset the difference of common_scalefac and scalefactors by SF_OFFSET  */
     scalefactor_recalculate(f, chn_num);
 
     /*format bitstream*/
     fa_write_bitstream(f);
-
-#if 0   //for inverse decode debug sign
-    for (i = 0; i < 1024; i++) {
-        if (s->mdct_line[i] >= 0)
-            s->mdct_line_sign[i] = 1;
-        else
-            s->mdct_line_sign[i] = -1;
-    }
-#endif
 
     *outlen = fa_bitstream_getbufval(f->h_bitstream, buf_out);
 

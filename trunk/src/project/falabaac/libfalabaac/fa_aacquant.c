@@ -1390,8 +1390,8 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
 #ifdef USE_PDF_IMPROVE
             sf = fa_estimate_sf_fast_improve((1.2+adj)*s->Ti[0][i], s->pdft[0][i], s->miu2[0][i]);
 #else 
-            sf = fa_estimate_sf_fast((1.0+adj+ti_adj)*s->Ti[0][i], s->pdft[0][i]);
-            /*sf = fa_estimate_sf_fast((1.0+ti_adj)*s->Ti[0][i], s->pdft[0][i]);*/
+            /*sf = fa_estimate_sf_fast((1.0+adj+ti_adj)*s->Ti[0][i], s->pdft[0][i]);*/
+            sf = fa_estimate_sf_fast((1.0+ti_adj)*s->Ti[0][i], s->pdft[0][i]);
 #endif
             s->common_scalefac = FA_MAX(s->common_scalefac, sf);
             s->scalefactor[0][i] = sf; 

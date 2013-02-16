@@ -123,7 +123,7 @@ void fa_aacfilterbank_uninit(uintptr_t handle)
     }
 }
 
-#if  1 
+#if  0 
 /*used in encode, kbd is used for short block, sine is used for long block*/
 void fa_aacfilterbank_analysis(uintptr_t handle, int block_type, int *window_shape, 
                                float *x, float *mdct_line)
