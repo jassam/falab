@@ -42,6 +42,7 @@ uintptr_t fa_blockswitch_init(int block_len);
 void fa_blockswitch_uninit(uintptr_t handle);
 
 int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf);
+int fa_blocksync(fa_aacenc_ctx_t *f);
 
 
 
