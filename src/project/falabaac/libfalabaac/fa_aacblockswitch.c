@@ -563,6 +563,7 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
                 /*frac  += (f->lastattack_index - 1) * 0.1;*/
                 ratio += (f->lastattack_index - 1) * 0.2;
             }
+
         } else {
             frac  = 0.3;
             ratio = 0.3;
@@ -586,6 +587,19 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
 #else 
     frac = 0.3;
     ratio = 0.1;
+/*
+    if (f->low_hf_flag) {
+        frac  = 0.2;
+        ratio = 0.05;
+    }
+*/
+    /*if (f->diff_enrg_ratio > 0.4) {*/
+        /*frac  = 0.4;*/
+        /*ratio = 0.3;*/
+    /*} else {*/
+        /*frac  = 0.3;*/
+        /*ratio = 0.1;*/
+    /*}*/
 
 #endif
     /*printf("############################## last attack flag=%d\n", f->lastattack_flag);*/
@@ -646,9 +660,9 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     /*check if last prev attack spread to this frame*/
     if (f->lastattack_flag && !f->attack_flag) {
         if  (((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
-             (f->lastattack_index == WINCNT-1)) ||
-             ((f->win_hfenrg[0][WINCNT-2] > f->win_hfenrg[1][0]) &&
-             (f->lastattack_index == WINCNT-2)) 
+             (f->lastattack_index == WINCNT-1)) //||
+             /*((f->win_hfenrg[0][WINCNT-2] > f->win_hfenrg[1][0]) &&*/
+             /*(f->lastattack_index == WINCNT-2)) */
             )  {
             f->attack_flag  = 1;
             f->attack_index = 0;

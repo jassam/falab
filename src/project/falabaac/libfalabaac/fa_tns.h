@@ -36,8 +36,8 @@ extern "C"
 
 
 #define TNS_MAX_ORDER        20
-#define DEF_TNS_GAIN_THRESH  45 //1.4 //18 //4 //1.8 //1.4 //10 //15 //1.4
-//#define DEF_TNS_GAIN_THRESH  35 //18 //4 //1.8 //1.4 //10 //15 //1.4
+//#define DEF_TNS_GAIN_THRESH  45 //1.4 //18 //4 //1.8 //1.4 //10 //15 //1.4
+#define DEF_TNS_GAIN_THRESH  10 //18 //4 //1.8 //1.4 //10 //15 //1.4
 #define DEF_TNS_COEFF_THRESH 0.1 //0.4 //0.1
 #define DEF_TNS_COEFF_RES    4
 #define DEF_TNS_RES_OFFSET   3
@@ -75,6 +75,8 @@ typedef struct _tns_info_t{
     uintptr_t h_lpc_short;
     uintptr_t h_lpc_long;
 
+    float tns_gain_thr;
+
 } tns_info_t;
 
  
@@ -84,7 +86,7 @@ void fa_tns_uninit(uintptr_t handle);
 
 void fa_tns_encode_frame(aacenc_ctx_t *f);
 
-
+int fa_tnssync(fa_aacenc_ctx_t *f);
 
 #ifdef __cplusplus 
 }
