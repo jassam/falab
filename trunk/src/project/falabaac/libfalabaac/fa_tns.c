@@ -97,7 +97,7 @@ uintptr_t fa_tns_init(int mpeg_version, int objtype, int sr_index)
             f->tns_maxorder_long = TNS_MAX_ORDER_LONG_LC;
         } else { /* MPEG4 */
             if (sr_index <= 5) /* fs > 32000Hz */
-                f->tns_maxorder_long = 12; //12; //12;
+                f->tns_maxorder_long = 12;//12; //12; //12;
             else
                 f->tns_maxorder_long = 20;//12; //20;
         }
@@ -109,6 +109,8 @@ uintptr_t fa_tns_init(int mpeg_version, int objtype, int sr_index)
 
     f->h_lpc_short = fa_lpc_init(f->tns_maxorder_short);
     f->h_lpc_long  = fa_lpc_init(f->tns_maxorder_long);
+
+    f->tns_gain_thr = DEF_TNS_GAIN_THRESH;
 
     return (uintptr_t)f;
 }
@@ -349,7 +351,8 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
         gain = fa_lpc(h_lpc, &(mdct_line[mdct_line_index]), mdct_line_len, acof, kcof, &err);
         /*printf("w=%d, tns gain=%f\n", w, gain);*/
 
-        if (gain > DEF_TNS_GAIN_THRESH) {
+        /*if (gain > DEF_TNS_GAIN_THRESH) {*/
+        if (gain > s->tns_gain_thr) {
             int real_order;
             
             /*printf("\ngain=%f\n", gain);*/
@@ -378,6 +381,60 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
 }
 
 
+int fa_tnssync(fa_aacenc_ctx_t *f)
+{
+    int i, chn;
+    int chn_num;
+    aacenc_ctx_t *s, *sl, *sr;
+    int tns_active;
+    int block_type;
+
+    chn_num = f->cfg.chn_num;
+
+    i = 0;
+    chn = 1;
+
+    while (i < chn_num) {
+        s = &(f->ctx[i]);
+
+        tns_active = 0;
+        if (s->chn_info.cpe == 1) {
+            chn = 2;
+            sl = s;
+            sr = &(f->ctx[i+1]);
+            tns_info_t *tns_sl = (tns_info_t *)sl->h_tns;
+            tns_info_t *tns_sr = (tns_info_t *)sr->h_tns;
+
+            /*if (1==sl->tns_active && 1==sr->tns_active)*/
+                /*tns_active = 1;*/
+            tns_active = sl->tns_active & sr->tns_active;
+
+            sl->tns_active = sr->tns_active = tns_active;
+            /*printf("sl_tnsa=%d, sr_tnsa=%d\n", sl->tns_active, sr->tns_active);*/
+
+            block_type = sl->block_type;
+            if (block_type == LONG_START_BLOCK || block_type == LONG_STOP_BLOCK)
+                tns_sl->tns_gain_thr = tns_sr->tns_gain_thr = 42;
+            else 
+                tns_sl->tns_gain_thr = tns_sr->tns_gain_thr = 30;
+           
+        } else {
+            chn = 1;
+            tns_info_t *tns_s = (tns_info_t *)s->h_tns;
+
+            block_type = s->block_type;
+            if (block_type == LONG_START_BLOCK || block_type == LONG_STOP_BLOCK)
+                tns_s->tns_gain_thr = 5;
+            else 
+                tns_s->tns_gain_thr = 2;
+        }
+
+        i += chn;
+    } 
+
+    return 0;
+
+}
 
 
 

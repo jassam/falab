@@ -431,6 +431,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         f->ctx[i].h_aac_analysis  = fa_aacfilterbank_init();
 
         f->ctx[i].h_tns           = fa_tns_init(f->cfg.mpeg_version, f->cfg.aac_objtype, f->cfg.sample_rate_index);
+        f->ctx[i].tns_active      = 0;
 
         memcpy(&(f->ctx[i].chn_info), &(chn_info_tmp[i]), sizeof(chn_info_t));
         f->ctx[i].chn_info.common_window = 0;
@@ -851,9 +852,10 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             if (psy_model == PSYCH1) {
                 fa_aacpsy_calculate_xmin_usepsych1(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);
             } else {
-                fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);
-                /*fa_aacpsy_calculate_pe_hp(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe);*/
+                fa_aacpsy_calculate_pe(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe, &s->tns_active);
+                /*fa_aacpsy_calculate_pe_hp(s->h_aacpsy, sample_psy_buf, s->block_type, &s->pe, &s->tns_active);*/
                 fa_aacpsy_calculate_xmin(s->h_aacpsy, s->mdct_line, s->block_type, s->xmin);
+                /*printf("=====>tns_active=%d\n", s->tns_active);*/
             }
             /*if (speed_level == 2 || speed_level == 3)*/
                 /*fa_calculate_scalefactor_win(s, s->xmin);*/
@@ -861,13 +863,22 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             if (speed_level < 5) {
                 fa_fastquant_calculate_sfb_avgenergy(s);
                 fa_fastquant_calculate_xmin(s, s->xmin);
-                /*fa_calculate_scalefactor_win(s, s->xmin);*/
+                /*fa_calculate_scalefactor_win(s, s->xmin);*/   // if use QUANTIZE_FAST , uncommented
             }
         }
+    }
+
+    fa_tnssync(f);
+
+    for (i = 0; i < chn_num; i++) {
+        s = &(f->ctx[i]);
 
         /*if (tns_enable && (!s->chn_info.lfe))*/
-        if (tns_enable && (!s->chn_info.lfe) &&
-            ((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == LONG_START_BLOCK) || (s->block_type == LONG_STOP_BLOCK)))
+        if (tns_enable && (!s->chn_info.lfe) && (1 == s->tns_active))
+        /*if (tns_enable && (!s->chn_info.lfe) &&*/
+        /*if (tns_enable && (!s->chn_info.lfe) && (1 == s->tns_active) &&*/
+            /*((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == LONG_START_BLOCK) || (s->block_type == LONG_STOP_BLOCK)))*/
+            /*((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == ONLY_LONG_BLOCK)) )*/
             fa_tns_encode_frame(s);
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/

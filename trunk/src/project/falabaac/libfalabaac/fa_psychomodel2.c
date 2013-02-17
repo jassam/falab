@@ -612,7 +612,7 @@ void fa_psychomodel2_calculate_pe(uintptr_t handle, float *x, float *pe)
     /*printf("\n\n");*/
 }
 
-void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
+void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe, int *tns_active,
                                           float tmn, float nmt, float nb_cof, int do_precho_ctrl)
 {
     int i,j;
@@ -794,26 +794,45 @@ void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
 #else 
         /*nb[i] = FA_MAX(pow(10., qsthr[i]/10.), nb[i]);*/
         if (do_precho_ctrl) {
-            if (fft_len < 1024)
+            if (fft_len < 1024) {
                 /*nb[i] = FA_MAX(pow(10., qsthr[i]/10.), nb[i]);*/
                 /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], 1.4*nb_prev[i]));*/
                 nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], nb_prev[i]));
                 /*nb[i] = FA_MAX(pow(10., qsthr[i]/10.), 1.6*nb[i]);*/
                 /*nb[i] = FA_MAX(qsthr[i], FA_MIN(nb[i], 2*nb_prev[i]));*/
-            else
+
+                if (nb[i] == nb_prev[i])
+                    *tns_active = 1;
+                else 
+                    *tns_active = 0;
+            } else {
                 nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], 2.0*nb_prev[i]));
                 /*nb[i] = FA_MAX(qsthr[i], FA_MIN(nb[i], 2*nb_prev[i]));*/
                 /*nb[i] = FA_MAX(qsthr[i], FA_MIN(nb[i], 6*nb_prev[i]));*/
                 /*nb[i] = FA_MAX(qsthr[i], nb[i]);*/
+
+                if (nb[i] == 2.*nb_prev[i])
+                    *tns_active = 1;
+                else 
+                    *tns_active = 0;
+            }
         } else {
             /*nb[i] = FA_MAX(qsthr[i], nb[i]);*/
             /*if (i < 736)*/
-                /*nb[i] = FA_MAX(pow(10., qsthr[i]/10.), FA_MIN(nb[i], 4.*nb_prev[i]));*/
+                /*nb[i] = FA_MAX(pow(10., qsthr[i]/10.), FA_MIN(nb[i], nb_prev[i]));*/
             /*else*/
-                /*nb[i] = FA_MAX(pow(10., qsthr[i]/10.), FA_MIN(nb[i], 6*nb_prev[i]));*/
+                /*nb[i] = FA_MAX(pow(10., qsthr[i]/10.), FA_MIN(nb[i], 0.7*nb_prev[i]));*/
 
             /*nb[i] = FA_MAX(pow(10., qsthr[i]/10.), nb[i]);*/
-            nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], 2.0*nb_prev[i]));
+            /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], 2.0*nb_prev[i]));*/
+            nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], 1.7*nb_prev[i]));
+
+            /*tns_active = 0;*/
+            /*if (nb[i] == 2.*nb_prev[i])*/
+            if (nb[i] == 1.7*nb_prev[i])
+                *tns_active = 1;
+            else
+                *tns_active = 0;
         }
 #endif
         /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.))*nb_cof, nb[i]);*/

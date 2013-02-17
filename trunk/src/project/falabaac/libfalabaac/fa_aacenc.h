@@ -81,6 +81,7 @@ typedef struct _aacenc_ctx_t{
 
     //tns handle
     uintptr_t h_tns;
+    int   tns_active;
 
     //aac quantize var
     int   spectral_count;
