@@ -314,6 +314,8 @@ typedef struct _fa_blockctrl_t {
     float win_enrg[2][WINCNT];
     float win_hfenrg[2][WINCNT];
     float win_accenrg;
+    float win_hfenrg_hp[2][WINCNT];
+    float win_accenrg_hp;
 
     float diff_enrg_ratio;
     int   low_hf_flag;
@@ -326,8 +328,9 @@ uintptr_t fa_blockswitch_init(int block_len)
     memset(f, 0, sizeof(fa_blockctrl_t));
 
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 7, 0.58, KAISER);*/
-    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 21, 0.58, KAISER);
-    f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 31, 0.6, KAISER);
+    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 21, 0.58, KAISER);*/
+    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 11, 0.65, KAISER);
+    f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 25, 0.8, KAISER);
     f->block_len    = block_len;
 
     f->x = (float *)malloc(block_len * sizeof(float));
@@ -389,52 +392,35 @@ static void calculate_win_enrg(fa_blockctrl_t *f)
     float win_hfenrg_tmp;
     float x_tmp, x_flt_tmp;
 
-    float enrg_tmp;
-    float hfenrg_hp_tmp;
+    float win_hfenrg_hp_tmp;
     float x_flt_hp_tmp;
 
     win_len = f->block_len / WINCNT;
-    f->diff_enrg_ratio = 0.0;
-    f->low_hf_flag = 0;
 
     fa_fir_filter(f->h_flt_fir   , f->x, f->x_flt   , f->block_len);
     fa_fir_filter(f->h_flt_fir_hp, f->x, f->x_flt_hp, f->block_len);
 
-    enrg_tmp    = 0.0;
-    hfenrg_hp_tmp = 0.0;
     for (win = 0; win < WINCNT; win++) {
         win_enrg_tmp   = 0.0;
         win_hfenrg_tmp = 0.0;
+        win_hfenrg_hp_tmp = 0.0;
 
         for (i = 0; i < win_len; i++) {
             x_tmp     = f->x    [win*win_len + i];
             x_flt_tmp = f->x_flt[win*win_len + i];
             x_flt_hp_tmp = f->x_flt_hp[win*win_len + i];
 
-            win_enrg_tmp   += x_tmp     * x_tmp;
-            win_hfenrg_tmp += x_flt_tmp * x_flt_tmp;
-            hfenrg_hp_tmp  += x_flt_hp_tmp * x_flt_hp_tmp;
+            win_enrg_tmp       += x_tmp     * x_tmp;
+            win_hfenrg_tmp     += x_flt_tmp * x_flt_tmp;
+            win_hfenrg_hp_tmp  += x_flt_hp_tmp * x_flt_hp_tmp;
 
         }
 
-        f->win_enrg[1][win]   = win_enrg_tmp;
-        f->win_hfenrg[1][win] = win_hfenrg_tmp;
+        f->win_enrg[1][win]      = win_enrg_tmp;
+        f->win_hfenrg[1][win]    = win_hfenrg_tmp;
+        f->win_hfenrg_hp[1][win] = win_hfenrg_hp_tmp;
 
-        enrg_tmp      += win_enrg_tmp;
     }
-
-    hfenrg_hp_tmp += 1.1;
-    enrg_tmp      += 1.1;
-
-    /*printf("hf enrg=%f, enrg=%f\n", hfenrg_hp_tmp, enrg_tmp);*/
-    if (hfenrg_hp_tmp < 200000)
-    /*if (hfenrg_hp_tmp < 10000)*/
-        f->low_hf_flag = 1;
-    
-    f->diff_enrg_ratio = log10(hfenrg_hp_tmp)/log10(enrg_tmp);
-    /*f->diff_enrg_ratio = log10(hfenrg_hp_tmp) - log10(enrg_tmp);*/
-
-    /*printf("low hf flag = %d, diff ratio=%f\n", f->low_hf_flag, f->diff_enrg_ratio);*/
 
 }
 
@@ -510,14 +496,6 @@ static int select_block(int prev_block_type, int attack_flag)
     return cur_block_type;
 }
 
-#define HFENRG_THR1  4000
-#define WINACC_THR1  40000
-
-/*#define HFENRG_THR2  5000*/
-/*#define WINACC_THR2  50000*/
-#define HFENRG_THR2  50000
-#define WINACC_THR2  80000
-
 /*TODO :sync flag, use the short block to sync all attack flag*/
 int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
 {
@@ -525,6 +503,8 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     fa_blockctrl_t *f = (fa_blockctrl_t *)(s->h_blockctrl);
     float win_enrg_max;
     float win_enrg_prev;
+    float win_enrg_hp_prev;
+
     float frac; 
     float ratio; 
 
@@ -540,6 +520,7 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     for (i = 0; i < WINCNT; i++) {
         f->win_enrg[0][i]   = f->win_enrg[1][i];
         f->win_hfenrg[0][i] = f->win_hfenrg[1][i];
+        f->win_hfenrg_hp[0][i] = f->win_hfenrg_hp[1][i];
     }
 
     for (i = 0; i < 1024; i++) {
@@ -553,115 +534,41 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
 
     win_enrg_max = 0.0;
     win_enrg_prev = f->win_hfenrg[0][WINCNT-1];
+    win_enrg_hp_prev = f->win_hfenrg_hp[0][WINCNT-1];
 
-#if 0 
-    if (f->lastattack_flag) {
-        if (f->diff_enrg_ratio > 0.35) {
-            frac  = 0.8;
-            ratio = 0.8;
-
-            if (f->lastattack_index > 1) {
-                /*frac  += (f->lastattack_index - 1) * 0.1;*/
-                ratio += (f->lastattack_index - 1) * 0.2;
-            }
-
-        } else {
-            frac  = 0.3;
-            ratio = 0.3;
-        }
-
-    } else  {
-        if (f->diff_enrg_ratio > 0.4) {
-            frac  = 0.4;
-            ratio = 0.3;
-        } else {
-            frac  = 0.3;
-            ratio = 0.1;
-        }
-
-        if (f->low_hf_flag) {
-            frac  = 0.2;
-            ratio = 0.05;
-        }
-        /*printf("---------------------------------- last attack flag=%d, lowflag=%d\n", f->lastattack_flag, f->low_hf_flag);*/
-    }
-#else 
     frac = 0.29; //0.3;
     ratio = 0.12;
-/*
-    if (f->low_hf_flag) {
-        frac  = 0.2;
-        ratio = 0.05;
-    }
-*/
-    /*if (f->diff_enrg_ratio > 0.4) {*/
-        /*frac  = 0.4;*/
-        /*ratio = 0.3;*/
-    /*} else {*/
-        /*frac  = 0.3;*/
-        /*ratio = 0.1;*/
-    /*}*/
-
-#endif
-    /*printf("############################## last attack flag=%d\n", f->lastattack_flag);*/
 
     for (i = 0; i < WINCNT; i++) {
         float diff;
-        float ratio1;
 
         /*the accenrg is the smooth energy threshold*/
         f->win_accenrg = (1-frac)*f->win_accenrg + frac*win_enrg_prev;
-        ratio1 = f->win_hfenrg[1][i]*ratio/f->win_accenrg;
+        f->win_accenrg_hp = (1-frac)*f->win_accenrg_hp + frac*win_enrg_hp_prev;
 
-#if  0 
-        if (f->diff_enrg_ratio > 0.8) {
-            /*if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {*/
-            /*if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg &&*/
-            if ((ratio1 > 1.5) &&
-                (f->win_hfenrg[1][i] > HFENRG_THR1) &&
-                (f->win_accenrg > WINACC_THR1)
-               ) {
-                f->attack_flag  = 1;
-                f->attack_index = i;
-                /*printf("hfenrg=%f, ratio=%f, mult=%f, i=%d, winacc=%f\n",*/
-                        /*f->win_hfenrg[1][i], ratio, f->win_hfenrg[1][i]*ratio, i, f->win_accenrg);*/
-            }
-        } else {
-            /*if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg &&*/
-            if ((ratio1 > 1.) &&
-                (f->win_hfenrg[1][i] > HFENRG_THR2) &&
-                (f->win_accenrg > WINACC_THR2)
-               ) {
-                f->attack_flag  = 1;
-                f->attack_index = i;
-                /*printf("hfenrg=%f, ratio=%f, mult=%f, i=%d, winacc=%f\n",*/
-                        /*f->win_hfenrg[1][i], ratio, f->win_hfenrg[1][i]*ratio, i, f->win_accenrg);*/
-            }
-        }
-/*
-        if (ratio1 > 20.) {
-            f->attack_flag  = 1;
-            f->attack_index = i;
-        }
-*/
-#else 
-        if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {
+        /*if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {*/
+        /*if ((f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp) {*/
+        if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg || 
+            (f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp
+           ) {
             f->attack_flag  = 1;
             f->attack_index = i;
             /*printf("hfenrg=%f, ratio=%f, mult=%f, i=%d, winacc=%f\n", */
                     /*f->win_hfenrg[1][i], ratio, f->win_hfenrg[1][i]*ratio, i, f->win_accenrg);*/
         }
 
-#endif
 
         win_enrg_prev = f->win_hfenrg[1][i];
+        win_enrg_hp_prev = f->win_hfenrg_hp[1][i];
         win_enrg_max  = FA_MAX(win_enrg_max, win_enrg_prev);
     }
 
     /*check if last prev attack spread to this frame*/
     if (f->lastattack_flag && !f->attack_flag) {
         if  (((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
-             (f->lastattack_index == WINCNT-1)) //||
+             (f->lastattack_index == WINCNT-1))// ||
+             /*((f->win_hfenrg_hp[0][WINCNT-1] > f->win_hfenrg_hp[1][0]) &&*/
+             /*(f->lastattack_index == WINCNT-1))*/
              /*((f->win_hfenrg[0][WINCNT-2] > f->win_hfenrg[1][0]) &&*/
              /*(f->lastattack_index == WINCNT-2))*/
             )  {
