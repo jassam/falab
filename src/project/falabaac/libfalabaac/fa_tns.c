@@ -211,6 +211,7 @@ static void tns_ma_filter(float *spec, int length, tns_flt_t *flt)
 
     memset(tmp, 0, 1024*sizeof(float));
 
+    k = 0;
     if (flt->direction) {
         tmp[length-1] = spec[length-1];
         for (i = length - 2; i > (length-1-order); i--) {
@@ -246,7 +247,6 @@ static void tns_ma_filter(float *spec, int length, tns_flt_t *flt)
 
 
 
-
 void fa_tns_encode_frame(aacenc_ctx_t *f)
 {
     tns_info_t *s = (tns_info_t *)f->h_tns;
@@ -265,6 +265,8 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
     float cof_res;
 
     int w;
+
+    int direction;
 
     fa_mdctquant_t *fs = (fa_mdctquant_t *)(f->h_mdctq_short);
     fa_mdctquant_t *fl = (fa_mdctquant_t *)(f->h_mdctq_long);
@@ -321,6 +323,10 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
 
     s->tns_data_present = 0;
 
+    direction = 0;
+    /*if (f->block_type == LONG_STOP_BLOCK)*/
+        /*direction = 1;*/
+
 
     for (w = 0; w < num_windows; w++) {
         tns_win_t * tns_win = &(s->tns_win[w]);
@@ -359,7 +365,8 @@ void fa_tns_encode_frame(aacenc_ctx_t *f)
 
             tns_win->num_flt++;
             s->tns_data_present = 1;
-            tns_flt->direction  = 0;
+            /*tns_flt->direction  = 0;*/
+            tns_flt->direction  = direction;
             tns_flt->coef_compress = 0;
             tns_flt->length = band_len;
 
@@ -414,9 +421,9 @@ int fa_tnssync(fa_aacenc_ctx_t *f)
 
             block_type = sl->block_type;
             if (block_type == LONG_START_BLOCK || block_type == LONG_STOP_BLOCK)
-                tns_sl->tns_gain_thr = tns_sr->tns_gain_thr = 42;
+                tns_sl->tns_gain_thr = tns_sr->tns_gain_thr = 60;
             else 
-                tns_sl->tns_gain_thr = tns_sr->tns_gain_thr = 30;
+                tns_sl->tns_gain_thr = tns_sr->tns_gain_thr = 50;
            
         } else {
             chn = 1;
@@ -424,9 +431,9 @@ int fa_tnssync(fa_aacenc_ctx_t *f)
 
             block_type = s->block_type;
             if (block_type == LONG_START_BLOCK || block_type == LONG_STOP_BLOCK)
-                tns_s->tns_gain_thr = 5;
+                tns_s->tns_gain_thr = 60;
             else 
-                tns_s->tns_gain_thr = 2;
+                tns_s->tns_gain_thr = 50;
         }
 
         i += chn;

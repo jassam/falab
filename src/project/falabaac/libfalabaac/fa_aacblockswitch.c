@@ -292,7 +292,7 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 }
 
 
-#define WINCNT  4 //8
+#define WINCNT  8
 
 typedef struct _fa_blockctrl_t {
     uintptr_t  h_flt_fir;
@@ -325,7 +325,8 @@ uintptr_t fa_blockswitch_init(int block_len)
     fa_blockctrl_t *f = (fa_blockctrl_t *)malloc(sizeof(fa_blockctrl_t));
     memset(f, 0, sizeof(fa_blockctrl_t));
 
-    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 7, 0.4, KAISER);
+    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 7, 0.58, KAISER);*/
+    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 21, 0.58, KAISER);
     f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 31, 0.6, KAISER);
     f->block_len    = block_len;
 
@@ -585,8 +586,8 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
         /*printf("---------------------------------- last attack flag=%d, lowflag=%d\n", f->lastattack_flag, f->low_hf_flag);*/
     }
 #else 
-    frac = 0.3;
-    ratio = 0.1;
+    frac = 0.29; //0.3;
+    ratio = 0.12;
 /*
     if (f->low_hf_flag) {
         frac  = 0.2;
@@ -662,7 +663,7 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
         if  (((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
              (f->lastattack_index == WINCNT-1)) //||
              /*((f->win_hfenrg[0][WINCNT-2] > f->win_hfenrg[1][0]) &&*/
-             /*(f->lastattack_index == WINCNT-2)) */
+             /*(f->lastattack_index == WINCNT-2))*/
             )  {
             f->attack_flag  = 1;
             f->attack_index = 0;
