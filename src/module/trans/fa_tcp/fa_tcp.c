@@ -171,7 +171,7 @@ static int tcp_send(fa_trans_t *trans, char *buf , int size)
             if (len < 0) {
                 if (fa_neterrno() != FA_NETERROR(EINTR) &&
                     fa_neterrno() != FA_NETERROR(EAGAIN))
-                    return -1;//im_neterrno();
+                    return fa_neterrno();
                 continue;
             }
             size -= len;

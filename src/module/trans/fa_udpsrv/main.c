@@ -49,9 +49,9 @@ int main()
 #endif
 
 
-    /*strcpy(hostname, "192.168.20.82");*/
-    strcpy(hostname, "192.168.20.38");
-    port = 1983;
+    strcpy(hostname, "192.168.20.82");
+    /*strcpy(hostname, "192.168.20.38");*/
+    port = 1984;
 
 	/*create trans unit*/
 	trans = fa_create_trans(fa_create_trans_udpsrv, fa_destroy_trans_udpsrv);
