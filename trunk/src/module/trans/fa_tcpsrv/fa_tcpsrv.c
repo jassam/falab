@@ -353,7 +353,7 @@ int fa_tcpsrv_start(unsigned long handle, const char *hostname, const int port)
 			if(i > f->client_nb)
 				f->client_nb = i;
 			
-			FA_PRINT("connect from %s is accept \n",inet_ntoa(from_addr.sin_addr));
+			FA_PRINT("connect from %s is accept, current client_nb=%d \n",inet_ntoa(from_addr.sin_addr), f->client_nb);
 			/*handle_new_connection(connect_fd);*/
             if (f->handle_new_connection)
                 f->handle_new_connection(connect_fd);

@@ -116,8 +116,8 @@ int main()
 
     h_tcpsrv = fa_tcpsrv_init(handle_new_connection, handle_connection_read);
 
-    fa_tcpsrv_start(h_tcpsrv, "192.168.20.38", 1982);
-    /*fa_tcpsrv_start(h_tcpsrv, "192.168.20.82", 1982);*/
+    /*fa_tcpsrv_start(h_tcpsrv, "192.168.20.38", 1982);*/
+    fa_tcpsrv_start(h_tcpsrv, "192.168.20.82", 1982);
 
     fa_tcpsrv_uninit(h_tcpsrv);
 

@@ -104,8 +104,8 @@ int main()
 {
 
 	char *sfile = "xs.wav";
-    char *dest_url = "tcp://192.168.20.38:1982";
-    /*char *dest_url = "tcp://192.168.20.82:1982";*/
+    /*char *dest_url = "tcp://192.168.20.38:1982";*/
+    char *dest_url = "tcp://192.168.20.82:1982";
 
 #ifdef USE_LOGFILE
 #ifdef WIN32 
