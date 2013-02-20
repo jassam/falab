@@ -684,10 +684,10 @@ static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
         s->window_group_length[7] = 1;
     #else 
         s->num_window_groups = 4;
-        s->window_group_length[0] = 1;
-        s->window_group_length[1] = 3;
+        s->window_group_length[0] = 2;
+        s->window_group_length[1] = 1;
         s->window_group_length[2] = 3;
-        s->window_group_length[3] = 1;
+        s->window_group_length[3] = 2;
         s->window_group_length[4] = 0;
         s->window_group_length[5] = 0;
         s->window_group_length[6] = 0;
@@ -878,7 +878,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
         if (tns_enable && (!s->chn_info.lfe) &&
         /*if (tns_enable && (!s->chn_info.lfe) && (1 == s->tns_active) &&*/
             /*((s->block_type == ONLY_SHORT_BLOCK) || (s->block_type == LONG_START_BLOCK) || (s->block_type == LONG_STOP_BLOCK)))*/
-            ((s->block_type == ONLY_SHORT_BLOCK))) // || (s->block_type == ONLY_LONG_BLOCK)) )
+           ((s->block_type == ONLY_SHORT_BLOCK))) // || (s->block_type == ONLY_LONG_BLOCK)) )
             fa_tns_encode_frame(s);
 
         /*if is short block , recorder will arrange the mdctline to sfb-grouped*/
