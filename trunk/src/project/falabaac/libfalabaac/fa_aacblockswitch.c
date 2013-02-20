@@ -327,10 +327,11 @@ uintptr_t fa_blockswitch_init(int block_len)
     fa_blockctrl_t *f = (fa_blockctrl_t *)malloc(sizeof(fa_blockctrl_t));
     memset(f, 0, sizeof(fa_blockctrl_t));
 
-    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 7, 0.58, KAISER);*/
-    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 21, 0.58, KAISER);*/
-    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 11, 0.65, KAISER);
-    f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 25, 0.8, KAISER);
+    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.8, KAISER);*/
+    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 11, 0.88, KAISER);*/
+    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.7, KAISER);
+    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 17, 0.4, KAISER);*/
+    f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 21, 0.7, KAISER);
     f->block_len    = block_len;
 
     f->x = (float *)malloc(block_len * sizeof(float));
@@ -536,8 +537,13 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     win_enrg_prev = f->win_hfenrg[0][WINCNT-1];
     win_enrg_hp_prev = f->win_hfenrg_hp[0][WINCNT-1];
 
-    frac = 0.29; //0.3;
-    ratio = 0.12;
+#if 1 
+    frac = 0.29; 
+    ratio = 0.178; //0.18;
+#else 
+    frac = 0.3; 
+    ratio = 0.2; //0.18;
+#endif
 
     for (i = 0; i < WINCNT; i++) {
         float diff;
@@ -546,11 +552,11 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
         f->win_accenrg = (1-frac)*f->win_accenrg + frac*win_enrg_prev;
         f->win_accenrg_hp = (1-frac)*f->win_accenrg_hp + frac*win_enrg_hp_prev;
 
-        /*if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {*/
+        if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {
         /*if ((f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp) {*/
-        if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg || 
-            (f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp
-           ) {
+        /*if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg ||*/
+            /*(f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp*/
+           /*) {*/
             f->attack_flag  = 1;
             f->attack_index = i;
             /*printf("hfenrg=%f, ratio=%f, mult=%f, i=%d, winacc=%f\n", */

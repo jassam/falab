@@ -101,9 +101,9 @@ void  fa_protect_db_rom_init()
         else if (i < 27)
             fa_protect_db_44k_long[i] = 8;
         else if (i < 31)
-            fa_protect_db_44k_long[i] = 6;
+            fa_protect_db_44k_long[i] = 8;
         else if (i < 42)
-            fa_protect_db_44k_long[i] = 5;
+            fa_protect_db_44k_long[i] = 6;
         else 
             fa_protect_db_44k_long[i] = 0;
     }
@@ -141,13 +141,13 @@ void  fa_protect_db_rom_init()
 #if  1 
     for (i = 0; i < 14; i++) {
         if (i < 1)
-            fa_protect_db_44k_short[i] = 9;//7;
+            fa_protect_db_44k_short[i] = 8;//7;
         else if (i < 2)
-            fa_protect_db_44k_short[i] = 8;//3;
+            fa_protect_db_44k_short[i] = 7;//3;
         else if (i < 11) 
             fa_protect_db_44k_short[i] = 7;//2;
         else 
-            fa_protect_db_44k_short[i] = 3;//0;
+            fa_protect_db_44k_short[i] = 0;//0;
     }
 
 #else 
