@@ -657,56 +657,18 @@ static void mdct_line_normarlize(fa_aacenc_ctx_t *f)
 
 static void mdctline_reorder(aacenc_ctx_t *s, float xmin[8][FA_SWB_NUM_MAX])
 {
-
     /*use mdct transform*/
     if (s->block_type == ONLY_SHORT_BLOCK) {
-#if  1 
-        s->num_window_groups = 1;
-        s->window_group_length[0] = 8;
-        s->window_group_length[1] = 0;
-        s->window_group_length[2] = 0;
-        s->window_group_length[3] = 0;
-        s->window_group_length[4] = 0;
-        s->window_group_length[5] = 0;
-        s->window_group_length[6] = 0;
-        s->window_group_length[7] = 0;
-#else 
-        /*just for test different group length result*/
-    #if  1 
-        s->num_window_groups = 8;
-        s->window_group_length[0] = 1;
-        s->window_group_length[1] = 1;
-        s->window_group_length[2] = 1;
-        s->window_group_length[3] = 1;
-        s->window_group_length[4] = 1;
-        s->window_group_length[5] = 1;
-        s->window_group_length[6] = 1;
-        s->window_group_length[7] = 1;
-    #else 
-        s->num_window_groups = 4;
-        s->window_group_length[0] = 2;
-        s->window_group_length[1] = 1;
-        s->window_group_length[2] = 3;
-        s->window_group_length[3] = 2;
-        s->window_group_length[4] = 0;
-        s->window_group_length[5] = 0;
-        s->window_group_length[6] = 0;
-        s->window_group_length[7] = 0;
-
-    #endif
-#endif
         fa_mdctline_sfb_arrange(s->h_mdctq_short, s->mdct_line, 
-                s->num_window_groups, s->window_group_length);
+                                s->num_window_groups, s->window_group_length);
         fa_xmin_sfb_arrange(s->h_mdctq_short, xmin,
-                s->num_window_groups, s->window_group_length);
+                            s->num_window_groups, s->window_group_length);
 
     } else {
-        s->num_window_groups = 1;
-        s->window_group_length[0] = 1;
         fa_mdctline_sfb_arrange(s->h_mdctq_long, s->mdct_line, 
-                s->num_window_groups, s->window_group_length);
+                                s->num_window_groups, s->window_group_length);
         fa_xmin_sfb_arrange(s->h_mdctq_long, xmin,
-                s->num_window_groups, s->window_group_length);
+                            s->num_window_groups, s->window_group_length);
 
     }
 

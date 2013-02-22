@@ -1897,8 +1897,8 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         fa_adjust_scalefactor(f);
         cur_bits = mdctline_enc(f);
-        /*if (cur_bits < res_maxsize)*/
-            /*break;*/
+        if (cur_bits < res_maxsize)
+            break;
 
         quant_ok_cnt = 0;
         for (i = 0; i < chn_num; i++) {
