@@ -328,7 +328,7 @@ uintptr_t fa_blockswitch_init(int block_len)
     memset(f, 0, sizeof(fa_blockctrl_t));
 
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.7, KAISER);*/
-    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 19, 0.55, KAISER);
+    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 3, 0.8, KAISER);
     f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 13, 0.8, KAISER);
     f->block_len    = block_len;
 
@@ -542,8 +542,8 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     frac = 0.29; 
     ratio = 0.178; //0.18;
 #else 
-    frac = 0.32; 
-    ratio = 0.25; //0.18;
+    frac = 0.53; //0.329; //0.32; 
+    ratio = 0.21; //0.25;
 #endif
 
     max_attack = 0.;
@@ -564,10 +564,18 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
             f->attack_flag  = 1;
             cur_attack = f->win_hfenrg[1][i]*ratio;
 
+            /*f->attack_index = i;*/
+
             if (cur_attack > max_attack) {
                 f->attack_index = i;
                 max_attack = cur_attack;
             }
+/*
+            if (i == WINCNT-1) {
+                f->attack_index = i;
+                max_attack = cur_attack;
+            }
+*/
         }
 /*
         [>if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {<]
@@ -593,11 +601,11 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     /*check if last prev attack spread to this frame*/
     if (f->lastattack_flag && !f->attack_flag) {
         if  (((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
-             (f->lastattack_index == WINCNT-1)) //||
+             (f->lastattack_index == WINCNT-1)) ||
              /*((f->win_hfenrg_hp[0][WINCNT-1] > f->win_hfenrg_hp[1][0]) &&*/
              /*(f->lastattack_index == WINCNT-1))*/
-             /*((f->win_hfenrg[0][WINCNT-2] > f->win_hfenrg[1][0]) &&*/
-             /*(f->lastattack_index == WINCNT-2))*/
+             ((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
+             (f->lastattack_index == WINCNT-1))
             )  {
             f->attack_flag  = 1;
             f->attack_index = 0;
