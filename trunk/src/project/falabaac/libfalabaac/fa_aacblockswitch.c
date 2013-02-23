@@ -328,7 +328,7 @@ uintptr_t fa_blockswitch_init(int block_len)
     memset(f, 0, sizeof(fa_blockctrl_t));
 
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.7, KAISER);*/
-    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 3, 0.8, KAISER);
+    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.52, KAISER);
     f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 13, 0.8, KAISER);
     f->block_len    = block_len;
 
@@ -499,6 +499,7 @@ static int select_block(int prev_block_type, int attack_flag)
 int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
 {
     int i;
+    fa_aacfilterbank_t *fb = (fa_aacfilterbank_t *)(s->h_aac_analysis);
     fa_blockctrl_t *f = (fa_blockctrl_t *)(s->h_blockctrl);
     float win_enrg_max;
     float win_enrg_prev;
@@ -525,9 +526,17 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
         f->win_hfenrg_hp[0][i] = f->win_hfenrg_hp[1][i];
     }
 
+#if 0
     for (i = 0; i < 1024; i++) {
         f->x[i] = sample_buf[i];
     }
+#else 
+    for (i = 0; i < 1024; i++) {
+        f->x[i]      = fb->x_buf[i+1024];
+        f->x[i+1024] = sample_buf[i];
+    }
+
+#endif
 
     calculate_win_enrg(f);
 
@@ -542,8 +551,8 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     frac = 0.29; 
     ratio = 0.178; //0.18;
 #else 
-    frac = 0.53; //0.329; //0.32; 
-    ratio = 0.21; //0.25;
+    frac = 0.32; //53; //0.329; //0.32; 
+    ratio = 0.2; //0.25;
 #endif
 
     max_attack = 0.;
@@ -564,12 +573,13 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
             f->attack_flag  = 1;
             cur_attack = f->win_hfenrg[1][i]*ratio;
 
-            /*f->attack_index = i;*/
-
+            f->attack_index = i;
+/*
             if (cur_attack > max_attack) {
                 f->attack_index = i;
                 max_attack = cur_attack;
             }
+*/
 /*
             if (i == WINCNT-1) {
                 f->attack_index = i;
@@ -876,16 +886,25 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
                             sl->window_group_length[k] = sr->window_group_length[k];
                     }
                 } else {
-                    sl->num_window_groups = 2;
-                    sr->num_window_groups = 2;
-                    sl->window_group_length[0] = sr->window_group_length[0] = 4;
-                    sl->window_group_length[1] = sr->window_group_length[1] = 4;
-                    sl->window_group_length[2] = sr->window_group_length[0] = 0;
-                    sl->window_group_length[3] = sr->window_group_length[0] = 0;
-                    sl->window_group_length[4] = sr->window_group_length[0] = 0;
-                    sl->window_group_length[5] = sr->window_group_length[0] = 0;
-                    sl->window_group_length[6] = sr->window_group_length[0] = 0;
-                    sl->window_group_length[7] = sr->window_group_length[0] = 0;
+                    /*sl->num_window_groups = 1;*/
+                    /*sr->num_window_groups = 1;*/
+                    /*sl->window_group_length[0] = sr->window_group_length[0] = 8;*/
+                    /*sl->window_group_length[1] = sr->window_group_length[1] = 0;*/
+                    /*sl->window_group_length[2] = sr->window_group_length[0] = 0;*/
+                    /*sl->window_group_length[3] = sr->window_group_length[0] = 0;*/
+                    /*sl->window_group_length[4] = sr->window_group_length[0] = 0;*/
+                    /*sl->window_group_length[5] = sr->window_group_length[0] = 0;*/
+                    /*sl->window_group_length[6] = sr->window_group_length[0] = 0;*/
+                    /*sl->window_group_length[7] = sr->window_group_length[0] = 0;*/
+                    if (bcl->max_win_enrg > bcr->max_win_enrg) {
+                        for (k = 0; k < MAX_GROUP_CNT; k++)
+                            sr->window_group_length[k] = sl->window_group_length[k];
+                    } else {
+                        for (k = 0; k < MAX_GROUP_CNT; k++)
+                            sl->window_group_length[k] = sr->window_group_length[k];
+                    }
+ 
+
                 }
 
             } else {

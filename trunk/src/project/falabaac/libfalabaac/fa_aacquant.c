@@ -1371,7 +1371,7 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
                     scalefactor = s->scalefactor_win[group_offset+win][i];
                     s->scalefactor[gr][i] = FA_MAX(s->scalefactor[gr][i], scalefactor);
                     /*printf("sf=%d\n", s->scalefactor[gr][i]);*/
-                    /*s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], 40);*/
+                    /*s->scalefactor[gr][i] = FA_MIN(s->scalefactor[gr][i], 50);*/
                 }
             }
             group_offset += s->window_group_length[gr];

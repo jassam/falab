@@ -34,27 +34,6 @@
 #include "fa_aacstream.h"
 #include "fa_mdct.h"
 
-typedef struct _fa_aacfilterbank_t {
-
-    float      x_buf[2*AAC_FRAME_LEN];
-
-    float      sin_win_long_left[AAC_BLOCK_LONG_LEN];
-    float      sin_win_long_right[AAC_BLOCK_LONG_LEN];
-    float      kbd_win_long_left[AAC_BLOCK_LONG_LEN];
-    float      kbd_win_long_right[AAC_BLOCK_LONG_LEN];
-
-    float      sin_win_short_left[AAC_BLOCK_SHORT_LEN];
-    float      sin_win_short_right[AAC_BLOCK_SHORT_LEN];
-    float      kbd_win_short_left[AAC_BLOCK_SHORT_LEN];
-    float      kbd_win_short_right[AAC_BLOCK_SHORT_LEN];
-
-    uintptr_t  h_mdct_long;
-    float      mdct_long_buf[2*AAC_BLOCK_LONG_LEN];
-    uintptr_t  h_mdct_short;
-    float      mdct_short_buf[2*AAC_BLOCK_SHORT_LEN];
-
-}fa_aacfilterbank_t;
-
 uintptr_t fa_aacfilterbank_init()
 {
     int   i;
