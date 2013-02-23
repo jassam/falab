@@ -292,7 +292,7 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 }
 
 
-#define WINCNT  4 
+#define WINCNT  8 //4 
 
 typedef struct _fa_blockctrl_t {
     uintptr_t  h_flt_fir;
@@ -329,6 +329,7 @@ uintptr_t fa_blockswitch_init(int block_len)
 
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.7, KAISER);*/
     f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.52, KAISER);
+    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.62, KAISER);*/
     f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 13, 0.8, KAISER);
     f->block_len    = block_len;
 
@@ -551,8 +552,8 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     frac = 0.29; 
     ratio = 0.178; //0.18;
 #else 
-    frac = 0.32; //53; //0.329; //0.32; 
-    ratio = 0.2; //0.25;
+    frac = 0.81; //0.57;  
+    ratio = 0.18; //0.19; 
 #endif
 
     max_attack = 0.;
@@ -574,12 +575,12 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
             cur_attack = f->win_hfenrg[1][i]*ratio;
 
             f->attack_index = i;
-/*
+
             if (cur_attack > max_attack) {
                 f->attack_index = i;
                 max_attack = cur_attack;
             }
-*/
+
 /*
             if (i == WINCNT-1) {
                 f->attack_index = i;
@@ -611,11 +612,11 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     /*check if last prev attack spread to this frame*/
     if (f->lastattack_flag && !f->attack_flag) {
         if  (((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
-             (f->lastattack_index == WINCNT-1)) ||
+             (f->lastattack_index == WINCNT-1)) // ||
              /*((f->win_hfenrg_hp[0][WINCNT-1] > f->win_hfenrg_hp[1][0]) &&*/
              /*(f->lastattack_index == WINCNT-1))*/
-             ((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
-             (f->lastattack_index == WINCNT-1))
+             /*((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&*/
+             /*(f->lastattack_index == WINCNT-1))*/
             )  {
             f->attack_flag  = 1;
             f->attack_index = 0;
@@ -644,7 +645,8 @@ static const int block_sync_tab[4][4] =
   /* LONG_STOP_BLOCK  */ {LONG_STOP_BLOCK,  ONLY_SHORT_BLOCK, ONLY_SHORT_BLOCK, LONG_STOP_BLOCK  },
 };
 
-#define MAX_GROUP_CNT  3 
+/*#define MAX_GROUP_CNT  3 */
+#define MAX_GROUP_CNT  4 
 /*#define MAX_GROUP_CNT 5*/
 static const int group_tab[WINCNT][MAX_GROUP_CNT] =
 {
@@ -658,14 +660,14 @@ static const int group_tab[WINCNT][MAX_GROUP_CNT] =
      /*{3,  3,  1,  1},*/
      /*{3,  3,  1,  1}*/
 
-     /*{1,  2,  2,  3},*/
-     /*{1,  1,  3,  3},*/
-     /*{2,  1,  2,  3},*/
-     /*{2,  2,  1,  3},*/
-     /*{2,  3,  1,  2},*/
-     /*{3,  2,  1,  2},*/
-     /*{3,  3,  1,  1},*/
-     /*{3,  2,  2,  1}*/
+     {1,  2,  2,  3},
+     {1,  1,  3,  3},
+     {2,  1,  2,  3},
+     {2,  2,  1,  3},
+     {2,  3,  1,  2},
+     {3,  2,  1,  2},
+     {3,  3,  1,  1},
+     {3,  2,  2,  1}
 
      /*{1,  3,  4},*/
      /*{2,  3,  3},*/
@@ -685,10 +687,10 @@ static const int group_tab[WINCNT][MAX_GROUP_CNT] =
      /*{3,  3,  2},*/
      /*{3,  3,  2}*/
 
-     {2,  3,  3},
-     {2,  2,  4},
-     {4,  2,  2},
-     {3,  3,  2},
+     /*{2,  3,  3},*/
+     /*{2,  2,  4},*/
+     /*{4,  2,  2},*/
+     /*{3,  3,  2},*/
 
 
 
@@ -828,7 +830,7 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
             if (block_type == ONLY_SHORT_BLOCK) {
                 sl->num_window_groups = MAX_GROUP_CNT;
                 sr->num_window_groups = MAX_GROUP_CNT;
-#if 1 
+#if 0 
                 sl->window_group_length[0] = group_tab[bcl->attack_index][0];
                 sl->window_group_length[1] = group_tab[bcl->attack_index][1];
                 sl->window_group_length[2] = group_tab[bcl->attack_index][2];

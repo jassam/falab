@@ -846,7 +846,7 @@ void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
             }
 */
 
-            if (nb[i] >= frac*nb_prev[i]) //  || nb_prev[i] >= 10*nb[i])
+            if (nb[i] >= frac*nb_prev[i]  || nb_prev[i] >= 10*nb[i])
             /*if (nb_prev[i] >= frac*nb[i])*/
             /*if (nb[i] >= frac*nb_prev[i])*/
                 *tns_active = 1;
@@ -869,7 +869,7 @@ void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
             /*nb[i] = nb_prev[i]; //+0.02*nb[i];//pow(10., qsthr[i]/10.);*/
             /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), 1.37*nb_prev[i]);*/
             /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), 1.6*nb_prev[i]);*/
-            nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i],1.5*nb_prev[i]));
+            nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], 1.*nb_prev[i]));
 
 #endif
 
