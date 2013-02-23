@@ -1306,7 +1306,7 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
                 sf = fa_estimate_sf_fast_improve((2.0+adj*3)*s->Ti[k][i], s->pdft[k][i], s->miu2[k][i]);
 #else 
                 /*sf = fa_estimate_sf_fast((2.5+adj*3+ti_adj)*s->Ti[k][i], s->pdft[k][i]);*/
-                sf = fa_estimate_sf_fast((1.1+ti_adj)*s->Ti[k][i], s->pdft[k][i]);
+                sf = fa_estimate_sf_fast((1.0+ti_adj)*s->Ti[k][i], s->pdft[k][i]);
 #endif
                 /*assert(sf>=0);*/
                 gl = FA_MAX(gl, sf);
