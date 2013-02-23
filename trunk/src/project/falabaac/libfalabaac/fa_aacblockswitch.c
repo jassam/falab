@@ -328,7 +328,8 @@ uintptr_t fa_blockswitch_init(int block_len)
     memset(f, 0, sizeof(fa_blockctrl_t));
 
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.7, KAISER);*/
-    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.52, KAISER);
+    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.52, KAISER);*/
+    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 7, 0.52, KAISER);
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.62, KAISER);*/
     f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 13, 0.8, KAISER);
     f->block_len    = block_len;
@@ -548,12 +549,12 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     win_enrg_prev = f->win_hfenrg[0][WINCNT-1];
     win_enrg_hp_prev = f->win_hfenrg_hp[0][WINCNT-1];
 
-#if 0 
-    frac = 0.29; 
-    ratio = 0.178; //0.18;
-#else 
+#if 1 
     frac = 0.81; //0.57;  
     ratio = 0.18; //0.19; 
+#else 
+    frac = 0.57; //57;  
+    ratio = 0.19; //0.19; 
 #endif
 
     max_attack = 0.;
@@ -612,11 +613,11 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     /*check if last prev attack spread to this frame*/
     if (f->lastattack_flag && !f->attack_flag) {
         if  (((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
-             (f->lastattack_index == WINCNT-1)) // ||
+             (f->lastattack_index == WINCNT-1))  ||
              /*((f->win_hfenrg_hp[0][WINCNT-1] > f->win_hfenrg_hp[1][0]) &&*/
              /*(f->lastattack_index == WINCNT-1))*/
-             /*((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&*/
-             /*(f->lastattack_index == WINCNT-1))*/
+             ((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
+             (f->lastattack_index == WINCNT-1))
             )  {
             f->attack_flag  = 1;
             f->attack_index = 0;
@@ -646,11 +647,10 @@ static const int block_sync_tab[4][4] =
 };
 
 /*#define MAX_GROUP_CNT  3 */
-#define MAX_GROUP_CNT  4 
+#define MAX_GROUP_CNT  4
 /*#define MAX_GROUP_CNT 5*/
 static const int group_tab[WINCNT][MAX_GROUP_CNT] =
 {
-#if 1 
      /*{1,  3,  3,  1},*/
      /*{1,  1,  3,  3},*/
      /*{2,  1,  3,  2},*/
@@ -692,99 +692,15 @@ static const int group_tab[WINCNT][MAX_GROUP_CNT] =
      /*{4,  2,  2},*/
      /*{3,  3,  2},*/
 
-
-
-#else 
-
-    /* Attack in Window 0 */ {1,  1,  2,  3,  1},
-    /* Attack in Window 1 */ {1,  1,  1,  2,  3},
-    /* Attack in Window 2 */ {2,  1,  1,  2,  2},
-    /* Attack in Window 3 */ {3,  1,  1,  1,  2},
-    /* Attack in Window 4 */ {2,  1,  1,  1,  3},
-    /* Attack in Window 5 */ {2,  2,  1,  1,  2},
-    /* Attack in Window 6 */ {3,  2,  1,  1,  1},
-    /* Attack in Window 7 */ {1,  3,  2,  1,  1}
-#endif
+     /*{1,  1,  2,  3,  1},*/
+     /*{1,  1,  1,  2,  3},*/
+     /*{2,  1,  1,  2,  2},*/
+     /*{3,  1,  1,  1,  2},*/
+     /*{2,  1,  1,  1,  3},*/
+     /*{2,  2,  1,  1,  2},*/
+     /*{3,  2,  1,  1,  1},*/
+     /*{1,  3,  2,  1,  1}*/
 };
-
-
-static int choose_group(aacenc_ctx_t *s)
-{
-    int attack_index;
-    fa_blockctrl_t *f = (fa_blockctrl_t *)(s->h_blockctrl);
-    attack_index = f->attack_index;
-
-    if (s->block_type == ONLY_SHORT_BLOCK) {
-#if 1 
-#if  0 
-        s->num_window_groups = 1;
-        s->window_group_length[0] = 8;
-        s->window_group_length[1] = 0;
-        s->window_group_length[2] = 0;
-        s->window_group_length[3] = 0;
-        s->window_group_length[4] = 0;
-        s->window_group_length[5] = 0;
-        s->window_group_length[6] = 0;
-        s->window_group_length[7] = 0;
-#else 
-        /*just for test different group length result*/
-    #if  0 
-        s->num_window_groups = 8;
-        s->window_group_length[0] = 1;
-        s->window_group_length[1] = 1;
-        s->window_group_length[2] = 1;
-        s->window_group_length[3] = 1;
-        s->window_group_length[4] = 1;
-        s->window_group_length[5] = 1;
-        s->window_group_length[6] = 1;
-        s->window_group_length[7] = 1;
-    #else 
-        s->num_window_groups = 2;
-        s->window_group_length[0] = 4;
-        s->window_group_length[1] = 4;
-        s->window_group_length[2] = 0;
-        s->window_group_length[3] = 0;
-        s->window_group_length[4] = 0;
-        s->window_group_length[5] = 0;
-        s->window_group_length[6] = 0;
-        s->window_group_length[7] = 0;
-
-    #endif
-#endif
-#else  //--------------------
-#if 1 
-        s->num_window_groups = MAX_GROUP_CNT;
-        s->window_group_length[0] = group_tab[attack_index][0];
-        s->window_group_length[1] = group_tab[attack_index][1];
-        s->window_group_length[2] = group_tab[attack_index][2];
-        s->window_group_length[3] = group_tab[attack_index][3];
-        s->window_group_length[4] = 0;
-        s->window_group_length[5] = 0;
-        s->window_group_length[6] = 0;
-        s->window_group_length[7] = 0;
-#else 
-       s->num_window_groups = MAX_GROUP_CNT;
-        s->window_group_length[0] = 3;//group_tab[attack_index][0];
-        s->window_group_length[1] = 3;//group_tab[attack_index][1];
-        s->window_group_length[2] = 1;//group_tab[attack_index][2];
-        s->window_group_length[3] = 1;//group_tab[attack_index][3];
-        s->window_group_length[4] = 0;
-        s->window_group_length[5] = 0;
-        s->window_group_length[6] = 0;
-        s->window_group_length[7] = 0;
-#endif
-
-        {
-            int kk;
-            for (kk = 0; kk < MAX_GROUP_CNT; kk++)
-                printf("-------attack_index=%d, g[%d]=%d\n", attack_index, kk, s->window_group_length[kk]);
-        }
-#endif
-    } else {
-        s->num_window_groups = 1;
-        s->window_group_length[0] = 1;
-    }
-}
 
 int fa_blocksync(fa_aacenc_ctx_t *f)
 {
@@ -824,9 +740,6 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
             if (block_type != 0)
                 printf("i=%d, block_type=%d\n", i+1, s->block_type);
             
-            /*choose_group(sl);*/
-            /*choose_group(sr);*/
-#if 1 
             if (block_type == ONLY_SHORT_BLOCK) {
                 sl->num_window_groups = MAX_GROUP_CNT;
                 sr->num_window_groups = MAX_GROUP_CNT;
@@ -866,17 +779,6 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
                 sr->window_group_length[7] = 0;
 
 #endif
-/*
-            {
-                int kk;
-                if (1) { //j(bcl->attack_index != 0 || bcr->attack_index != 0) {
-                    for (kk = 0; kk < MAX_GROUP_CNT; kk++)
-                        printf("-------lattack_index=%d, rattack_index=%d, g[%d]=%d\n",
-                                bcl->attack_index, bcr->attack_index, kk, sl->window_group_length[kk]);
-                }
-            }
-
-*/
 
                 if (last_block_type == ONLY_SHORT_BLOCK) {
                     /*printf("lwe=%f, rwe=%f\n", bcl->max_win_enrg, bcr->max_win_enrg);*/
@@ -888,16 +790,6 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
                             sl->window_group_length[k] = sr->window_group_length[k];
                     }
                 } else {
-                    /*sl->num_window_groups = 1;*/
-                    /*sr->num_window_groups = 1;*/
-                    /*sl->window_group_length[0] = sr->window_group_length[0] = 8;*/
-                    /*sl->window_group_length[1] = sr->window_group_length[1] = 0;*/
-                    /*sl->window_group_length[2] = sr->window_group_length[0] = 0;*/
-                    /*sl->window_group_length[3] = sr->window_group_length[0] = 0;*/
-                    /*sl->window_group_length[4] = sr->window_group_length[0] = 0;*/
-                    /*sl->window_group_length[5] = sr->window_group_length[0] = 0;*/
-                    /*sl->window_group_length[6] = sr->window_group_length[0] = 0;*/
-                    /*sl->window_group_length[7] = sr->window_group_length[0] = 0;*/
                     if (bcl->max_win_enrg > bcr->max_win_enrg) {
                         for (k = 0; k < MAX_GROUP_CNT; k++)
                             sr->window_group_length[k] = sl->window_group_length[k];
@@ -905,8 +797,6 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
                         for (k = 0; k < MAX_GROUP_CNT; k++)
                             sl->window_group_length[k] = sr->window_group_length[k];
                     }
- 
-
                 }
 
             } else {
@@ -925,7 +815,6 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
                 }
             }
 
-#endif
         } else {
             chn = 1;
             s->num_window_groups = 1;
