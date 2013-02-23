@@ -292,7 +292,7 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 }
 
 
-#define WINCNT  8
+#define WINCNT  4 
 
 typedef struct _fa_blockctrl_t {
     uintptr_t  h_flt_fir;
@@ -327,9 +327,9 @@ uintptr_t fa_blockswitch_init(int block_len)
     fa_blockctrl_t *f = (fa_blockctrl_t *)malloc(sizeof(fa_blockctrl_t));
     memset(f, 0, sizeof(fa_blockctrl_t));
 
-    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.7, KAISER);
-    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 9, 0.4, KAISER);*/
-    f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 21, 0.7, KAISER);
+    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.7, KAISER);*/
+    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 19, 0.55, KAISER);
+    f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 13, 0.8, KAISER);
     f->block_len    = block_len;
 
     f->x = (float *)malloc(block_len * sizeof(float));
@@ -507,6 +507,9 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     float frac; 
     float ratio; 
 
+    float max_attack;
+    float cur_attack;
+
     /*save current attack info to last attack info*/
     f->lastattack_flag  = f->attack_flag;
     f->lastattack_index = f->attack_index;
@@ -535,14 +538,16 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     win_enrg_prev = f->win_hfenrg[0][WINCNT-1];
     win_enrg_hp_prev = f->win_hfenrg_hp[0][WINCNT-1];
 
-#if 1 
+#if 0 
     frac = 0.29; 
     ratio = 0.178; //0.18;
 #else 
-    frac = 0.3; 
-    ratio = 0.1; //0.18;
+    frac = 0.32; 
+    ratio = 0.25; //0.18;
 #endif
 
+    max_attack = 0.;
+    cur_attack = 0.;
     for (i = 0; i < WINCNT; i++) {
         float diff;
 
@@ -555,13 +560,31 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
         /*if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg ||*/
             /*(f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp*/
            /*) {*/
+
             f->attack_flag  = 1;
-            f->attack_index = i;
-            /*printf("hfenrg=%f, ratio=%f, mult=%f, i=%d, winacc=%f\n", */
-                    /*f->win_hfenrg[1][i], ratio, f->win_hfenrg[1][i]*ratio, i, f->win_accenrg);*/
+            cur_attack = f->win_hfenrg[1][i]*ratio;
+
+            if (cur_attack > max_attack) {
+                f->attack_index = i;
+                max_attack = cur_attack;
+            }
         }
+/*
+        [>if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {<]
+        if ((f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp) {
+        [>if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg ||<]
+            [>(f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp<]
+           [>) {<]
 
+            f->attack_flag  = 1;
+            cur_attack = f->win_hfenrg[1][i]*ratio;
 
+            if (cur_attack > max_attack) {
+                f->attack_index = i;
+                max_attack = cur_attack;
+            }
+        }
+*/
         win_enrg_prev = f->win_hfenrg[1][i];
         win_enrg_hp_prev = f->win_hfenrg_hp[1][i];
         win_enrg_max  = FA_MAX(win_enrg_max, win_enrg_prev);
@@ -570,7 +593,7 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     /*check if last prev attack spread to this frame*/
     if (f->lastattack_flag && !f->attack_flag) {
         if  (((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
-             (f->lastattack_index == WINCNT-1))// ||
+             (f->lastattack_index == WINCNT-1)) //||
              /*((f->win_hfenrg_hp[0][WINCNT-1] > f->win_hfenrg_hp[1][0]) &&*/
              /*(f->lastattack_index == WINCNT-1))*/
              /*((f->win_hfenrg[0][WINCNT-2] > f->win_hfenrg[1][0]) &&*/
@@ -603,19 +626,54 @@ static const int block_sync_tab[4][4] =
   /* LONG_STOP_BLOCK  */ {LONG_STOP_BLOCK,  ONLY_SHORT_BLOCK, ONLY_SHORT_BLOCK, LONG_STOP_BLOCK  },
 };
 
-/*#define MAX_GROUP_CNT 4 */
-#define MAX_GROUP_CNT 5 
+#define MAX_GROUP_CNT  3 
+/*#define MAX_GROUP_CNT 5*/
 static const int group_tab[WINCNT][MAX_GROUP_CNT] =
 {
-#if 0 
-    /* Attack in Window 0 */ {1,  3,  3,  1},
-    /* Attack in Window 1 */ {1,  1,  3,  3},
-    /* Attack in Window 2 */ {2,  1,  3,  2},
-    /* Attack in Window 3 */ {3,  1,  3,  1},
-    /* Attack in Window 4 */ {3,  1,  1,  3},
-    /* Attack in Window 5 */ {3,  2,  1,  2},
-    /* Attack in Window 6 */ {3,  3,  1,  1},
-    /* Attack in Window 7 */ {3,  3,  1,  1}
+#if 1 
+     /*{1,  3,  3,  1},*/
+     /*{1,  1,  3,  3},*/
+     /*{2,  1,  3,  2},*/
+     /*{3,  1,  3,  1},*/
+     /*{3,  1,  1,  3},*/
+     /*{3,  2,  1,  2},*/
+     /*{3,  3,  1,  1},*/
+     /*{3,  3,  1,  1}*/
+
+     /*{1,  2,  2,  3},*/
+     /*{1,  1,  3,  3},*/
+     /*{2,  1,  2,  3},*/
+     /*{2,  2,  1,  3},*/
+     /*{2,  3,  1,  2},*/
+     /*{3,  2,  1,  2},*/
+     /*{3,  3,  1,  1},*/
+     /*{3,  2,  2,  1}*/
+
+     /*{1,  3,  4},*/
+     /*{2,  3,  3},*/
+     /*{2,  1,  5},*/
+     /*{3,  2,  3},*/
+     /*{3,  2,  3},*/
+     /*{3,  3,  2},*/
+     /*{3,  3,  2},*/
+     /*{4,  3,  1}*/
+
+     /*{2,  3,  3},*/
+     /*{2,  3,  3},*/
+     /*{2,  2,  4},*/
+     /*{3,  2,  3},*/
+     /*{3,  2,  3},*/
+     /*{4,  2,  2},*/
+     /*{3,  3,  2},*/
+     /*{3,  3,  2}*/
+
+     {2,  3,  3},
+     {2,  2,  4},
+     {4,  2,  2},
+     {3,  3,  2},
+
+
+
 #else 
 
     /* Attack in Window 0 */ {1,  1,  2,  3,  1},
@@ -752,11 +810,11 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
             if (block_type == ONLY_SHORT_BLOCK) {
                 sl->num_window_groups = MAX_GROUP_CNT;
                 sr->num_window_groups = MAX_GROUP_CNT;
-#if 0
+#if 1 
                 sl->window_group_length[0] = group_tab[bcl->attack_index][0];
                 sl->window_group_length[1] = group_tab[bcl->attack_index][1];
                 sl->window_group_length[2] = group_tab[bcl->attack_index][2];
-                sl->window_group_length[3] = group_tab[bcl->attack_index][3];
+                sl->window_group_length[3] = 0;//group_tab[bcl->attack_index][3];
                 sl->window_group_length[4] = 0;
                 sl->window_group_length[5] = 0;
                 sl->window_group_length[6] = 0;
@@ -764,7 +822,7 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
                 sr->window_group_length[0] = group_tab[bcr->attack_index][0];
                 sr->window_group_length[1] = group_tab[bcr->attack_index][1];
                 sr->window_group_length[2] = group_tab[bcr->attack_index][2];
-                sr->window_group_length[3] = group_tab[bcr->attack_index][3];
+                sr->window_group_length[3] = 0;//group_tab[bcr->attack_index][3];
                 sr->window_group_length[4] = 0;
                 sr->window_group_length[5] = 0;
                 sr->window_group_length[6] = 0;
@@ -788,7 +846,17 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
                 sr->window_group_length[7] = 0;
 
 #endif
+/*
+            {
+                int kk;
+                if (1) { //j(bcl->attack_index != 0 || bcr->attack_index != 0) {
+                    for (kk = 0; kk < MAX_GROUP_CNT; kk++)
+                        printf("-------lattack_index=%d, rattack_index=%d, g[%d]=%d\n",
+                                bcl->attack_index, bcr->attack_index, kk, sl->window_group_length[kk]);
+                }
+            }
 
+*/
 
                 if (last_block_type == ONLY_SHORT_BLOCK) {
                     /*printf("lwe=%f, rwe=%f\n", bcl->max_win_enrg, bcr->max_win_enrg);*/
@@ -822,7 +890,7 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
             {
                 int kk;
                 if (bcl->attack_index != 0 || bcr->attack_index != 0) {
-                    for (kk = 0; kk < MAX_GROUP_CNT; kk++)
+                    for (kk = 0; kk < sl->num_window_groups; kk++)
                         printf("-------lattack_index=%d, rattack_index=%d, g[%d]=%d\n",
                                 bcl->attack_index, bcr->attack_index, kk, sl->window_group_length[kk]);
                 }
