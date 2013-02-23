@@ -494,7 +494,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
                 /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);*/
             else 
-                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.85);
         } else { 
             if (time_resolution_first)
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
