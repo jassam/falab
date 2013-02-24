@@ -1305,8 +1305,8 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
 #ifdef USE_PDF_IMPROVE
                 sf = fa_estimate_sf_fast_improve((2.0+adj*3)*s->Ti[k][i], s->pdft[k][i], s->miu2[k][i]);
 #else 
-                /*sf = fa_estimate_sf_fast((2.5+adj*3+ti_adj)*s->Ti[k][i], s->pdft[k][i]);*/
-                sf = fa_estimate_sf_fast((1.0+ti_adj)*s->Ti[k][i], s->pdft[k][i]);
+                sf = fa_estimate_sf_fast((2.5+adj*3+ti_adj)*s->Ti[k][i], s->pdft[k][i]);
+                /*sf = fa_estimate_sf_fast((1.0+ti_adj)*s->Ti[k][i], s->pdft[k][i]);*/
 #endif
                 /*assert(sf>=0);*/
                 gl = FA_MAX(gl, sf);
@@ -1862,7 +1862,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
         if (cur_cnt > max_loop_cnt) {
             if (cur_bits > res_maxsize) {
                 gl_adj++;
-                ti_adj += 0.1;
+                ti_adj += 0.2;
             } else 
                 break;
         } 
@@ -1897,8 +1897,8 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         fa_adjust_scalefactor(f);
         cur_bits = mdctline_enc(f);
-        /*if (cur_bits < res_maxsize)*/
-            /*break;*/
+        if (cur_bits < res_maxsize)
+            break;
 
         quant_ok_cnt = 0;
         for (i = 0; i < chn_num; i++) {
