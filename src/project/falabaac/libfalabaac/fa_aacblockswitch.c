@@ -330,7 +330,7 @@ uintptr_t fa_blockswitch_init(int block_len)
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.7, KAISER);*/
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.52, KAISER);*/
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.52, KAISER);*/
-    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.8, KAISER);
+    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.6, KAISER);
 
 
 
@@ -569,12 +569,12 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
         /*printf("$$$$$$$$$$--------------------------------------->rat1=%f, i=%d\n", win_enrg_prev/f->win_accenrg, i);*/
 
         tt = win_enrg_prev/f->win_accenrg ;
-        if (tt > 1.5) {
-            frac = 0.8;
-            ratio = 0.3;
+        if (tt > 3.5) {
+            frac = 0.83;
+            ratio = 0.9;
         } else {
-            frac = 0.4;
-            ratio = 0.12;
+            frac = 0.3;
+            ratio = 0.1;
         }
 
         /*the accenrg is the smooth energy threshold*/
@@ -666,18 +666,18 @@ static const int block_sync_tab[4][4] =
 };
 
 /*#define MAX_GROUP_CNT  3*/
-#define MAX_GROUP_CNT  4
-/*#define MAX_GROUP_CNT 5*/
+/*#define MAX_GROUP_CNT  4*/
+#define MAX_GROUP_CNT 5
 static const int group_tab[WINCNT][MAX_GROUP_CNT] =
 {
-     {1,  3,  3,  1},
-     {1,  1,  3,  3},
-     {2,  1,  3,  2},
-     {3,  1,  3,  1},
-     {3,  1,  1,  3},
-     {3,  2,  1,  2},
-     {3,  3,  1,  1},
-     {3,  3,  1,  1}
+     /*{1,  3,  3,  1},*/
+     /*{1,  1,  3,  3},*/
+     /*{2,  1,  3,  2},*/
+     /*{3,  1,  3,  1},*/
+     /*{3,  1,  1,  3},*/
+     /*{3,  2,  1,  2},*/
+     /*{3,  3,  1,  1},*/
+     /*{3,  3,  1,  1}*/
 
      /*{1,  2,  2,  3},*/
      /*{1,  1,  3,  3},*/
@@ -711,14 +711,14 @@ static const int group_tab[WINCNT][MAX_GROUP_CNT] =
      /*{4,  2,  2},*/
      /*{3,  3,  2},*/
 
-     /*{1,  1,  2,  3,  1},*/
-     /*{1,  1,  1,  2,  3},*/
-     /*{2,  1,  1,  2,  2},*/
-     /*{3,  1,  1,  1,  2},*/
-     /*{2,  1,  1,  1,  3},*/
-     /*{2,  2,  1,  1,  2},*/
-     /*{3,  2,  1,  1,  1},*/
-     /*{1,  3,  2,  1,  1}*/
+     {1,  1,  2,  3,  1},
+     {1,  1,  1,  2,  3},
+     {2,  1,  1,  2,  2},
+     {3,  1,  1,  1,  2},
+     {2,  1,  1,  1,  3},
+     {2,  2,  1,  1,  2},
+     {3,  2,  1,  1,  1},
+     {1,  3,  2,  1,  1}
 };
 
 int fa_blocksync(fa_aacenc_ctx_t *f)
