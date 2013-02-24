@@ -114,11 +114,11 @@ void  fa_protect_db_rom_init()
         if (i < 3)
             fa_protect_db_44k_long[i] = 9;
         else if (i < 27)
-            fa_protect_db_44k_long[i] = 7;
+            fa_protect_db_44k_long[i] = 8;
         else if (i < 31)
             fa_protect_db_44k_long[i] = 7;
         else if (i < 42)
-            fa_protect_db_44k_long[i] = 5;
+            fa_protect_db_44k_long[i] = 4;
         else 
             fa_protect_db_44k_long[i] = 0;
     }

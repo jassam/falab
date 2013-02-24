@@ -292,7 +292,7 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 }
 
 
-#define WINCNT  8 //4 
+#define WINCNT  8 
 
 typedef struct _fa_blockctrl_t {
     uintptr_t  h_flt_fir;
@@ -329,8 +329,8 @@ uintptr_t fa_blockswitch_init(int block_len)
 
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.7, KAISER);*/
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.52, KAISER);*/
-    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 7, 0.52, KAISER);*/
-    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.45, KAISER);
+    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.52, KAISER);*/
+    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.8, KAISER);
 
 
 
@@ -556,24 +556,41 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     frac = 0.81; //0.57;  
     ratio = 0.18; //0.19; 
 #else 
-    frac = 0.62; //57;  
-    ratio = 0.34; //0.19; 
+    frac = 0.8; //62; //57;  
+    ratio = 0.5; //31; //0.34; //0.19; 
 #endif
 
     max_attack = 0.;
     cur_attack = 0.;
     for (i = 0; i < WINCNT; i++) {
         float diff;
+        float tt;
+
+        /*printf("$$$$$$$$$$--------------------------------------->rat1=%f, i=%d\n", win_enrg_prev/f->win_accenrg, i);*/
+
+        tt = win_enrg_prev/f->win_accenrg ;
+        if (tt > 1.5) {
+            frac = 0.8;
+            ratio = 0.3;
+        } else {
+            frac = 0.4;
+            ratio = 0.12;
+        }
 
         /*the accenrg is the smooth energy threshold*/
         f->win_accenrg = (1-frac)*f->win_accenrg + frac*win_enrg_prev;
         f->win_accenrg_hp = (1-frac)*f->win_accenrg_hp + frac*win_enrg_hp_prev;
 
         if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {
+        /*if (((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) || */
+            /*(tt > 4)) {*/
+        /*if (tt > 4) {*/
         /*if ((f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp) {*/
         /*if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg ||*/
             /*(f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp*/
            /*) {*/
+
+            /*printf("--------------------------------------->rat1=%f, i=%d\n", win_enrg_prev/f->win_accenrg, i);*/
 
             f->attack_flag  = 1;
             cur_attack = f->win_hfenrg[1][i]*ratio;
@@ -648,19 +665,19 @@ static const int block_sync_tab[4][4] =
   /* LONG_STOP_BLOCK  */ {LONG_STOP_BLOCK,  ONLY_SHORT_BLOCK, ONLY_SHORT_BLOCK, LONG_STOP_BLOCK  },
 };
 
-/*#define MAX_GROUP_CNT  3 */
-/*#define MAX_GROUP_CNT  4*/
-#define MAX_GROUP_CNT 5
+/*#define MAX_GROUP_CNT  3*/
+#define MAX_GROUP_CNT  4
+/*#define MAX_GROUP_CNT 5*/
 static const int group_tab[WINCNT][MAX_GROUP_CNT] =
 {
-     /*{1,  3,  3,  1},*/
-     /*{1,  1,  3,  3},*/
-     /*{2,  1,  3,  2},*/
-     /*{3,  1,  3,  1},*/
-     /*{3,  1,  1,  3},*/
-     /*{3,  2,  1,  2},*/
-     /*{3,  3,  1,  1},*/
-     /*{3,  3,  1,  1}*/
+     {1,  3,  3,  1},
+     {1,  1,  3,  3},
+     {2,  1,  3,  2},
+     {3,  1,  3,  1},
+     {3,  1,  1,  3},
+     {3,  2,  1,  2},
+     {3,  3,  1,  1},
+     {3,  3,  1,  1}
 
      /*{1,  2,  2,  3},*/
      /*{1,  1,  3,  3},*/
@@ -694,14 +711,14 @@ static const int group_tab[WINCNT][MAX_GROUP_CNT] =
      /*{4,  2,  2},*/
      /*{3,  3,  2},*/
 
-     {1,  1,  2,  3,  1},
-     {1,  1,  1,  2,  3},
-     {2,  1,  1,  2,  2},
-     {3,  1,  1,  1,  2},
-     {2,  1,  1,  1,  3},
-     {2,  2,  1,  1,  2},
-     {3,  2,  1,  1,  1},
-     {1,  3,  2,  1,  1}
+     /*{1,  1,  2,  3,  1},*/
+     /*{1,  1,  1,  2,  3},*/
+     /*{2,  1,  1,  2,  2},*/
+     /*{3,  1,  1,  1,  2},*/
+     /*{2,  1,  1,  1,  3},*/
+     /*{2,  2,  1,  1,  2},*/
+     /*{3,  2,  1,  1,  1},*/
+     /*{1,  3,  2,  1,  1}*/
 };
 
 int fa_blocksync(fa_aacenc_ctx_t *f)
@@ -745,7 +762,7 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
             if (block_type == ONLY_SHORT_BLOCK) {
                 sl->num_window_groups = MAX_GROUP_CNT;
                 sr->num_window_groups = MAX_GROUP_CNT;
-#if 0 
+#if  0 
                 sl->window_group_length[0] = group_tab[bcl->attack_index][0];
                 sl->window_group_length[1] = group_tab[bcl->attack_index][1];
                 sl->window_group_length[2] = group_tab[bcl->attack_index][2];
