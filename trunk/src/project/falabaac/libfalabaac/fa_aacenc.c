@@ -53,7 +53,7 @@
 
 #define GAIN_ADJUST   4 //5  
 
-#define BW_MAX        22000
+#define BW_MAX        22000.
 
 /* Returns the sample rate index */
 int get_samplerate_index(int sample_rate)
@@ -84,19 +84,19 @@ int get_max_pred_sfb(int sample_rate_index)
 
 typedef struct _rate_cutoff {
     int bit_rate;
-    int cutoff;
+    float cutoff;
 }rate_cutoff_t;
 
 /*reference to 48000kHz sample rate*/
 static rate_cutoff_t rate_cutoff[] = 
 {
-    {15000, 5000},
-    {23000, 8000},
-    {31000, 10000},
-    {39000, 13000},
-    {45000, 15000},
-    {63000, 16000},
-    {100000, 20000},
+    {15000, 5000.},
+    {23000, 8000.},
+    {31000, 10000.},
+    {39000, 13000.},
+    {45000, 15000.},
+    {63000, 16000.},
+    {100000, 20000.},
     {120000, BW_MAX},
     {0    , 0},
 };
@@ -142,11 +142,11 @@ static adj_cof_t adj_cof[] =
     {0    , 0},
 };
 
-static int get_bandwidth(int chn, int sample_rate, int bit_rate) 
+static float get_bandwidth(int chn, int sample_rate, int bit_rate) 
 {
     int i;
     int tmpbitrate;
-    int bandwidth;
+    float bandwidth;
     float ratio;
 
     ratio = (float) 48000/sample_rate;
@@ -161,14 +161,14 @@ static int get_bandwidth(int chn, int sample_rate, int bit_rate)
     if (i > 0)
         bandwidth = rate_cutoff[i-1].cutoff;
     else 
-        bandwidth = 5000;
+        bandwidth = 5000.;
 
-    if (bandwidth == 0)
+    if (bandwidth == 0.)
         /*bandwidth = 20000;*/
         bandwidth = BW_MAX;
     /*printf("bandwidth = %d\n", bandwidth);*/
     /*assert(bandwidth > 0 && bandwidth <= 20000);*/
-    assert(bandwidth > 0 && bandwidth <= BW_MAX);
+    assert(bandwidth > 0. && bandwidth <= BW_MAX);
 
     return bandwidth;
 
@@ -271,7 +271,7 @@ static void fa_aacenc_rom_init()
 }
 
 uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
-                      int mpeg_version, int aac_objtype, int band_width, int speed_level,
+                      int mpeg_version, int aac_objtype, float band_width, int speed_level,
                       int ms_enable, int lfe_enable, int tns_enable, int block_switch_enable, int psy_enable, int psy_model,
                       int blockswitch_method, int quantize_method, int time_resolution_first)
 {
@@ -318,15 +318,15 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
     /*printf("bits thr cof=%f\n", bits_thr_cof);*/
 
     if (speed_level > 5) {
-        if (f->band_width > 10000)
-            f->band_width = 10000;
+        if (f->band_width > 10000.)
+            f->band_width = 10000.;
     }
     /*if (band_width >= 5000 && band_width <= 20000) {*/
-    if (band_width >= 5000 && band_width <= BW_MAX) {
+    if (band_width >= 5000. && band_width <= BW_MAX) {
         if (band_width < f->band_width)
             f->band_width = band_width;
     }
-    printf("band width= %d kHz\n", f->band_width);
+    printf("band width= %f kHz\n", f->band_width);
 
     memset(chn_info_tmp, 0, sizeof(chn_info_t)*MAX_CHANNELS);
     get_aac_chn_info(chn_info_tmp, chn_num, lfe_enable);
@@ -440,7 +440,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         if (f->ctx[i].chn_info.lfe == 1) 
             real_band_width = 2000;
         else 
-            real_band_width = f->band_width;
+            real_band_width = (int)f->band_width;
         
         switch (sample_rate) {
             case 48000:
@@ -560,7 +560,7 @@ static int speed_level_tab[SPEED_LEVEL_MAX][6] =
 
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
                          int mpeg_version, int aac_objtype, int lfe_enable,
-                         int band_width,
+                         float band_width,
                          int speed_level,
                          int time_resolution_first)
 {

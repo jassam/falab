@@ -55,7 +55,7 @@ extern char  opt_inputfile[] ;
 extern char  opt_outputfile[];
 extern int   opt_bitrate;
 extern int   opt_speedlevel;
-extern int   opt_bandwidth;
+extern float opt_bandwidth;
 extern int   opt_lfeenable;
 extern int   opt_time_resolution_first;
 
