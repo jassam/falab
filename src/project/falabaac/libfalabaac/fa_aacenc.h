@@ -162,7 +162,7 @@ typedef struct _fa_aacenc_ctx_t{
 
     aacenc_ctx_t ctx[MAX_CHANNELS];
 
-    int band_width;
+    float band_width;
 
     uintptr_t h_bitstream;
     int used_bytes;

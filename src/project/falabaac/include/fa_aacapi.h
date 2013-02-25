@@ -93,7 +93,7 @@ extern "C"
 */
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
                          int mpeg_version, int aac_objtype, int lfe_enable,
-                         int band_width,
+                         float band_width,
                          int speed_level,
                          int time_resolution_first);
 
