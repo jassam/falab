@@ -292,7 +292,7 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 }
 
 
-#define WINCNT  4 //8 
+#define WINCNT  4 
 
 typedef struct _fa_blockctrl_t {
     uintptr_t  h_flt_fir;
@@ -568,7 +568,7 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
         /*printf("$$$$$$$$$$--------------------------------------->rat1=%f, i=%d\n", win_enrg_prev/f->win_accenrg, i);*/
 
         tt = win_enrg_prev/f->win_accenrg ;
-#if  1 
+#if  0 
 /*
         if (tt > 3.5) {
             [>frac = 0.82;<]
@@ -582,19 +582,18 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
             ratio = 0.1;
         }
 */
-        if (f->lastattack_flag) {
-            /*frac = 0.8;*/
-            /*ratio = 0.9;*/
-            frac = 0.6;
+        if (f->attack_index == i-1) {
+            frac = 0.55;
             ratio = 0.8;
         } else {
             frac = 0.32;
             ratio = 0.1;
         }
 #else
-
-            frac = 0.32;
-            ratio = 0.1;
+            /*frac = 0.4;*/
+            /*ratio = 0.045;*/
+            frac = 0.42;
+            ratio = 0.045;
 #endif
 
         /*the accenrg is the smooth energy threshold*/
