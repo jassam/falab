@@ -813,7 +813,6 @@ void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
                 /*nb[i] = FA_MAX(qsthr[i], nb[i]);*/
 
 
-                /*if (nb[i] == 2.*nb_prev[i])*/
                 if (nb[i] > frac*nb_prev[i]) // || nb_prev[i] > frac*nb[i])
                     *tns_active = 1;
                 else 
