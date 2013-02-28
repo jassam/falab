@@ -327,10 +327,7 @@ uintptr_t fa_blockswitch_init(int block_len)
     fa_blockctrl_t *f = (fa_blockctrl_t *)malloc(sizeof(fa_blockctrl_t));
     memset(f, 0, sizeof(fa_blockctrl_t));
 
-    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.7, KAISER);*/
-    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.52, KAISER);*/
-    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 13, 0.52, KAISER);*/
-    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 5, 0.6, KAISER);*/
+    /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 3, 0.4, KAISER);*/
     f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 3, 0.4, KAISER);
 
     f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 11, 0.7, KAISER);
@@ -590,10 +587,10 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
             ratio = 0.1;
         }
 #else
-            /*frac = 0.4;*/
+            /*frac = 0.42;*/
             /*ratio = 0.045;*/
             frac = 0.42;
-            ratio = 0.045;
+            ratio = 0.044;
 #endif
 
         /*the accenrg is the smooth energy threshold*/
