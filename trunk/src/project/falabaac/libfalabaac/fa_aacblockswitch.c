@@ -292,16 +292,15 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 }
 
 
+/*#define WINCNT  4 */
 #define WINCNT  8 
 
 typedef struct _fa_blockctrl_t {
     uintptr_t  h_flt_fir;
-    uintptr_t  h_flt_fir_hp;
 
-    int block_len;
-    float *x;
-    float *x_flt;
-    float *x_flt_hp;
+    int block_len;  // analysis block length
+    float *x;       // block sample 2048
+    float *x_flt;   // filter by hp_flt, high frequence sample
 
     // 1 means attack, 0 means no attack
     int attack_flag;           
@@ -313,12 +312,7 @@ typedef struct _fa_blockctrl_t {
 
     float win_enrg[2][WINCNT];
     float win_hfenrg[2][WINCNT];
-    float win_accenrg;
-    float win_hfenrg_hp[2][WINCNT];
-    float win_accenrg_hp;
-
-    float diff_enrg_ratio;
-    int   low_hf_flag;
+    float win_accenrg;          // smooth energy, accumulate by frame by frame
 
 } fa_blockctrl_t;
 
@@ -327,21 +321,15 @@ uintptr_t fa_blockswitch_init(int block_len)
     fa_blockctrl_t *f = (fa_blockctrl_t *)malloc(sizeof(fa_blockctrl_t));
     memset(f, 0, sizeof(fa_blockctrl_t));
 
+    /*use 3 taps, should be smoothly filter the low frequence*/
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 3, 0.4, KAISER);*/
     f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 3, 0.43, KAISER);
-
-    f->h_flt_fir_hp = fa_fir_filter_hpf_init(block_len, 11, 0.7, KAISER);
     f->block_len    = block_len;
 
     f->x = (float *)malloc(block_len * sizeof(float));
     memset(f->x, 0, block_len * sizeof(float));
     f->x_flt = (float *)malloc(block_len * sizeof(float));
     memset(f->x_flt, 0, block_len * sizeof(float));
-    f->x_flt_hp = (float *)malloc(block_len * sizeof(float));
-    memset(f->x_flt_hp, 0, block_len * sizeof(float));
-
-    f->diff_enrg_ratio = 0.0;
-    f->low_hf_flag = 0;
 
     return (uintptr_t)f;
 }
@@ -356,11 +344,6 @@ void fa_blockswitch_uninit(uintptr_t handle)
             f->h_flt_fir = NULL;
         }
 
-        if (f->h_flt_fir_hp) {
-            fa_fir_filter_uninit(f->h_flt_fir_hp);
-            f->h_flt_fir_hp = NULL;
-        }
-
         if (f->x) {
             free(f->x);
             f->x = NULL;
@@ -369,11 +352,6 @@ void fa_blockswitch_uninit(uintptr_t handle)
         if (f->x_flt) {
             free(f->x_flt);
             f->x_flt = NULL;
-        }
-
-        if (f->x_flt_hp) {
-            free(f->x_flt_hp);
-            f->x_flt_hp = NULL;
         }
 
         free(f);
@@ -392,34 +370,24 @@ static void calculate_win_enrg(fa_blockctrl_t *f)
     float win_hfenrg_tmp;
     float x_tmp, x_flt_tmp;
 
-    float win_hfenrg_hp_tmp;
-    float x_flt_hp_tmp;
-
     win_len = f->block_len / WINCNT;
 
     fa_fir_filter(f->h_flt_fir   , f->x, f->x_flt   , f->block_len);
-    fa_fir_filter(f->h_flt_fir_hp, f->x, f->x_flt_hp, f->block_len);
 
     for (win = 0; win < WINCNT; win++) {
         win_enrg_tmp   = 0.0;
         win_hfenrg_tmp = 0.0;
-        win_hfenrg_hp_tmp = 0.0;
 
         for (i = 0; i < win_len; i++) {
             x_tmp     = f->x    [win*win_len + i];
             x_flt_tmp = f->x_flt[win*win_len + i];
-            x_flt_hp_tmp = f->x_flt_hp[win*win_len + i];
 
             win_enrg_tmp       += x_tmp     * x_tmp;
             win_hfenrg_tmp     += x_flt_tmp * x_flt_tmp;
-            win_hfenrg_hp_tmp  += x_flt_hp_tmp * x_flt_hp_tmp;
-
         }
 
         f->win_enrg[1][win]      = win_enrg_tmp;
         f->win_hfenrg[1][win]    = win_hfenrg_tmp;
-        f->win_hfenrg_hp[1][win] = win_hfenrg_hp_tmp;
-
     }
 
 }
@@ -504,7 +472,6 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     fa_blockctrl_t *f = (fa_blockctrl_t *)(s->h_blockctrl);
     float win_enrg_max;
     float win_enrg_prev;
-    float win_enrg_hp_prev;
 
     float frac; 
     float ratio; 
@@ -524,7 +491,6 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     for (i = 0; i < WINCNT; i++) {
         f->win_enrg[0][i]   = f->win_enrg[1][i];
         f->win_hfenrg[0][i] = f->win_hfenrg[1][i];
-        f->win_hfenrg_hp[0][i] = f->win_hfenrg_hp[1][i];
     }
 
 #if 0
@@ -546,45 +512,19 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
 
     win_enrg_max = 0.0;
     win_enrg_prev = f->win_hfenrg[0][WINCNT-1];
-    win_enrg_hp_prev = f->win_hfenrg_hp[0][WINCNT-1];
 
-#if 0 
-    frac = 0.81; //0.57;  
-    ratio = 0.18; //0.19; 
-#else 
-    frac = 0.8; //62; //57;  
-    ratio = 0.5; //31; //0.34; //0.19; 
-#endif
+    /*frac = 0.42;*/
+    /*ratio = 0.044;*/
+    frac = 0.32;
+    ratio = 0.15;
 
     max_attack = 0.;
     cur_attack = 0.;
     for (i = 0; i < WINCNT; i++) {
-        float diff;
-        float tt;
-
-        /*printf("$$$$$$$$$$--------------------------------------->rat1=%f, i=%d\n", win_enrg_prev/f->win_accenrg, i);*/
-
-        tt = win_enrg_prev/f->win_accenrg ;
-        /*frac = 0.42;*/
-        /*ratio = 0.044;*/
-        frac = 0.32;
-        ratio = 0.15;
-
         /*the accenrg is the smooth energy threshold*/
         f->win_accenrg = (1-frac)*f->win_accenrg + frac*win_enrg_prev;
-        f->win_accenrg_hp = (1-frac)*f->win_accenrg_hp + frac*win_enrg_hp_prev;
 
         if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {
-        /*if (((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) || */
-            /*(tt > 4)) {*/
-        /*if (tt > 4) {*/
-        /*if ((f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp) {*/
-        /*if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg &&*/
-            /*(f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp*/
-           /*) {*/
-
-            /*printf("--------------------------------------->rat1=%f, i=%d\n", win_enrg_prev/f->win_accenrg, i);*/
-
             f->attack_flag  = 1;
             cur_attack = f->win_hfenrg[1][i]*ratio;
 
@@ -594,42 +534,16 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
                 f->attack_index = i;
                 max_attack = cur_attack;
             }
-/*
-            if (i == WINCNT-1) {
-                f->attack_index = i;
-                max_attack = cur_attack;
-            }
-*/
         }
-/*
-        [>if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg) {<]
-        if ((f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp) {
-        [>if ((f->win_hfenrg[1][i]*ratio) > f->win_accenrg ||<]
-            [>(f->win_hfenrg_hp[1][i]*ratio) > f->win_accenrg_hp<]
-           [>) {<]
 
-            f->attack_flag  = 1;
-            cur_attack = f->win_hfenrg[1][i]*ratio;
-
-            if (cur_attack > max_attack) {
-                f->attack_index = i;
-                max_attack = cur_attack;
-            }
-        }
-*/
         win_enrg_prev = f->win_hfenrg[1][i];
-        win_enrg_hp_prev = f->win_hfenrg_hp[1][i];
         win_enrg_max  = FA_MAX(win_enrg_max, win_enrg_prev);
     }
 
     /*check if last prev attack spread to this frame*/
     if (f->lastattack_flag && !f->attack_flag) {
         if  (((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&
-             (f->lastattack_index == WINCNT-1)) //  ||
-             /*((f->win_hfenrg_hp[0][WINCNT-1] > f->win_hfenrg_hp[1][0]) &&*/
-             /*(f->lastattack_index == WINCNT-1))*/
-             /*((f->win_hfenrg[0][WINCNT-1] > f->win_hfenrg[1][0]) &&*/
-             /*(f->lastattack_index == WINCNT-1))*/
+             (f->lastattack_index == WINCNT-1))
             )  {
             f->attack_flag  = 1;
             f->attack_index = 0;
@@ -638,7 +552,6 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     
     /*s->block_type = select_block(s->block_type, f->attack_flag);*/
     s->block_type = win_sequence[f->lastattack_flag][f->attack_flag][s->block_type];
-    /*printf("diff ratio=%f\n", f->diff_enrg_ratio);*/
 
     if (f->attack_flag)
         f->max_win_enrg = f->win_enrg[0][f->attack_index];
@@ -730,9 +643,6 @@ static const int group_tab[WINCNT][MAX_GROUP_CNT] =
      {2,  3,  1,  1,  1},
      {3,  2,  1,  1,  1},
      {3,  2,  1,  1,  1}
-
-
-
 };
 
 int fa_blocksync(fa_aacenc_ctx_t *f)
@@ -811,35 +721,23 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
                 sr->window_group_length[6] = 0;
                 sr->window_group_length[7] = 0;
 
-
 #endif
 
-                if (last_block_type == ONLY_SHORT_BLOCK) {
-                    /*printf("lwe=%f, rwe=%f\n", bcl->max_win_enrg, bcr->max_win_enrg);*/
-                    if (bcl->max_win_enrg > bcr->max_win_enrg) {
-                        for (k = 0; k < MAX_GROUP_CNT; k++)
-                            sr->window_group_length[k] = sl->window_group_length[k];
-                    } else {
-                        for (k = 0; k < MAX_GROUP_CNT; k++)
-                            sl->window_group_length[k] = sr->window_group_length[k];
-                    }
+                /*printf("lwe=%f, rwe=%f\n", bcl->max_win_enrg, bcr->max_win_enrg);*/
+                if (bcl->max_win_enrg > bcr->max_win_enrg) {
+                    for (k = 0; k < MAX_GROUP_CNT; k++)
+                        sr->window_group_length[k] = sl->window_group_length[k];
                 } else {
-                    if (bcl->max_win_enrg > bcr->max_win_enrg) {
-                        for (k = 0; k < MAX_GROUP_CNT; k++)
-                            sr->window_group_length[k] = sl->window_group_length[k];
-                    } else {
-                        for (k = 0; k < MAX_GROUP_CNT; k++)
-                            sl->window_group_length[k] = sr->window_group_length[k];
-                    }
+                    for (k = 0; k < MAX_GROUP_CNT; k++)
+                        sl->window_group_length[k] = sr->window_group_length[k];
                 }
-
             } else {
                 sl->num_window_groups = 1;
                 sl->window_group_length[0] = 1;
                 sr->num_window_groups = 1;
                 sr->window_group_length[0] = 1;
             }
-
+/*
             {
                 int kk;
                 if (bcl->attack_index != 0 || bcr->attack_index != 0) {
@@ -848,7 +746,7 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
                                 bcl->attack_index, bcr->attack_index, kk, sl->window_group_length[kk]);
                 }
             }
-
+*/
         } else {
             chn = 1;
             s->num_window_groups = 1;

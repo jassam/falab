@@ -1301,7 +1301,6 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
             for (i = 0; i < swb_num; i++) {
                 kmin = swb_low[i];
                 kmax = swb_high[i];
-                /*sf = fa_estimate_sf_fast((0.95+adj)*s->Ti[k][i], s->pdft[k][i]);*/
 #ifdef USE_PDF_IMPROVE
                 sf = fa_estimate_sf_fast_improve((2.0+adj*3)*s->Ti[k][i], s->pdft[k][i], s->miu2[k][i]);
 #else 
@@ -1416,8 +1415,6 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
             }
 
 */
-
-
         }
 
     }
@@ -1777,7 +1774,6 @@ static int mdctline_enc(fa_aacenc_ctx_t *f)
             }
         }
 #endif
-
 
         i += chn;
         total_bits += counted_bits;
