@@ -71,23 +71,25 @@ void  fa_protect_db_rom_init()
     /*48k long*/
     for (i = 0; i < 49; i++) {
         if (i < 3)
-            fa_protect_db_48k_long[i] = 10;
-        else if (i < 31)
             fa_protect_db_48k_long[i] = 9;
-        else if (i < 42)
+        else if (i < 27)
             fa_protect_db_48k_long[i] = 8;
+        else if (i < 31)
+            fa_protect_db_48k_long[i] = 8;
+        else if (i < 42)
+            fa_protect_db_48k_long[i] = 7;
         else 
-            fa_protect_db_48k_long[i] = 3;
+            fa_protect_db_48k_long[i] = 0;
     }
 
     /*48k short*/
     for (i = 0; i < 14; i++) {
         if (i < 1)
-            fa_protect_db_48k_short[i] = 7;
+            fa_protect_db_48k_short[i] = 8;
         else if (i < 2)
-            fa_protect_db_48k_short[i] = 3;
+            fa_protect_db_48k_short[i] = 7;
         else if (i < 11) 
-            fa_protect_db_48k_short[i] = 2;
+            fa_protect_db_48k_short[i] = 7;
         else 
             fa_protect_db_48k_short[i] = 0;
     }
@@ -155,23 +157,25 @@ void  fa_protect_db_rom_init()
     /*32k long*/
     for (i = 0; i < 51; i++) {
         if (i < 3)
-            fa_protect_db_32k_long[i] = 10;
-        else if (i < 31)
             fa_protect_db_32k_long[i] = 9;
-        else if (i < 42)
+        else if (i < 27)
             fa_protect_db_32k_long[i] = 8;
+        else if (i < 31)
+            fa_protect_db_32k_long[i] = 7;
+        else if (i < 42)
+            fa_protect_db_32k_long[i] = 7;
         else 
-            fa_protect_db_32k_long[i] = 3;
+            fa_protect_db_32k_long[i] = 0;
     }
 
     /*32k short*/
     for (i = 0; i < 14; i++) {
         if (i < 1)
-            fa_protect_db_32k_short[i] = 7;
+            fa_protect_db_32k_short[i] = 8;
         else if (i < 2)
-            fa_protect_db_32k_short[i] = 3;
+            fa_protect_db_32k_short[i] = 7;
         else if (i < 11) 
-            fa_protect_db_32k_short[i] = 2;
+            fa_protect_db_32k_short[i] = 7;
         else 
             fa_protect_db_32k_short[i] = 0;
     }

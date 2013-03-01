@@ -374,7 +374,6 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
 
     /*init psy and mdct quant */
     for (i = 0; i < chn_num; i++) {
-        /*f->ctx[i].h_blockctrl = fa_blockswitch_init(1024);*/
         f->ctx[i].h_blockctrl = fa_blockswitch_init(2048);
 
         f->ctx[i].time_resolution_first = time_resolution_first;
@@ -492,13 +491,11 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num,
         if (f->band_width < BW_MAX) {
             if (time_resolution_first)
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
-                /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);*/
             else 
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);
         } else { 
             if (time_resolution_first)
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
-                /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
             else 
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 1.0);
         }
@@ -754,37 +751,14 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
 #else 
                 fa_blockswitch_robust(s, f->sample+i*AAC_FRAME_LEN);
 #endif 
-
-#if  0 
-                /*if (s->block_type == 2)*/
-                if (s->block_type != 0)
-                    printf("i=%d, block_type=%d, pe=%f, bits_alloc=%d\n", i+1, s->block_type, s->pe, s->bits_alloc);
-                /*printf("i=%d, block_type=%d\n", i+1, s->block_type);*/
-#endif
             } else {
                 s->block_type = ONLY_LONG_BLOCK;
                 /*s->block_type = ONLY_SHORT_BLOCK;*/
             }
         }
-
-#if 0 
-        if (s->block_type == ONLY_SHORT_BLOCK) {
-            block_type = ONLY_SHORT_BLOCK;
-            break;
-        } else {
-            block_type = s->block_type;
-        }
-#endif
-
     }
 
     fa_blocksync(f);
-/*
-    for (i = 0; i < chn_num; i++) {
-        s = &(f->ctx[i]);
-        s->block_type = block_type;
-    }
-*/
 
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
