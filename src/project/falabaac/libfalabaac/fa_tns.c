@@ -422,8 +422,10 @@ int fa_tnssync(fa_aacenc_ctx_t *f)
             block_type = sl->block_type;
             if (block_type == LONG_START_BLOCK || block_type == LONG_STOP_BLOCK)
                 tns_sl->tns_gain_thr = tns_sr->tns_gain_thr = 60;
+                /*tns_sl->tns_gain_thr = tns_sr->tns_gain_thr = 2;*/
             else 
                 tns_sl->tns_gain_thr = tns_sr->tns_gain_thr = 50;
+                /*tns_sl->tns_gain_thr = tns_sr->tns_gain_thr = 2;*/
            
         } else {
             chn = 1;
