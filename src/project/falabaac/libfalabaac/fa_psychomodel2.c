@@ -875,7 +875,7 @@ void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
             /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], 5*nb_prev[i]));*/
             /*nb[i] = FA_MIN(nb[i], 1.*nb_prev[i]);*/
 
-            nb[i] = FA_MAX((pow(10., qsthr[i]/10.))*17, FA_MIN(nb[i], 2.8*nb_prev[i]));
+            nb[i] = FA_MAX((pow(10., qsthr[i]/10.))*18, FA_MIN(nb[i], 2.7*nb_prev[i]));
 /*
             if (nb[i] >= 4*nb_prev[i])
                 nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), 3*nb_prev[i]);
