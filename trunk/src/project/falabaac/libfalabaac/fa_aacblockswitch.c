@@ -565,33 +565,10 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
         /*printf("$$$$$$$$$$--------------------------------------->rat1=%f, i=%d\n", win_enrg_prev/f->win_accenrg, i);*/
 
         tt = win_enrg_prev/f->win_accenrg ;
-#if  0 
-/*
-        if (tt > 3.5) {
-            [>frac = 0.82;<]
-            [>ratio = 0.9;<]
-            frac = 0.7;
-            ratio = 0.8;
-        } else {
-            [>frac = 0.3;<]
-            [>ratio = 0.1;<]
-            frac = 0.3;
-            ratio = 0.1;
-        }
-*/
-        if (f->attack_index == i-1) {
-            frac = 0.55;
-            ratio = 0.8;
-        } else {
-            frac = 0.32;
-            ratio = 0.1;
-        }
-#else
-            /*frac = 0.42;*/
-            /*ratio = 0.045;*/
-            frac = 0.42;
-            ratio = 0.044;
-#endif
+        /*frac = 0.42;*/
+        /*ratio = 0.044;*/
+        frac = 0.42;
+        ratio = 0.08;
 
         /*the accenrg is the smooth energy threshold*/
         f->win_accenrg = (1-frac)*f->win_accenrg + frac*win_enrg_prev;
