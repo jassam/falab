@@ -464,13 +464,12 @@ static int select_block(int prev_block_type, int attack_flag)
     return cur_block_type;
 }
 
-/*TODO :sync flag, use the short block to sync all attack flag*/
 int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
 {
     int i;
     fa_aacfilterbank_t *fb = (fa_aacfilterbank_t *)(s->h_aac_analysis);
     fa_blockctrl_t *f = (fa_blockctrl_t *)(s->h_blockctrl);
-    float win_enrg_max;
+    /*float win_enrg_max;*/
     float win_enrg_prev;
 
     float frac; 
@@ -482,10 +481,6 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     /*save current attack info to last attack info*/
     f->lastattack_flag  = f->attack_flag;
     f->lastattack_index = f->attack_index;
-    /*if (f->attack_flag)*/
-        /*f->max_win_enrg = f->win_enrg[0][f->lastattack_index];*/
-    /*else*/
-        /*f->max_win_enrg = 0.0;*/
 
     /*save current analysis win energy to last analysis win energy*/
     for (i = 0; i < WINCNT; i++) {
@@ -510,7 +505,7 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
     f->attack_flag = 0;
     f->attack_index = 0;
 
-    win_enrg_max = 0.0;
+    /*win_enrg_max = 0.0;*/
     win_enrg_prev = f->win_hfenrg[0][WINCNT-1];
 
     /*frac = 0.42;*/
@@ -537,7 +532,7 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
         }
 
         win_enrg_prev = f->win_hfenrg[1][i];
-        win_enrg_max  = FA_MAX(win_enrg_max, win_enrg_prev);
+        /*win_enrg_max  = FA_MAX(win_enrg_max, win_enrg_prev);*/
     }
 
     /*check if last prev attack spread to this frame*/
@@ -680,8 +675,10 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
             sl->block_type = block_type;
             sr->block_type = block_type;
 
+#if 1
             if (block_type != 0)
                 printf("i=%d, block_type=%d\n", i+1, s->block_type);
+#endif
             
             if (block_type == ONLY_SHORT_BLOCK) {
                 sl->num_window_groups = MAX_GROUP_CNT;
