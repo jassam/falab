@@ -743,7 +743,7 @@ void  fa_fastquant_calculate_sfb_avgenergy(aacenc_ctx_t *s)
 }
 
 
-void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
+void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX], float qcof)
 {
     int k,i,j;
 
@@ -791,7 +791,8 @@ void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
                     energy += tmp * tmp;
                 }
 
-                xmin[k][i] = energy/9;
+                /*xmin[k][i] = energy/9;*/
+                xmin[k][i] = qcof*energy/12;
             }
         }
     } else {
@@ -820,7 +821,8 @@ void fa_fastquant_calculate_xmin(aacenc_ctx_t *s, float xmin[8][NUM_SFB_MAX])
                 energy += tmp * tmp;
             }
 
-            xmin[0][i] = energy/7;
+            /*xmin[0][i] = energy/7;*/
+            xmin[0][i] = qcof*energy/10;
         }
     }
 

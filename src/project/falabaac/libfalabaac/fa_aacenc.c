@@ -601,8 +601,8 @@ static int speed_level_tab[SPEED_LEVEL_MAX][6] =
                                 {1,       1,        0,                    1,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //2
                                 {1,       0,        1,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //3
                                 {1,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //4
-                                {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //5
-                                {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_LOOP},  //same, but bw=10k
+                                {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //5
+                                {0,       0,        0,                    0,           BLOCKSWITCH_VAR,          QUANTIZE_BEST},  //same, but bw=10k
                             };
 
 #endif
@@ -857,11 +857,11 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
             /*if (speed_level == 2 || speed_level == 3)*/
                 /*fa_calculate_scalefactor_win(s, s->xmin);*/
         } else {
-            if (speed_level < 5) {
+            /*if (speed_level < 5) {*/
                 fa_fastquant_calculate_sfb_avgenergy(s);
-                fa_fastquant_calculate_xmin(s, s->xmin);
+                fa_fastquant_calculate_xmin(s, s->xmin, qcof);
                 /*fa_calculate_scalefactor_win(s, s->xmin);*/   // if use QUANTIZE_FAST , uncommented
-            }
+            /*}*/
         }
     }
 
