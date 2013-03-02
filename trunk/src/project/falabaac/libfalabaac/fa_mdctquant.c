@@ -310,10 +310,10 @@ void fa_mdctline_quantdirect(uintptr_t handle,
                     x_quant[i] = -x_quant[i];
 
                 if (x_quant[i] > 8191) {
-                    printf(">>>>\n");
+                    /*printf(">>>>\n");*/
                     x_quant[i] = 8191;
                 } else if(x_quant[i] < -8191) {
-                    printf("<<<<\n");
+                    /*printf("<<<<\n");*/
                     x_quant[i] = -8191;
                 }
 

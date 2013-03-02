@@ -675,7 +675,7 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
             sl->block_type = block_type;
             sr->block_type = block_type;
 
-#if 1
+#if 0 
             if (block_type != 0)
                 printf("i=%d, block_type=%d\n", i+1, s->block_type);
 #endif

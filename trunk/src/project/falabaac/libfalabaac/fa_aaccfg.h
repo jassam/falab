@@ -164,6 +164,10 @@ typedef struct _aaccfg_t  {
     /* bitrate / channel of AAC file */
     int bit_rate;
 
+    float qcof;
+
+    int vbr_flag;
+
     int sample_rate;
 
     int sample_rate_index;
