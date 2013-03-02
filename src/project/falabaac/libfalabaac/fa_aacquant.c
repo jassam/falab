@@ -1823,8 +1823,10 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
     float ti_adj;
     int res_maxsize;
     int cur_bits;
+    int vbr_flag;
 
     chn_num = f->cfg.chn_num;
+    vbr_flag = f->cfg.vbr_flag;
 
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
@@ -1859,6 +1861,8 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
             if (cur_bits > res_maxsize) {
                 gl_adj++;
                 ti_adj += 0.2;
+                if (cur_cnt > 20)
+                    gl_adj++;
             } else 
                 break;
         } 
@@ -1893,8 +1897,12 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         fa_adjust_scalefactor(f);
         cur_bits = mdctline_enc(f);
-        if (cur_bits < res_maxsize)
-            break;
+
+        /*if vbr mode, we break */
+        if (vbr_flag) {
+            if (cur_bits < res_maxsize)
+                break;
+        }
 
         quant_ok_cnt = 0;
         for (i = 0; i < chn_num; i++) {

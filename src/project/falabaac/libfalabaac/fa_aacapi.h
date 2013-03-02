@@ -91,7 +91,7 @@ extern "C"
       Want Normal quality and fast speed: use default (-l 3 , it is good choise, good quality and speed you can tolerant)
       Want Fast speed                   : use -l 5  (if is rock music, can not hear abnormal; but if is quiet or polluted by white noise, maybe not good)
 */
-uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num,
+uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num, float quality, int vbr_flag,
                          int mpeg_version, int aac_objtype, int lfe_enable,
                          float band_width,
                          int speed_level,

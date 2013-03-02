@@ -342,7 +342,7 @@ void update_psy_short_previnfo(uintptr_t handle, int index)
 }
 
 
-void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type, float xmin[8][FA_SWB_NUM_MAX])
+void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type, float xmin[8][FA_SWB_NUM_MAX], float qcof)
 {
     int k;
     fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
@@ -350,10 +350,10 @@ void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type
     if (block_type == ONLY_SHORT_BLOCK) {
         for (k = 0; k < 8; k++) {
             /*update_psy_short_previnfo(f, k);*/
-            fa_psychomodel2_calculate_xmin(f->h_psy2_short[k], mdct_line+k*AAC_BLOCK_SHORT_LEN, &(xmin[k][0]));
+            fa_psychomodel2_calculate_xmin(f->h_psy2_short[k], mdct_line+k*AAC_BLOCK_SHORT_LEN, &(xmin[k][0]), qcof);
         }
     } else {
-        fa_psychomodel2_calculate_xmin(f->h_psy2_long, mdct_line, &(xmin[0][0]));
+        fa_psychomodel2_calculate_xmin(f->h_psy2_long, mdct_line, &(xmin[0][0]), qcof);
     }
 }
 

@@ -113,8 +113,9 @@ int main(int argc, char *argv[])
     sample_rate = fmt.samplerate;
     chn_num     = fmt.channels;
 
+
     /*initial aac encoder, return the handle for the encoder*/
-    h_aacenc = fa_aacenc_init(sample_rate, opt_bitrate, chn_num,
+    h_aacenc = fa_aacenc_init(sample_rate, opt_bitrate, chn_num, opt_quality, opt_vbrflag,
                               FA_AACENC_MPEG_VER_DEF , FA_AACENC_OBJ_TYPE_DEF, opt_lfeenable,
                               opt_bandwidth,
                               opt_speedlevel, opt_time_resolution_first);
