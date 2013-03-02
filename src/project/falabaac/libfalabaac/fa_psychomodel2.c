@@ -866,6 +866,7 @@ void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
 void fa_psychomodel2_calculate_xmin(uintptr_t handle, float *mdct_line, float *xmin)
 {
     int i,j;
+    float frac;
     fa_psychomodel2_t *f = (fa_psychomodel2_t *)handle;
 
     float codec_e;
@@ -873,6 +874,7 @@ void fa_psychomodel2_calculate_xmin(uintptr_t handle, float *mdct_line, float *x
     int   *swb_offset= f->swb_offset;
     float *smr       = f->smr;
 
+    frac = 0.8;
 
     for (i = 0; i < swb_num; i++) {
         codec_e = 0.0;
@@ -881,10 +883,10 @@ void fa_psychomodel2_calculate_xmin(uintptr_t handle, float *mdct_line, float *x
             for (j = swb_offset[i]; j < swb_offset[i+1]; j++)
                 codec_e = codec_e + mdct_line[j]*mdct_line[j];
 
-            xmin[i] = codec_e/smr[i];
+            xmin[i] = frac*codec_e/smr[i];
         } else {
             /*xmin[i] = 0;*/
-            xmin[i] = codec_e/20;
+            xmin[i] = frac*codec_e/20;
         }
     }
 }

@@ -56,9 +56,11 @@ uintptr_t fa_aacfilterbank_init()
     memset(kbd_win_short, 0, sizeof(float)*2*AAC_BLOCK_SHORT_LEN);
 
     fa_mdct_sine(sin_win_long , 2*AAC_BLOCK_LONG_LEN);
-    fa_mdct_kbd(kbd_win_long  , 2*AAC_BLOCK_LONG_LEN , 4);
+    /*fa_mdct_kbd(kbd_win_long  , 2*AAC_BLOCK_LONG_LEN , 4);*/
+    fa_mdct_kbd(kbd_win_long  , 2*AAC_BLOCK_LONG_LEN , 6);
     fa_mdct_sine(sin_win_short, 2*AAC_BLOCK_SHORT_LEN);
-    fa_mdct_kbd(kbd_win_short , 2*AAC_BLOCK_SHORT_LEN, 6);
+    /*fa_mdct_kbd(kbd_win_short , 2*AAC_BLOCK_SHORT_LEN, 6);*/
+    fa_mdct_kbd(kbd_win_short , 2*AAC_BLOCK_SHORT_LEN, 7);
 
     for (i = 0; i < AAC_BLOCK_LONG_LEN; i++) {
         f->sin_win_long_left[i]   = sin_win_long[i];

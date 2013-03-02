@@ -94,8 +94,8 @@ static rate_cutoff_t rate_cutoff[] =
     {23000, 8000.},
     {31000, 10000.},
     {39000, 13000.},
-    {45000, 15000.},
-    {63000, 17020.},
+    {45000, 15300.},
+    {63000, 16500.},
     {100000, 20000.},
     {120000, BW_MAX},
     {0    , 0},
@@ -705,7 +705,6 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     short *sample_in;
     float *sample_buf;
     float sample_psy_buf[2*AAC_FRAME_LEN];
-    /*float xmin[8][FA_SWB_NUM_MAX];*/
     int ms_enable;
     int tns_enable;
     int block_switch_en;
@@ -723,7 +722,6 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     chn_num     = f->cfg.chn_num;
     /*assert(inlen == chn_num*AAC_FRAME_LEN*2);*/
 
-    /*memset(xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);*/
     /*update sample buffer, ith sample, jth chn*/
     sample_in = (short *)buf_in;
     for (i = 0; i < AAC_FRAME_LEN; i++) 
