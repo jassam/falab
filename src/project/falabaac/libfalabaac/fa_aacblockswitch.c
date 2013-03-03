@@ -166,14 +166,16 @@ static float frame_var_max(float *x, int len)
 
         for (i = 0; i < hop; i++) {
             float tmp;
-            tmp = fabs(xp[i]/32768.);
+            /*tmp = fabs(xp[i]/32768.);*/
+            tmp = FA_ABS(xp[i]/32768.);
             sum += tmp;
         }
         avg = sum / hop;
 
         for (i = 0; i < hop; i++) {
             float tmp;
-            tmp  = fabs(xp[i]/32768.);
+            /*tmp  = fabs(xp[i]/32768.);*/
+            tmp  = FA_ABS(xp[i]/32768.);
             diff =  tmp - avg;
             var  += diff  * diff; 
         }
@@ -341,7 +343,7 @@ void fa_blockswitch_uninit(uintptr_t handle)
     if (f) {
         if (f->h_flt_fir) {
             fa_fir_filter_uninit(f->h_flt_fir);
-            f->h_flt_fir = NULL;
+            f->h_flt_fir = 0; //NULL;
         }
 
         if (f->x) {

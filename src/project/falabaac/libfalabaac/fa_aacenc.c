@@ -427,7 +427,6 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num, float qcof, in
     /*init psy and mdct quant */
     for (i = 0; i < chn_num; i++) {
         f->ctx[i].h_blockctrl = fa_blockswitch_init(2048);
-
         f->ctx[i].time_resolution_first = time_resolution_first;
 
         f->ctx[i].pe                = 0.0;
@@ -539,7 +538,6 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num, float qcof, in
 
         f->ctx[i].quant_ok = 0;
 
-        /*if (f->band_width < 20000) {*/
         if (f->band_width < BW_MAX) {
             if (time_resolution_first)
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
@@ -551,6 +549,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num, float qcof, in
             else 
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 1.0);
         }
+
     }
 
     /*f->bitres_maxsize = get_aac_bitreservoir_maxsize(f->cfg.bit_rate, f->cfg.sample_rate);*/
@@ -572,11 +571,21 @@ void fa_aacenc_uninit(uintptr_t handle)
             f->sample = NULL;
         }
 
+        fa_bitstream_uninit(f->h_bitstream);
+
         for (i = 0; i < chn_num; i++) {
+            fa_blockswitch_uninit(f->ctx[i].h_blockctrl);
             free(f->ctx[i].res_buf);
             f->ctx[i].res_buf = NULL;
+
+            fa_aacpsy_uninit(f->ctx[i].h_aacpsy);
+            fa_aacfilterbank_uninit(f->ctx[i].h_aac_analysis);
+            fa_tns_uninit(f->ctx[i].h_tns);
+            fa_mdctquant_uninit(f->ctx[i].h_mdctq_long);
+            fa_mdctquant_uninit(f->ctx[i].h_mdctq_short);
         }
 
+        memset(f, 0, sizeof(fa_aacenc_ctx_t));
         free(f);
         f = NULL;
     }

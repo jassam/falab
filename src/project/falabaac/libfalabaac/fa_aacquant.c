@@ -1584,15 +1584,12 @@ static float choose_stepsize_db(int delta_bits, float cof)
 		step = 1;
 	else if (delta_bits < 1000*cof)
 		step = 3;
-#if 0 
-	else 
-		step = 4;
-#else 
 	else if (delta_bits < 1500*cof)
         step = 4;
+	else if (delta_bits < 2500*cof)
+        step = 6;
 	else 
-		step = 6;
-#endif
+		step = 8;
 
 	return step;
 

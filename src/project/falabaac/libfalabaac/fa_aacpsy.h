@@ -40,6 +40,7 @@ extern "C"
 
 
 uintptr_t fa_aacpsy_init(int sample_rate);
+void fa_aacpsy_uninit(uintptr_t handle);
 
 void update_psy_long2short_previnfo(uintptr_t handle);
 void update_psy_short2long_previnfo(uintptr_t handle);

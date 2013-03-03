@@ -542,6 +542,11 @@ static void free_mdct_fft(fa_mdct_ctx_t *f)
 
 static void free_mdct_fft4(fa_mdct_ctx_t *f)
 {
+    if (f->fft_buf) {
+        free(f->fft_buf);
+        f->fft_buf = NULL;
+    }
+
     if (f->tw_c) {
         free(f->tw_c);
         f->tw_c = NULL;
