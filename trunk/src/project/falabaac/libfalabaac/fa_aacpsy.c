@@ -122,6 +122,26 @@ uintptr_t fa_aacpsy_init(int sample_rate)
 }
 
 
+void fa_aacpsy_uninit(uintptr_t handle)
+{
+    int i;
+    fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
+
+    if (f) {
+        fa_psychomodel1_uninit(f->h_psy1_long);
+        fa_psychomodel2_uninit(f->h_psy2_long);
+
+        for (i = 0; i < 8; i++) {
+            fa_psychomodel1_uninit(f->h_psy1_short[i]);
+            fa_psychomodel2_uninit(f->h_psy2_short[i]);
+        }
+
+        free(f);
+        f = NULL;
+    }
+}
+
+
 /* short block to long block
  * NOTE: I simulate using matlab, and found that the psd of short block less than long block 
  *       about 36dB after fft, because that the length of the input samples is differernt, and 
@@ -264,7 +284,7 @@ void fa_aacpsy_calculate_pe(uintptr_t handle, float *x, int block_type, float *p
         pe_sum = 0;
         for (win = 0; win < 8; win++) {
             xp = x + AAC_BLOCK_TRANS_LEN + win*128;
-            update_psy_short_previnfo(f, win);
+            update_psy_short_previnfo(handle, win);
             fa_psychomodel2_calculate_pe_improve(f->h_psy2_short[win], xp, &pe, tns_active, 18, 9, 1, 1);
             pe_sum += pe;
         }
@@ -291,7 +311,7 @@ void fa_aacpsy_calculate_pe_hp(uintptr_t handle, float *x, int block_type, float
     pe_sum_short = 0;
     for (win = 0; win < 8; win++) {
         xp = x + AAC_BLOCK_TRANS_LEN + win*128;
-        update_psy_short_previnfo(f, win);
+        update_psy_short_previnfo(handle, win);
         /*fa_psychomodel2_calculate_pe(f->h_psy2_short[win], xp, &pe);*/
         /*fa_psychomodel2_calculate_pe_improve(f->h_psy2_short[win], xp, &pe, tns_active, 18, 9, 1, 1);*/
         fa_psychomodel2_calculate_pe_improve(f->h_psy2_short[win], xp, &pe, tns_active, 18, 6, 1, 1);

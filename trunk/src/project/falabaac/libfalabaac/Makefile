@@ -53,9 +53,9 @@ CFLAGS    += -I.  -I$(INCLUDEDIR)
 all: $(OBJFILES) 
 	@rm $(TARGET1) -f 
 	@rm $(TARGET2) -f 
-	$(CC) $(CFLAGS) -c $(OBJFILES) $(LDFLAGS)	 
+	$(CC) $(CFLAGS) -c $(OBJFILES) 	 
 	$(AR) $(ARFLAG) $(TARGET1) $(OBJFILES)
-	$(CC) $(SHAREFLAG) -o $(TARGET2) $(OBJFILES) $(LDFLAGS)	 
+	$(CC) $(SHAREFLAG) -o $(TARGET2) $(OBJFILES) 	 
 	cp fa_aacapi.h $(DESTINCLUDE)
 	cp fa_inttypes.h $(DESTINCLUDE)
 

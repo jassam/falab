@@ -85,8 +85,9 @@ unsigned char fa_read_byte(FILE *fp)
 {
     unsigned char cx;
     unsigned char temp[SIZE_OF_BYTE];
+    int ret;
 
-    fread(temp, sizeof(*temp), SIZE_OF_BYTE, fp);
+    ret = fread(temp, sizeof(*temp), SIZE_OF_BYTE, fp);
     cx = temp[0];
     return cx;
 
@@ -96,8 +97,9 @@ unsigned short fa_read_ushort(FILE *fp)
 {
     unsigned short cx;
     unsigned char temp[SIZE_OF_SHORT];
+    int ret;
 
-    fread(temp, sizeof(*temp), SIZE_OF_SHORT, fp);
+    ret = fread(temp, sizeof(*temp), SIZE_OF_SHORT, fp);
     cx = temp[0];
     cx |= (unsigned short)temp[1] << 8;
     return cx;
@@ -108,8 +110,9 @@ unsigned long fa_read_ulong(FILE *fp)
 {
     unsigned long cx;
     unsigned char temp[SIZE_OF_LONG];
+    int ret;
 
-    fread(temp,sizeof(*temp),SIZE_OF_LONG,fp);
+    ret = fread(temp,sizeof(*temp),SIZE_OF_LONG,fp);
     cx = temp[0];
     cx |= (unsigned long)temp[1] << 8;
     cx |= (unsigned long)temp[2] << 16;
@@ -255,9 +258,10 @@ void example_read_bitbuffer(FILE *f, unsigned int *num_bytes, int *sr_index)
 {
     fa_bitbuffer_t bitbuf;
     unsigned char tmp[4];
+    int ret;
 
     /*read the certain bytes into tmp buffer*/
-    fread(tmp,1,4,f);
+    ret = fread(tmp,1,4,f);
     /*use the tmp buffer initial bitbuf*/
     fa_bitbuffer_init(&bitbuf, tmp, 4);
 
