@@ -406,11 +406,13 @@ int fa_tnssync(fa_aacenc_ctx_t *f)
 
         tns_active = 0;
         if (s->chn_info.cpe == 1) {
+            tns_info_t *tns_sl, *tns_sr;
+
             chn = 2;
             sl = s;
             sr = &(f->ctx[i+1]);
-            tns_info_t *tns_sl = (tns_info_t *)sl->h_tns;
-            tns_info_t *tns_sr = (tns_info_t *)sr->h_tns;
+            tns_sl = (tns_info_t *)sl->h_tns;
+            tns_sr = (tns_info_t *)sr->h_tns;
 
             /*if (1==sl->tns_active && 1==sr->tns_active)*/
                 /*tns_active = 1;*/
@@ -428,8 +430,8 @@ int fa_tnssync(fa_aacenc_ctx_t *f)
                 /*tns_sl->tns_gain_thr = tns_sr->tns_gain_thr = 2;*/
            
         } else {
-            chn = 1;
             tns_info_t *tns_s = (tns_info_t *)s->h_tns;
+            chn = 1;
 
             block_type = s->block_type;
             if (block_type == LONG_START_BLOCK || block_type == LONG_STOP_BLOCK)

@@ -48,10 +48,13 @@ extern "C"
     1.sample rate only support 32, 44.1, 48kHz(I think enough, high is no useless, low sample rate sound terrible),
       if you want to support more sample rate, complete fa_swbtab and add code in fa_aacenc_init by yourself, very easy
 
-    2.bit rate can support 16~160 per channel, means that if encode stereo audio, can support (32 ~320kbps)
-      stereo : I tested, >=128kbps (almost noloss, can not hear obvious difference between aac and flac or wav file)
-                           96kbps  (good quality, for some certain audio. high frequency maybe not very good)
-               you can use (-w) option for your certain background
+    2.vbr with quality control (0.1 ~ 1.0), vbr mode is recommend for it adjust bitrate according to the frame feature;
+      cbr(roughtly cbr, because if want have accurate bit rate can cost more bitrate control loop and will degrade the 
+      speed performance), cbr support 16~160 per channel, means that if encode stereo audio, can support (32 ~320kbps)
+      default settings is: -q 0.7, band width is 17kHz, roughtly bitrate is 110 ~ 150kbps according to the audio sample feature
+      if you want the best quality and wide band width, use -q 1, the band width extend to 22kHz and encoding whole 
+      frequency line using psychmodel
+                                     
       you can download the EBU test audio file frome the web site below to do sound quality test:
       http://tech.ebu.ch/public-cations/sqamcd
 
@@ -70,26 +73,17 @@ extern "C"
 
     6.ms encode is support, but if you use fast quantize method(according to you speed_level choice), I close ms encode
 
-    7.band_width you can change by yourself, I use 20kHz in high bitrate(>=128kbps) , and use 16kHz when bitrate >= 96kbps,
-      but if the audio polluted by white noise(sound little) and not very pure, in 96kbps the high frequency can sound a little quantize noise caused
-      by white noise quantiztion, at this time, you can use (-w 10) option to limit the band width, and the high frequency can be removed, and the 
-      sound quality recoverd better 
+    7.band_width you can change by yourself using option -w 
     
     8.I give 6 speed level(1~6), you can choose according to your application , 1 is the lowest but very good quality, 6 is fatest but low quality,
-      default is 3(strongly recommend), I think 3 is the good choice(good quality, the speed also is fast I think). if you want to use fast version, 
-      use 5 choice, for speed_level 6 I limit the band_width to 10kHz in high bit rate.
+      default is 1(strongly recommend), 
+      I think level 3 is a good choice if you want fast encoding, the speed is more than 2 times compare to the speed_level 1. 
 
-    9.when you use speed_level 1, be patient(it fixing noise). beside, if the audio change fastly signal(not stable signal), and the attack signal 
-      frequently happen, then I suggest you use (-w 15) to limit the high frequency if you use high bit rate, because the attack will lead pre-echo 
-      noise spread in time domain, and the high frequency band will be heared like(sa sa sa) sound. and at this time, use TNS will highlight the 
-      attack and surppress the "sa sa sa" sound, but when do quantize, the sa sa sa will not good be quantized, so I suggeset use (-w 15) to mannally 
-      suprress the high frequency, worsely, use (-w 10) can totally suppress the "sa sa sa " pre-echo and quantize noise
-      Or, you can use 128kbps to encode the audio file polluted by white noise, in 128kbps, quantize noise can be masked
+    9.Summary----
+      Want Best quality (default)       : use -l 1  (best quality, very good sound, smoothly and stable)
+      Want Normal quality and fast speed: use -l 3  (it is good choise, normal quality and speed you can tolerant)
+      Want Fast speed                   : use -l 5  (if is rock music, can not hear abnormal; but if is quiet or piano audio, maybe not good)
 
-   10.Summary----
-      Want Best quality                 : use -l 1  (best quality, very good sound, smoothly and stable)
-      Want Normal quality and fast speed: use default (-l 3 , it is good choise, good quality and speed you can tolerant)
-      Want Fast speed                   : use -l 5  (if is rock music, can not hear abnormal; but if is quiet or polluted by white noise, maybe not good)
 */
 uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num, float quality, int vbr_flag,
                          int mpeg_version, int aac_objtype, int lfe_enable,
