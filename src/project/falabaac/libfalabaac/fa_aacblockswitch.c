@@ -294,8 +294,8 @@ int fa_blockswitch_var(aacenc_ctx_t *s)
 }
 
 
-/*#define WINCNT  4 */
-#define WINCNT  8 
+#define WINCNT  4
+/*#define WINCNT  8 */
 
 typedef struct _fa_blockctrl_t {
     uintptr_t  h_flt_fir;
@@ -325,7 +325,7 @@ uintptr_t fa_blockswitch_init(int block_len)
 
     /*use 3 taps, should be smoothly filter the low frequence*/
     /*f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 3, 0.4, KAISER);*/
-    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 3, 0.43, KAISER);
+    f->h_flt_fir    = fa_fir_filter_hpf_init(block_len, 3, 0.45, KAISER);
     f->block_len    = block_len;
 
     f->x = (float *)malloc(block_len * sizeof(float));
@@ -512,8 +512,11 @@ int fa_blockswitch_robust(aacenc_ctx_t *s, float *sample_buf)
 
     /*frac = 0.42;*/
     /*ratio = 0.044;*/
-    frac = 0.32;
-    ratio = 0.15;
+    /*frac = 0.32;*/
+    /*ratio = 0.15;*/
+    /*frac = 0.42;*/
+    frac = 0.42;
+    ratio = 0.044;
 
     max_attack = 0.;
     cur_attack = 0.;
@@ -568,9 +571,9 @@ static const int block_sync_tab[4][4] =
   /* LONG_STOP_BLOCK  */ {LONG_STOP_BLOCK,  ONLY_SHORT_BLOCK, ONLY_SHORT_BLOCK, LONG_STOP_BLOCK  },
 };
 
-/*#define MAX_GROUP_CNT  3*/
+#define MAX_GROUP_CNT  3
 /*#define MAX_GROUP_CNT  4*/
-#define MAX_GROUP_CNT 5
+/*#define MAX_GROUP_CNT 5*/
 static const int group_tab[WINCNT][MAX_GROUP_CNT] =
 {
      /*{1,  3,  3,  1},*/
@@ -609,10 +612,10 @@ static const int group_tab[WINCNT][MAX_GROUP_CNT] =
      /*{3,  3,  2},*/
      /*{3,  3,  2}*/
 
-     /*{2,  3,  3},*/
-     /*{2,  2,  4},*/
-     /*{4,  2,  2},*/
-     /*{3,  3,  2},*/
+     {2,  3,  3},
+     {2,  2,  4},
+     {4,  2,  2},
+     {3,  3,  2},
 
      /*{1,  1,  2,  3,  1},*/
      /*{1,  1,  1,  2,  3},*/
@@ -632,14 +635,14 @@ static const int group_tab[WINCNT][MAX_GROUP_CNT] =
      /*{2,  2,  2,  1,  1},*/
      /*{2,  2,  2,  1,  1}*/
 
-     {1,  1,  1,  2,  3},
-     {1,  1,  1,  2,  3},
-     {1,  1,  1,  3,  2},
-     {1,  1,  1,  3,  2},
-     {2,  3,  1,  1,  1},
-     {2,  3,  1,  1,  1},
-     {3,  2,  1,  1,  1},
-     {3,  2,  1,  1,  1}
+     /*{1,  1,  1,  2,  3},*/
+     /*{1,  1,  1,  2,  3},*/
+     /*{1,  1,  1,  3,  2},*/
+     /*{1,  1,  1,  3,  2},*/
+     /*{2,  3,  1,  1,  1},*/
+     /*{2,  3,  1,  1,  1},*/
+     /*{3,  2,  1,  1,  1},*/
+     /*{3,  2,  1,  1,  1}*/
 };
 
 int fa_blocksync(fa_aacenc_ctx_t *f)
@@ -685,7 +688,7 @@ int fa_blocksync(fa_aacenc_ctx_t *f)
             if (block_type == ONLY_SHORT_BLOCK) {
                 sl->num_window_groups = MAX_GROUP_CNT;
                 sr->num_window_groups = MAX_GROUP_CNT;
-#if  0 
+#if  1 
                 sl->window_group_length[0] = group_tab[bcl->attack_index][0];
                 sl->window_group_length[1] = group_tab[bcl->attack_index][1];
                 sl->window_group_length[2] = group_tab[bcl->attack_index][2];

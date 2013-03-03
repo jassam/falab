@@ -157,11 +157,11 @@ void  fa_protect_db_rom_init()
     /*32k long*/
     for (i = 0; i < 51; i++) {
         if (i < 3)
-            fa_protect_db_32k_long[i] = 9;
+            fa_protect_db_32k_long[i] = 10;
         else if (i < 27)
-            fa_protect_db_32k_long[i] = 8;
+            fa_protect_db_32k_long[i] = 9;
         else if (i < 31)
-            fa_protect_db_32k_long[i] = 7;
+            fa_protect_db_32k_long[i] = 9;
         else if (i < 42)
             fa_protect_db_32k_long[i] = 7;
         else 
@@ -171,9 +171,9 @@ void  fa_protect_db_rom_init()
     /*32k short*/
     for (i = 0; i < 14; i++) {
         if (i < 1)
-            fa_protect_db_32k_short[i] = 8;
+            fa_protect_db_32k_short[i] = 9;
         else if (i < 2)
-            fa_protect_db_32k_short[i] = 7;
+            fa_protect_db_32k_short[i] = 8;
         else if (i < 11) 
             fa_protect_db_32k_short[i] = 7;
         else 

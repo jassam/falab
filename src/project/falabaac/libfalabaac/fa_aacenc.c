@@ -98,8 +98,8 @@ static rate_cutoff_t rate_cutoff[] =
     {23000, 1.41, 8000.},
     {31000, 1.31, 10000.},
     {39000, 1.28, 13000.},
-    {45000, 1.18, 15300.},
-    {63000, 1.01, 16500.},
+    {45000, 1.18, 15200.},
+    {63000, 1.01, 16200.},
     {70000, 0.91, 17000.},
     {80000, 0.81, 17000.},
     {100000, 0.71, 20000.},
@@ -115,15 +115,15 @@ typedef struct _bit_thr_cof_t{
 
 static bit_thr_cof_t bit_thr_cof[] = 
 {
-    {16000, 0.4},
-    {24000, 0.4},
-    {32000, 0.5},
-    {38000, 0.6},
-    {48000, 0.7},
+    {16000, 0.5},
+    {24000, 0.5},
+    {32000, 0.6},
+    {38000, 0.7},
+    {48000, 0.9},
     {64000, 1.3},
-    {80000, 2.0},
-    {100000, 4},
-    {120000, 5},
+    {80000, 1.4},
+    {100000, 1.5},
+    {120000, 1.8},
     {180000, 7},
     {0    , 0},
 
@@ -319,6 +319,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num, float qcof, in
                       int blockswitch_method, int quantize_method, int time_resolution_first)
 {
     int i;
+    int bits_adj;
     int bits_average;
     int bits_res_maxsize;
     int real_band_width;
@@ -365,8 +366,20 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num, float qcof, in
         /*printf("\nNOTE: final qcof = %f\n", f->cfg.qcof);*/
     }
 
+    if (bit_rate >= 200000 && bit_rate < 260000)
+        bits_adj = 9000;
+    if (bit_rate >= 140000 && bit_rate < 200000)
+        bits_adj = 4000;
+    if (bit_rate >= 90000  && bit_rate < 110000)
+        bits_adj = -2000;
+
+#if 0
     bits_thr_cof  = get_bit_thr_cof(chn_num, sample_rate, bit_rate);
     adj = get_adj_cof(chn_num, sample_rate, bit_rate);
+#else 
+    bits_thr_cof  = get_bit_thr_cof(chn_num, sample_rate, bit_rate+bits_adj);
+    adj = get_adj_cof(chn_num, sample_rate, bit_rate+bits_adj);
+#endif
     /*printf("bits thr cof=%f\n", bits_thr_cof);*/
 
     if (speed_level > 5) {
@@ -383,7 +396,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num, float qcof, in
     memset(chn_info_tmp, 0, sizeof(chn_info_t)*MAX_CHANNELS);
     get_aac_chn_info(chn_info_tmp, chn_num, lfe_enable);
 
-    bits_average  = (bit_rate*1024)/(sample_rate*chn_num);
+    /*bits_average  = (bit_rate*1024)/(sample_rate*chn_num);*/
+    bits_average  = ((bit_rate+bits_adj)*1024)/(sample_rate*chn_num);
     bits_res_maxsize = get_aac_bitreservoir_maxsize(bits_average, sample_rate);
     f->h_bitstream = fa_bitstream_init((6144/8)*chn_num);
 
