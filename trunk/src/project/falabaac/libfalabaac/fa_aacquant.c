@@ -1575,11 +1575,13 @@ static void adjust_noise_thr(aacenc_ctx_t *s)
 static float choose_stepsize_db(int delta_bits, float cof)
 {
 	float step;
+#if 0
 
-	if (delta_bits < 160*cof)
+	/*if (delta_bits < 160*cof)*/
+	if (delta_bits < 140*cof)
 		step = 0.25;
 	else if (delta_bits < 300*cof)
-		step = 0.5;
+		step = 0.4;
 	else if (delta_bits < 700*cof)
 		step = 1;
 	else if (delta_bits < 1000*cof)
@@ -1590,6 +1592,27 @@ static float choose_stepsize_db(int delta_bits, float cof)
         step = 6;
 	else 
 		step = 8;
+
+#else 
+
+    if (delta_bits < 140*cof)
+        step = 0.25;
+    else if (delta_bits < 300*cof)
+        step = 0.4;
+    else if (delta_bits < 700*cof)
+        step = 0.8;
+    else if (delta_bits < 1000*cof)
+        step = 2;
+    else if (delta_bits < 1500*cof)
+        step = 3;
+    else if (delta_bits < 2500*cof)
+        step = 5;
+    else 
+        step = 6;
+
+    /*step = 0.25;*/
+
+#endif
 
 	return step;
 
@@ -1623,7 +1646,8 @@ static int mdctline_enc(fa_aacenc_ctx_t *f)
 
     while (i < chn_num) {
         s = &(f->ctx[i]);
-        bit_thr = 160.0*s->bit_thr_cof;
+        /*bit_thr = 160.0*s->bit_thr_cof;*/
+        bit_thr = 140.0*s->bit_thr_cof;
 
         if (s->chn_info.cpe == 1) {
             chn = 2;
