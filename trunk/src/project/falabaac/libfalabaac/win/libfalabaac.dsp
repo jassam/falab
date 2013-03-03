@@ -52,7 +52,7 @@ LIB32=link.exe -lib
 # ADD LIB32 /nologo
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy      ..\fa_aacapi.h      ..\..\include     	copy      ..\fa_inttypes.h      ..\..\include     	copy      .\Release\libfalabaac.lib      .\ 
+PostBuild_Cmds=copy       ..\fa_aacapi.h       ..\..\include      	copy       ..\fa_inttypes.h       ..\..\include      	copy       .\Release\libfalabaac.lib       .\ 
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "libfalabaac - Win32 Debug"
@@ -79,7 +79,7 @@ LIB32=link.exe -lib
 # ADD LIB32 /nologo
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy      ..\fa_aacapi.h      ..\..\include     	copy      ..\fa_inttypes.h      ..\..\include     	copy      .\Debug\libfalabaac.lib       .\ 
+PostBuild_Cmds=copy       ..\fa_aacapi.h       ..\..\include      	copy       ..\fa_inttypes.h       ..\..\include      	copy       .\Debug\libfalabaac.lib        .\ 
 # End Special Build Tool
 
 !ENDIF 
@@ -174,6 +174,10 @@ SOURCE=..\fa_mdct.c
 # Begin Source File
 
 SOURCE=..\fa_mdctquant.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\fa_psychomodel1.c
 # End Source File
 # Begin Source File
 
@@ -294,6 +298,10 @@ SOURCE=..\fa_mdct.h
 # Begin Source File
 
 SOURCE=..\fa_mdctquant.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\fa_psychomodel1.h
 # End Source File
 # Begin Source File
 
