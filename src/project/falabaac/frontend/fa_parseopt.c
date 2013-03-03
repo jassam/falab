@@ -60,7 +60,16 @@ const char *usage =
 "See also:\n"
 "    -h, --help               for help on ...\n"
 /*"    --long-help          for a description of all options for ...\n"*/
-"    -L, --license            for the license terms for falab.\n\n";
+"    -L, --license            for the license terms for falab.\n\n"
+"Simple example:\n"
+"       falabaac -i test.wav\n"
+"       falabaac -i test.wav -o test_out.aac\n"
+"       falabaac -i test.wav -q 1.0\n"
+"       falabaac -i test.wav -b 128\n"
+"       falabaac -i test.wav -b 128 -w 15\n"
+"       falabaac -i test.wav -o test_out.aac -b 96\n"
+"       falabaac -i test.wav -l 3\n"
+"\n\n";
 
 const char *default_set =
 "\n\n"
@@ -119,11 +128,16 @@ const char *long_help =
 const char *all_help =
 "\n\n"
 "Usage: falabaac <-i> <inputfile>  [options] ...                                                            \n"
+"                                                                                                           \n"
+"Recommend command line:                                                                                    \n"
+"       falabaac -i test.wav                                                                                \n"
+"       falabaac -i test.wav -q 1                                                                           \n"
+"                                                                                                           \n"
 "Options:                                                                                                   \n"
 "    -i <inputfile> , --input  <inputfile>                                                                  \n"          
 "          Set input filename , must be wav file, now support 32kHz, 44.1kHz and 48kHz, 16bits/sample       \n"              
 "          Example:  -i test.wav                                                                            \n" 
-"                    --input test.wav]                                                                      \n"
+"                    --input test.wav                                                                       \n"
 "                                                                                                           \n"
 "    -o <outputfile> , --output <outputfile>                                                                \n"        
 "          Set output filename , aac file, format is MPEG2-ADTS                                             \n"             
@@ -148,6 +162,7 @@ const char *all_help =
 "                                                                                                           \n"
 "    -l <speedlevel> , --speedlevel <speedlevel>                                                            \n"           
 "          Set speed level(1~6), default is 1, it has good quality                                          \n"
+"          Want fast mode, -l 3 is a good choice                                                            \n"
 "          Example:  -l 1                                                                                   \n"
 "                    --speedlevel 1                                                                         \n"
 "                                                                                                           \n"
