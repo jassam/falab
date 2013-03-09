@@ -783,13 +783,15 @@ void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
                     *tns_active = 1;
                 else 
                     *tns_active = 0;
-
+/*
                 if (nb[i] >= frac*nb_prev[i])
                     nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), frac*nb_prev[i]);
                 else if (nb_prev[i] > frac*nb[i])
                     nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), frac*nb[i]);
                 else 
                     nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], frac*nb_prev[i]));
+*/
+                nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], frac*nb_prev[i]));
             }
         } else {
             if (nb[i] >= nb_prev[i]  || nb_prev[i] >= 10*nb[i])
@@ -799,7 +801,9 @@ void fa_psychomodel2_calculate_pe_improve(uintptr_t handle, float *x, float *pe,
 
             /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.))*18, FA_MIN(nb[i], 2.7*nb_prev[i]));*/
             /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.))*10, FA_MIN(nb[i], 1.6*nb_prev[i]));*/
-            nb[i] = FA_MAX((pow(10., qsthr[i]/10.))*7, FA_MIN(nb[i], 1.564*nb_prev[i]));
+            /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.))*7, FA_MIN(nb[i], 1.564*nb_prev[i]));*/
+            /*nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], 1.564*nb_prev[i]));*/
+            nb[i] = FA_MAX((pow(10., qsthr[i]/10.)), FA_MIN(nb[i], 1.1*nb_prev[i]));
         }
 
         nb_prev[i] = nb[i];
@@ -910,6 +914,102 @@ void fa_psychomodel2_calculate_xmin_short(uintptr_t handle, float xmin[8][51])
         xmin[j][i] = xmin_tmp;
     }
 }
+
+
+void fa_psychomodel2_xmin_short2long(uintptr_t h_short, uintptr_t h_long, 
+                                     float xmin_short[8][51], float *xmin_long, float qcof)
+{
+    int i,j;
+    fa_psychomodel2_t *fs = (fa_psychomodel2_t *)h_short;
+    fa_psychomodel2_t *fl = (fa_psychomodel2_t *)h_long;
+    float xmin_short_tmp[51];
+
+    int   swb_num       = fs->swb_num;
+    int   *swb_offset   = fs->swb_offset;
+    int   swb_num_l     = fl->swb_num;
+    int   *swb_offset_l = fl->swb_offset;
+
+    float xmin_s_line[128];
+    float xmin_l_line[1024];
+
+    float xmin_tmp;
+
+    memset(xmin_short_tmp, 0, sizeof(float)*51);
+    for (i = 0; i < swb_num; i++) {
+        xmin_tmp = 1000000000000.;
+        for (j = 0; j < 8; j++) {
+            xmin_tmp = FA_MIN(xmin_tmp, xmin_short[j][i]);
+        }
+        xmin_short_tmp[i] = xmin_tmp;
+    }
+
+    for (i = 0; i < swb_num; i++) {
+        for (j = swb_offset[i]; j < swb_offset[i+1]; j++)
+            xmin_s_line[j] = xmin_short_tmp[i];
+    }
+
+    for (i = 0; i < 128; i++)
+        for (j = 0; j < 8; j++)
+            xmin_l_line[8*i+j] = xmin_s_line[i];
+
+    for (i = 0; i < swb_num_l; i++) {
+        xmin_tmp = 100000000000000.;
+        for (j = swb_offset_l[i]; j < swb_offset_l[i+1]; j++)
+            xmin_tmp = FA_MIN(xmin_tmp, xmin_l_line[j]);
+        xmin_long[i] = qcof * xmin_tmp;
+    }
+
+}
+
+
+void fa_psychomodel2_xmin_long2short(uintptr_t h_short, uintptr_t h_long, 
+                                     float xmin_short[8][51], float *xmin_long, float qcof)
+{
+    int i,j;
+    fa_psychomodel2_t *fs = (fa_psychomodel2_t *)h_short;
+    fa_psychomodel2_t *fl = (fa_psychomodel2_t *)h_long;
+
+    int   swb_num       = fs->swb_num;
+    int   *swb_offset   = fs->swb_offset;
+    int   swb_num_l     = fl->swb_num;
+    int   *swb_offset_l = fl->swb_offset;
+
+    float xmin_s_line[128];
+    float xmin_l_line[1024];
+
+    float xmin_tmp;
+
+    for (i = 0; i < swb_num_l; i++) {
+        for (j = swb_offset_l[i]; j < swb_offset_l[i+1]; j++)
+            xmin_l_line[j] = xmin_long[i];
+    }
+
+    memset(xmin_s_line, 0, sizeof(float)*128);
+    for (i = 0; i < 128; i++) {
+        xmin_tmp = 1000000000000000.;
+        for (j = 0; j < 8; j++) {
+            xmin_tmp = FA_MIN(xmin_tmp, xmin_l_line[8*i+j]);
+        }
+        xmin_s_line[i] = xmin_tmp;
+    }
+
+    for (i = 0; i < swb_num; i++) {
+        xmin_tmp = 100000000000000.;
+        for (j = swb_offset[i]; j < swb_offset[i+1]; j++) {
+            xmin_tmp = FA_MIN(xmin_tmp, xmin_s_line[j]);
+        }
+        xmin_short[0][i] = qcof * xmin_tmp;
+    }
+
+    for (i = 1; i < 8; i++)
+        for (j = 0; j < 51; j++)
+            xmin_short[i][j] = xmin_short[0][j];
+
+}
+
+
+
+
 
 
 

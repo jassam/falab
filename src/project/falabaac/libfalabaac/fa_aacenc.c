@@ -199,10 +199,10 @@ static float get_bandwidth1(int chn, int sample_rate, float qcof, int *bit_rate)
     }
 
     if (i > 0) {
-        *bit_rate = rate_cutoff[i-1].bit_rate;
+        *bit_rate = chn*rate_cutoff[i-1].bit_rate;
         bandwidth = rate_cutoff[i-1].cutoff;
     } else {
-        *bit_rate = 15000;
+        *bit_rate = chn*15000;
         bandwidth = 5000.;
     }
 
@@ -360,6 +360,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num, float qcof, in
 
     if (vbr_flag) {
         f->band_width = get_bandwidth1(chn_num, sample_rate, qcof, &(f->cfg.bit_rate)); 
+        bit_rate = f->cfg.bit_rate;
         /*printf("\nNOTE: final bitrate/chn = %d\n", f->cfg.bit_rate);*/
     } else {
         f->band_width = get_bandwidth(chn_num, sample_rate, bit_rate, &(f->cfg.qcof));
@@ -431,6 +432,7 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num, float qcof, in
             f->quantize_method = QUANTIZE_BEST;
             f->do_quantize = fa_quantize_best;
             /*f->do_quantize = fa_quantize_fast;*/
+            /*f->do_quantize = fa_quantize_loop;*/
             break;
         default:
             f->quantize_method = QUANTIZE_BEST;
@@ -663,8 +665,8 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num, float quali
     tns_enable           = speed_level_tab[speed_index][1];
     block_switch_enable  = speed_level_tab[speed_index][2];
     psy_enable           = speed_level_tab[speed_index][3];
-    /*psy_model            = PSYCH1;*/
-    psy_model            = PSYCH2;
+    psy_model            = PSYCH1;
+    /*psy_model            = PSYCH2;*/
     blockswitch_method   = speed_level_tab[speed_index][4];
     quantize_method      = speed_level_tab[speed_index][5];
 
@@ -846,7 +848,7 @@ void fa_aacenc_encode(uintptr_t handle, unsigned char *buf_in, int inlen, unsign
     for (i = 0; i < chn_num; i++) {
         s = &(f->ctx[i]);
 
-        memset(s->xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);
+        /*memset(s->xmin, 0, sizeof(float)*8*FA_SWB_NUM_MAX);*/
 
         /*get the input sample*/
         sample_buf = f->sample+i*AAC_FRAME_LEN;

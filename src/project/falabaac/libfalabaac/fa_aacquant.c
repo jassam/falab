@@ -1289,7 +1289,8 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
     int group_offset;
     float adj;
 
-    s->common_scalefac = 0; //255;//0;
+    /*s->common_scalefac = 0; //255;//0;*/
+    s->common_scalefac = -250; //255;//0;
     adj = s->adj;
 
     if (s->block_type == ONLY_SHORT_BLOCK) {
@@ -1298,7 +1299,8 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
         swb_high = fs->swb_high;
 
         for (k = 0; k < 8; k++) {
-            gl = 0;
+            /*gl = 0;*/
+            gl = -250;
             sf_min = 255;
             for (i = 0; i < swb_num; i++) {
                 kmin = swb_low[i];
@@ -1306,7 +1308,9 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
 #ifdef USE_PDF_IMPROVE
                 sf = fa_estimate_sf_fast_improve((2.0+adj*3)*s->Ti[k][i], s->pdft[k][i], s->miu2[k][i]);
 #else 
-                sf = fa_estimate_sf_fast((2.5+adj*3+ti_adj)*s->Ti[k][i], s->pdft[k][i]);
+                /*sf = fa_estimate_sf_fast((2.5+adj*3+ti_adj)*s->Ti[k][i], s->pdft[k][i]);*/
+                s->Ti[k][i] = (2.5+adj*3+ti_adj)*s->Ti[k][i];
+                sf = fa_estimate_sf_fast(s->Ti[k][i], s->pdft[k][i]);
                 /*sf = fa_estimate_sf_fast((1.0+ti_adj)*s->Ti[k][i], s->pdft[k][i]);*/
 #endif
                 /*assert(sf>=0);*/
@@ -1392,7 +1396,8 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
             sf = fa_estimate_sf_fast_improve((1.2+adj)*s->Ti[0][i], s->pdft[0][i], s->miu2[0][i]);
 #else 
             /*sf = fa_estimate_sf_fast((1.0+adj+ti_adj)*s->Ti[0][i], s->pdft[0][i]);*/
-            sf = fa_estimate_sf_fast((1.0+ti_adj)*s->Ti[0][i], s->pdft[0][i]);
+            s->Ti[0][i] = (1.0+ti_adj)*s->Ti[0][i];
+            sf = fa_estimate_sf_fast(s->Ti[0][i], s->pdft[0][i]);
 #endif
             s->common_scalefac = FA_MAX(s->common_scalefac, sf);
             s->scalefactor[0][i] = sf; 
@@ -1881,7 +1886,8 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
         cur_cnt++;
 
         if (cur_cnt > max_loop_cnt) {
-            if (cur_bits > res_maxsize) {
+            /*if (cur_bits > res_maxsize) {*/
+            if (cur_bits > chn_num*res_maxsize) {
                 gl_adj++;
                 ti_adj += 0.2;
                 if (cur_cnt > 20)
