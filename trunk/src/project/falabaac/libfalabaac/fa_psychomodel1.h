@@ -44,6 +44,7 @@ uintptr_t fa_psychomodel1_init(int fs, int fft_len);
 void fa_psychomodel1_uninit(uintptr_t handle);
 void fa_psy_global_threshold(uintptr_t handle, float *fft_buf, float *gth);
 void fa_psy_global_threshold_usemdct(uintptr_t handle, float *mdct_buf, float *gth);
+void fa_psychomodel1_get_gth(uintptr_t handle, float *gth);
 
 
 #ifdef __cplusplus 

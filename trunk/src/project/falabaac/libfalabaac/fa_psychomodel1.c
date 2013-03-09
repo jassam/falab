@@ -860,3 +860,9 @@ void fa_psy_global_threshold_usemdct(uintptr_t handle, float *mdct_buf, float *g
 #endif
 }
 
+void fa_psychomodel1_get_gth(uintptr_t handle, float *gth)
+{
+    fa_psychomodel1_t *f = (fa_psychomodel1_t *)handle;
+
+    memcpy(gth, f->global_thres, sizeof(float)*f->psd_len);
+}

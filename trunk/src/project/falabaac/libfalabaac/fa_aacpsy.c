@@ -361,7 +361,7 @@ void update_psy_short_previnfo(uintptr_t handle, int index)
 
 }
 
-
+#if 0
 void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type, float xmin[8][FA_SWB_NUM_MAX], float qcof)
 {
     int k;
@@ -377,6 +377,54 @@ void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type
     }
 }
 
+#else 
+
+void fa_aacpsy_calculate_xmin(uintptr_t handle, float *mdct_line, int block_type, float xmin[8][FA_SWB_NUM_MAX], float qcof)
+{
+    int k;
+    fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
+
+    if (block_type == ONLY_SHORT_BLOCK) {
+        for (k = 0; k < 8; k++) {
+            /*update_psy_short_previnfo(f, k);*/
+            fa_psychomodel2_calculate_xmin(f->h_psy2_short[k], mdct_line+k*AAC_BLOCK_SHORT_LEN, &(xmin[k][0]), qcof);
+        }
+    } else {
+#if  1 
+        fa_psychomodel2_calculate_xmin(f->h_psy2_long, mdct_line, &(xmin[0][0]), qcof);
+#else 
+        int i;
+        float xmin_tmp[51];
+        float xmin_s_tmp[8][51];
+
+        if (block_type == ONLY_LONG_BLOCK)
+            fa_psychomodel2_calculate_xmin(f->h_psy2_long, mdct_line, &(xmin[0][0]), qcof);
+
+        if (block_type == LONG_START_BLOCK) {
+            /*fa_psychomodel2_xmin_long2short(f->h_psy2_short[0], f->h_psy2_long, */
+                                            /*xmin_s_tmp, xmin[0], qcof);*/
+            /*memset(xmin, 0, 8*FA_SWB_NUM_MAX*sizeof(float));*/
+            /*memcpy(&(xmin[0][0]), xmin_s_tmp, 8*51*sizeof(float));*/
+            ;
+        }
+
+        if (block_type == LONG_STOP_BLOCK) {
+            fa_psychomodel2_xmin_short2long(f->h_psy2_short[0], f->h_psy2_long, 
+                                            xmin, xmin_tmp, qcof);
+            memset(xmin, 0, 8*FA_SWB_NUM_MAX*sizeof(float));
+            memcpy(&(xmin[0][0]), xmin_tmp, 51*sizeof(float));
+        }
+
+#endif
+    }
+}
+
+
+
+#endif
+
+
+#if  0 
 void fa_aacpsy_calculate_xmin_usepsych1(uintptr_t handle, float *mdct_line, int block_type, float xmin[8][FA_SWB_NUM_MAX])
 {
     int k;
@@ -418,4 +466,96 @@ void fa_aacpsy_calculate_xmin_usepsych1(uintptr_t handle, float *mdct_line, int 
 
     }
 }
+
+#else 
+void fa_aacpsy_calculate_xmin_usepsych1(uintptr_t handle, float *mdct_line, int block_type, float xmin[8][FA_SWB_NUM_MAX])
+{
+    int k;
+    int i,j;
+    fa_aacpsy_t *f = (fa_aacpsy_t *)handle;
+    float gthr[1024];
+    int   swb_num;
+    int   *swb_offset;
+    float quality;
+
+    /*quality = 50;*/
+    quality = 1;
+
+    memset(gthr, 0, sizeof(float)*1024);
+    if (block_type == ONLY_SHORT_BLOCK) {
+        swb_num    = FA_PSY_44k_SHORT_NUM;
+        swb_offset= fa_swb_44k_short_offset;
+        for (k = 0; k < 8; k++) {
+            fa_psy_global_threshold_usemdct(f->h_psy1_short[k], mdct_line+k*AAC_BLOCK_SHORT_LEN, gthr);
+            for (i = 0; i < swb_num; i++) {
+                xmin[k][i] = 10000000000;
+                for (j = swb_offset[i]; j < swb_offset[i+1]; j++) {
+                    xmin[k][i] = FA_MIN(xmin[k][i], quality*gthr[j]);
+                    /*printf("xmin[%d]=%f\n", j, xmin[0][i]);*/
+                }
+            }
+        }
+    } else {
+
+        if (block_type == ONLY_LONG_BLOCK) {
+            float gth_l[1024];
+            int i;
+
+            fa_psychomodel1_get_gth(f->h_psy1_long, gth_l);
+            fa_psy_global_threshold_usemdct(f->h_psy1_long, mdct_line, gthr);
+            for (i = 0; i < 1024; i++)
+                gthr[i] = FA_MIN(quality*gthr[i], 1.2*gth_l[i]);
+
+            swb_num    = FA_PSY_44k_LONG_NUM;
+            swb_offset= fa_swb_44k_long_offset;
+            for (i = 0; i < swb_num; i++) {
+                xmin[0][i] = 10000000000;
+                for (j = swb_offset[i]; j < swb_offset[i+1]; j++) {
+                    xmin[0][i] = FA_MIN(xmin[0][i], quality*gthr[j]);
+                    /*printf("xmin[%d]=%f\n", j, xmin[0][i]);*/
+                }
+            }
+        }
+
+        if (block_type == LONG_STOP_BLOCK ) {
+            float gth_s_tmp[8][128];
+            float gth_s[128];
+            float gth_l[1024];
+            int i,j;
+
+            memset(gth_s, 0, sizeof(float)*128);
+            memset(gth_l, 0, sizeof(float)*1024);
+            for (i = 0; i < 8; i++)
+                fa_psychomodel1_get_gth(f->h_psy1_short[i], gth_s_tmp[i]);
+
+            for (i = 0; i < 128; i++)
+                gth_s[i] = 1000000000000000.;
+
+            for (i = 0; i < 8; i++)
+                for (j = 0; j < 128; j++)
+                    gth_s[j] = FA_MIN(gth_s[j], gth_s_tmp[i][j]);
+
+            fa_psychomodel1_get_gth(f->h_psy1_short[7], gth_s);
+
+            for (i = 0; i < 128; i++)
+                for (j = 0; j < 8; j++)
+                    gth_l[8*i+j] = gth_s[i];
+
+            swb_num    = FA_PSY_44k_LONG_NUM;
+            swb_offset= fa_swb_44k_long_offset;
+            for (i = 0; i < swb_num; i++) {
+                xmin[0][i] = 10000000000;
+                for (j = swb_offset[i]; j < swb_offset[i+1]; j++) {
+                    xmin[0][i] = FA_MIN(xmin[0][i], gth_l[j]);
+                    /*printf("xmin[%d]=%f\n", j, xmin[0][i]);*/
+                }
+            }
+        }
+
+    }
+}
+
+
+
+#endif
 
