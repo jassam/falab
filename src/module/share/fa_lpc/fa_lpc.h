@@ -32,7 +32,7 @@ extern "C"
 { 
 #endif  
 
-//#define USE_LPC_HP
+#define USE_LPC_HP
 
 typedef unsigned uintptr_t;
 

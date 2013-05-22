@@ -95,7 +95,7 @@ void  fa_protect_db_rom_init()
     }
 
     /*44k long*/
-#if 1 
+#if  1 
 
     for (i = 0; i < 49; i++) {
         if (i < 3)
@@ -392,8 +392,10 @@ void fa_adjust_thr(int subband_num,
     float mi;
     float r1, r2;
 
-    r1 = 1.0;
-    r2 = 0.25;
+    /*r1 = 1.0;*/
+    /*r2 = 0.25;*/
+    r1 = 4.0;
+    r2 = 1; //0.25;
 
     mi = 10000000;
     for (s = 0; s < subband_num; s++) {
