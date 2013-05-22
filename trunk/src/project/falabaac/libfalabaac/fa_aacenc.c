@@ -367,6 +367,8 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num, float qcof, in
         /*printf("\nNOTE: final qcof = %f\n", f->cfg.qcof);*/
     }
 
+    bits_adj = 0;
+
     if (bit_rate >= 200000 && bit_rate < 260000)
         bits_adj = 9000;
     if (bit_rate >= 140000 && bit_rate < 200000)
@@ -558,12 +560,14 @@ uintptr_t aacenc_init(int sample_rate, int bit_rate, int chn_num, float qcof, in
             if (time_resolution_first)
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
             else 
-                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);
+                /*fa_quantqdf_para_init(&(f->ctx[i].qp), 0.95);*/
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.85);
         } else { 
             if (time_resolution_first)
                 fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
             else 
-                fa_quantqdf_para_init(&(f->ctx[i].qp), 1.0);
+                /*fa_quantqdf_para_init(&(f->ctx[i].qp), 1.0);*/
+                fa_quantqdf_para_init(&(f->ctx[i].qp), 0.9);
         }
 
     }
@@ -665,8 +669,8 @@ uintptr_t fa_aacenc_init(int sample_rate, int bit_rate, int chn_num, float quali
     tns_enable           = speed_level_tab[speed_index][1];
     block_switch_enable  = speed_level_tab[speed_index][2];
     psy_enable           = speed_level_tab[speed_index][3];
-    psy_model            = PSYCH1;
-    /*psy_model            = PSYCH2;*/
+    /*psy_model            = PSYCH1;*/
+    psy_model            = PSYCH2;
     blockswitch_method   = speed_level_tab[speed_index][4];
     quantize_method      = speed_level_tab[speed_index][5];
 

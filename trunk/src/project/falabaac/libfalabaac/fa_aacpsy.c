@@ -478,7 +478,7 @@ void fa_aacpsy_calculate_xmin_usepsych1(uintptr_t handle, float *mdct_line, int 
     int   *swb_offset;
     float quality;
 
-    /*quality = 50;*/
+    /*quality = 10;*/
     quality = 1;
 
     memset(gthr, 0, sizeof(float)*1024);
@@ -494,17 +494,20 @@ void fa_aacpsy_calculate_xmin_usepsych1(uintptr_t handle, float *mdct_line, int 
                     /*printf("xmin[%d]=%f\n", j, xmin[0][i]);*/
                 }
             }
+            if (k > 0)
+                xmin[k][i] = FA_MIN(xmin[k][i], xmin[k-1][i]);
         }
     } else {
 
         if (block_type == ONLY_LONG_BLOCK) {
+        /*if (block_type != LONG_STOP_BLOCK) {*/
             float gth_l[1024];
             int i;
 
             fa_psychomodel1_get_gth(f->h_psy1_long, gth_l);
             fa_psy_global_threshold_usemdct(f->h_psy1_long, mdct_line, gthr);
             for (i = 0; i < 1024; i++)
-                gthr[i] = FA_MIN(quality*gthr[i], 1.2*gth_l[i]);
+                gthr[i] = FA_MIN(quality*gthr[i], gth_l[i]);
 
             swb_num    = FA_PSY_44k_LONG_NUM;
             swb_offset= fa_swb_44k_long_offset;
@@ -535,7 +538,7 @@ void fa_aacpsy_calculate_xmin_usepsych1(uintptr_t handle, float *mdct_line, int 
                 for (j = 0; j < 128; j++)
                     gth_s[j] = FA_MIN(gth_s[j], gth_s_tmp[i][j]);
 
-            fa_psychomodel1_get_gth(f->h_psy1_short[7], gth_s);
+            /*fa_psychomodel1_get_gth(f->h_psy1_short[7], gth_s);*/
 
             for (i = 0; i < 128; i++)
                 for (j = 0; j < 8; j++)

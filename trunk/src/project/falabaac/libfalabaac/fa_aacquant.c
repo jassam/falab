@@ -1308,9 +1308,9 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
 #ifdef USE_PDF_IMPROVE
                 sf = fa_estimate_sf_fast_improve((2.0+adj*3)*s->Ti[k][i], s->pdft[k][i], s->miu2[k][i]);
 #else 
-                /*sf = fa_estimate_sf_fast((2.5+adj*3+ti_adj)*s->Ti[k][i], s->pdft[k][i]);*/
-                s->Ti[k][i] = (2.5+adj*3+ti_adj)*s->Ti[k][i];
-                sf = fa_estimate_sf_fast(s->Ti[k][i], s->pdft[k][i]);
+                sf = fa_estimate_sf_fast((2.5+adj*3+ti_adj)*s->Ti[k][i], s->pdft[k][i]);
+                /*s->Ti[k][i] = (2.5+adj*3+ti_adj)*s->Ti[k][i];*/
+                /*sf = fa_estimate_sf_fast(s->Ti[k][i], s->pdft[k][i]);*/
                 /*sf = fa_estimate_sf_fast((1.0+ti_adj)*s->Ti[k][i], s->pdft[k][i]);*/
 #endif
                 /*assert(sf>=0);*/
@@ -1395,9 +1395,9 @@ static void calculate_scalefactor_usepdf(aacenc_ctx_t *s, float ti_adj)
 #ifdef USE_PDF_IMPROVE
             sf = fa_estimate_sf_fast_improve((1.2+adj)*s->Ti[0][i], s->pdft[0][i], s->miu2[0][i]);
 #else 
-            /*sf = fa_estimate_sf_fast((1.0+adj+ti_adj)*s->Ti[0][i], s->pdft[0][i]);*/
-            s->Ti[0][i] = (1.0+ti_adj)*s->Ti[0][i];
-            sf = fa_estimate_sf_fast(s->Ti[0][i], s->pdft[0][i]);
+            sf = fa_estimate_sf_fast((1.0+adj+ti_adj)*s->Ti[0][i], s->pdft[0][i]);
+            /*s->Ti[0][i] = (1.0+ti_adj)*s->Ti[0][i];*/
+            /*sf = fa_estimate_sf_fast(s->Ti[0][i], s->pdft[0][i]);*/
 #endif
             s->common_scalefac = FA_MAX(s->common_scalefac, sf);
             s->scalefactor[0][i] = sf; 
@@ -1733,8 +1733,8 @@ static int mdctline_enc(fa_aacenc_ctx_t *f)
                         /*printf("delta bits=%d\n", delta_bits);*/
 
                         if (sl->block_type == ONLY_SHORT_BLOCK)
-                            sl->step_down_db = sr->step_down_db = 0.2;
-                            /*sl->step_down_db = sr->step_down_db = choose_stepsize_db(delta_bits, s->bit_thr_cof);*/
+                            /*sl->step_down_db = sr->step_down_db = 0.2;*/
+                            sl->step_down_db = sr->step_down_db = choose_stepsize_db(delta_bits, s->bit_thr_cof);
                         else
                             sl->step_down_db = sr->step_down_db = choose_stepsize_db(delta_bits, s->bit_thr_cof);
                     }
@@ -1884,12 +1884,16 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
     while (1) {
         cur_cnt++;
+        printf("\ncurcnt=%d, curbis=%d, maxbits=%d\n", cur_cnt, cur_bits, chn_num*res_maxsize);
 
         if (cur_cnt > max_loop_cnt) {
             /*if (cur_bits > res_maxsize) {*/
             if (cur_bits > chn_num*res_maxsize) {
+            /*if (cur_bits > chn_num*6144) {*/
                 gl_adj++;
                 ti_adj += 0.2;
+                /*ti_adj += 1;*/
+                /*printf("\ncurcnt=%d, curbis=%d, maxbits=%d\n", cur_cnt, cur_bits, chn_num*res_maxsize);*/
                 if (cur_cnt > 20)
                     gl_adj++;
             } else 
@@ -1929,7 +1933,7 @@ void fa_quantize_best(fa_aacenc_ctx_t *f)
 
         /*if vbr mode, we break */
         if (vbr_flag) {
-            if (cur_bits < res_maxsize)
+            if (cur_bits < chn_num*res_maxsize)
                 break;
         }
 
